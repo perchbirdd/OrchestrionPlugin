@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Text;
 using Dalamud.Plugin;
 
-namespace OrchestrionPlugin
+namespace Orchestrion
 {
     struct Song
     {

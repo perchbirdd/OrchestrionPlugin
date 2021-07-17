@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OrchestrionPlugin
+namespace Orchestrion
 {
     [StructLayout(LayoutKind.Sequential)]
     unsafe struct BGMPlayback

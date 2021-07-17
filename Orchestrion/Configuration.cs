@@ -3,7 +3,7 @@ using Dalamud.Plugin;
 using System;
 using System.Collections.Generic;
 
-namespace OrchestrionPlugin
+namespace Orchestrion
 {
     [Serializable]
     class Configuration : IPluginConfiguration

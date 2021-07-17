@@ -1,0 +1,9 @@
+name: Orchestrion Plugin
+author: Meli & perchbird
+description: |-
+  Adds a simple front-end for browsing and changing the in-game BGM.  /porch to open
+repo_url: https://github.com/lmcintyre/OrchestrionPlugin
+dalamud_api_level: 4
+tags:
+  - bgm
+  - music

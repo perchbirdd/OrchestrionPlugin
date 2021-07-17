@@ -1,5 +1,5 @@
 ﻿
-namespace OrchestrionPlugin
+namespace Orchestrion
 {
     interface IPlaybackController
     {
