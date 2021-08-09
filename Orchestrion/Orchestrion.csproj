@@ -22,9 +22,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Dalamud">
-      <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Dalamud, Version=6.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\DalamudNet5\bin\Debug\Dalamud.dll</HintPath>
+    </Reference>
+    <Reference Include="FFXIVClientStructs, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\FFXIVClientStructs\bin\Debug\FFXIVClientStructs.dll</HintPath>
+    </Reference>
+    <Reference Include="FFXIVClientStructs.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\FFXIVClientStructs\bin\Debug\FFXIVClientStructs.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="FFXIVClientStructs.Generators, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\FFXIVClientStructs\bin\Debug\FFXIVClientStructs.Generators.dll</HintPath>
     </Reference>
     <Reference Include="ImGui.NET">
       <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>

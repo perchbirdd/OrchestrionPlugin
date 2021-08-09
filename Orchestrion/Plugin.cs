@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Dalamud.Game.Internal;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 
@@ -16,7 +17,7 @@ namespace Orchestrion
     // debug info of which priority is active
     //  notifications/logs of changes even to lower priorities?
 
-    public class Plugin : IDalamudPlugin, IPlaybackController, IResourceLoader
+    public unsafe class Plugin : IDalamudPlugin, IPlaybackController, IResourceLoader
     {
         public string Name => "Orchestrion plugin";
         public string AssemblyLocation { get; set; } = Assembly.GetExecutingAssembly().Location;
@@ -25,6 +26,7 @@ namespace Orchestrion
         private const string commandName = "/porch";
 
         private DalamudPluginInterface pi;
+        private NativeUIUtil nui;
         private Configuration configuration;
         private SongList songList;
         private BGMControl bgmControl;
@@ -54,30 +56,35 @@ namespace Orchestrion
                 addressResolver.Setup(pluginInterface.TargetModuleScanner);
                 bgmControl = new BGMControl(addressResolver);
                 bgmControl.OnSongChanged += HandleSongChanged;
-                bgmControl.StartUpdate();
             }
             catch (Exception e)
             {
                 PluginLog.LogError(e, "Failed to find BGM playback objects");
-                bgmControl?.Dispose();
                 bgmControl = null;
-
                 enableFallbackPlayer = true;
             }
+
+            nui = new NativeUIUtil(pi);
 
             pluginInterface.CommandManager.AddHandler(commandName, new CommandInfo(OnDisplayCommand)
             {
                 HelpMessage = "Displays the orchestrion player, to view, change, or stop in-game BGM."
             });
             pluginInterface.UiBuilder.OnBuildUi += Display;
-
             pluginInterface.UiBuilder.OnOpenConfigUi += (_, _) => songList.SettingsVisible = true;
+            pluginInterface.Framework.OnUpdateEvent += OrchestrionUpdate;
+        }
+
+        private void OrchestrionUpdate(Framework unused)
+        {
+            bgmControl.Update();
+            nui.Update();
         }
 
         public void Dispose()
         {
             songList.Dispose();
-            bgmControl?.Dispose();
+            nui.Dispose();
 
             pi.UiBuilder.OnBuildUi -= Display;
             pi.CommandManager.RemoveHandler(commandName);
@@ -106,9 +113,9 @@ namespace Orchestrion
 
         private void HandleSongChanged(ushort songId)
         {
+            var songName = songList.GetSongTitle(songId);
             if (configuration.ShowSongInChat && !EnableFallbackPlayer) // hack to not show 'new' updates when using the old player... temporary hopefully
             {
-                var songName = songList.GetSongTitle(songId);
                 if (!string.IsNullOrEmpty(songName))
                 {
                     var payloads = new List<Payload>();
@@ -126,6 +133,8 @@ namespace Orchestrion
                     });
                 }
             }
+            
+            // nui.Update($"♪ {songName}");
         }
 
         #region IPlaybackController

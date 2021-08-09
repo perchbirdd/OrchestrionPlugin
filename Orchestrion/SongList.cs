@@ -148,7 +148,7 @@ namespace Orchestrion
             this.configuration.Save();
         }
 
-        public string GetSongTitle(ushort id) => this.songs.ContainsKey(id) ? this.songs[id].Name : null;
+        public string GetSongTitle(ushort id) => this.songs.ContainsKey(id) ? this.songs[id].Name : "";
 
         public void Draw()
         {
