@@ -45,7 +45,7 @@ namespace Orchestrion
         }
     }
 
-    class BGMControl : IDisposable
+    class BGMControl
     {
         public ushort CurrentSongId { get; private set; }
 
@@ -56,40 +56,14 @@ namespace Orchestrion
         private const int ControlBlockCount = 12;
 
         private AddressResolver Address { get; }
-        private CancellationTokenSource cancellationToken;
         private BGMRecord previousSongInfo = new BGMRecord();
 
         public BGMControl(AddressResolver address)
         {
             this.Address = address;
-            this.cancellationToken = new CancellationTokenSource();
         }
 
-        public void Dispose()
-        {
-            this.cancellationToken.Cancel();
-        }
-
-        public void StartUpdate()
-        {
-            Task.Factory.StartNew(async () =>
-            {
-                while (true)
-                {
-                    if (this.cancellationToken.IsCancellationRequested)
-                    {
-                        //throw new OperationCanceledException();
-                        break;
-                    }
-
-                    this.Update();
-
-                    await Task.Delay(2000);
-                }
-            }, cancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-        }
-
-        private void Update()
+        public void Update()
         {
             var currentSong = (ushort)0;
             var activePriority = 0;
