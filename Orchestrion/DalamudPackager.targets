@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+    <Target Name="PackagePlugin" AfterTargets="Build">
+        <DalamudPackager
+                AssemblyName="$(AssemblyName)"
+                OutputPath="$(OutputPath)"
+                ProjectDir="$(ProjectDir)"
+                ManifestType="yaml"
+                MakeZip="true"
+                Include="Orchestrion.dll;
+                        Orchestrion.pdb;
+                        xiv_bgm.csv;
+                        favoriteIcon.png;
+                        settings.png;
+                        Orchestrion.json"/>
+    </Target>    
+</Project>

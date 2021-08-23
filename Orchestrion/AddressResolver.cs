@@ -3,7 +3,7 @@ using Dalamud.Game.Internal;
 using System;
 using System.Runtime.InteropServices;
 
-namespace OrchestrionPlugin
+namespace Orchestrion
 {
     class AddressResolver : BaseAddressResolver
     {

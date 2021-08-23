@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OrchestrionPlugin
+namespace Orchestrion
 {
     interface IResourceLoader
     {
