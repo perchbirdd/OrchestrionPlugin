@@ -2,8 +2,9 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
     <LangVersion>preview</LangVersion>
-    <AssemblyTitle>Orchestrion</AssemblyTitle>
-    <Product>Orchestrion</Product>
+    <AssemblyName>orchestrion</AssemblyName>
+    <AssemblyTitle>orchestrion</AssemblyTitle>
+    <Product>orchestrion</Product>
     <Authors>Meli, perchbird</Authors>
     <Description>Orchestrion plugin for XivLauncher</Description>
     <Copyright>Copyright ©  2021</Copyright>

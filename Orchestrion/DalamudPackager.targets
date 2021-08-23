@@ -7,11 +7,11 @@
                 ProjectDir="$(ProjectDir)"
                 ManifestType="yaml"
                 MakeZip="true"
-                Include="Orchestrion.dll;
-                        Orchestrion.pdb;
+                Include="orchestrion.dll;
+                        orchestrion.pdb;
                         xiv_bgm.csv;
                         favoriteIcon.png;
                         settings.png;
-                        Orchestrion.json"/>
+                        orchestrion.json"/>
     </Target>    
 </Project>
