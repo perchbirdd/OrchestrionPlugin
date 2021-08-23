@@ -11,6 +11,3 @@ dalamud_api_level: 4
 tags:
   - bgm
   - music
-icon_url: https://raw.githubusercontent.com/lmcintyre/OrchestrionPlugin/main/images/icon.png
-image_urls:
-  - https://raw.githubusercontent.com/lmcintyre/OrchestrionPlugin/main/images/img1.png

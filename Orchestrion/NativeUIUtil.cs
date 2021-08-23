@@ -1,4 +1,5 @@
-﻿using Dalamud.Game.Gui;
+﻿using System;
+using Dalamud.Game.Gui;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -40,28 +41,37 @@ namespace Orchestrion
         
         public void Init()
         {
-            var dtr = GetDTR();
-            if (dtr == null || dtr->UldManager.NodeListCount < 16 || dtr->UldManager.SearchNodeById(NodeId) != null) return;
-            PluginLog.Debug($"DTR @ {(ulong) dtr:X}");
-            
-            // Create text node for jello world
-            PluginLog.Debug("Creating our text node.");
-            var musicNode = CreateTextNode();
-            PluginLog.Debug("Text node created.");
-            
-            PluginLog.Debug("Finding last sibling node to add to DTR");
-            var lastChild = dtr->RootNode->ChildNode;
-            while (lastChild->PrevSiblingNode != null) lastChild = lastChild->PrevSiblingNode;
-            PluginLog.Debug($"Found last sibling: {(ulong) lastChild:X}");
-            lastChild->PrevSiblingNode = (AtkResNode*) musicNode;
-            musicNode->AtkResNode.ParentNode = lastChild->ParentNode;
-            musicNode->AtkResNode.NextSiblingNode = lastChild;
+            // try
+            // {
+                var dtr = GetDTR();
+                if (dtr == null || dtr->UldManager.NodeListCount < 16 || dtr->UldManager.SearchNodeById(NodeId) != null) return;
+                PluginLog.Debug($"DTR @ {(ulong)dtr:X}");
+                
+                PluginLog.Debug("Finding last sibling node to add to DTR");
+                if (dtr->RootNode == null) return;
+                var lastChild = dtr->RootNode->ChildNode;
 
-            dtr->RootNode->ChildCount = (ushort) (dtr->RootNode->ChildCount + 1);
-            PluginLog.Debug("Set last sibling of DTR and updated child count");
-            
-            dtr->UldManager.UpdateDrawNodeList();
-            PluginLog.Debug("Updated node draw list");
+                // Create text node for jello world
+                PluginLog.Debug("Creating our text node.");
+                var musicNode = CreateTextNode();
+                PluginLog.Debug("Text node created.");
+                
+                while (lastChild->PrevSiblingNode != null) lastChild = lastChild->PrevSiblingNode;
+                PluginLog.Debug($"Found last sibling: {(ulong)lastChild:X}");
+                lastChild->PrevSiblingNode = (AtkResNode*)musicNode;
+                musicNode->AtkResNode.ParentNode = lastChild->ParentNode;
+                musicNode->AtkResNode.NextSiblingNode = lastChild;
+
+                dtr->RootNode->ChildCount = (ushort)(dtr->RootNode->ChildCount + 1);
+                PluginLog.Debug("Set last sibling of DTR and updated child count");
+
+                dtr->UldManager.UpdateDrawNodeList();
+                PluginLog.Debug("Updated node draw list");
+            // }
+            // catch (Exception ignored)
+            // {
+            //     // ignored
+            // }
         }
         
         public void Update(string text = null)
@@ -137,22 +147,29 @@ namespace Orchestrion
             return newTextNode;
         }
 
+        private void DisposeTextNode()
+        {
+            PluginLog.Debug("Disposing text node.");
+            var musicNode = GetTextNode();
+            if (musicNode == null) return;
+            musicNode->AtkResNode.Destroy(true);
+        }
+
         public void Dispose()
         {
             var dtr = GetDTR();
             var musicNode = GetTextNode();
             if (dtr == null || musicNode == null) return;
             
-            PluginLog.Log("Unlinking Text node...");
+            PluginLog.Debug("Unlinking Text node...");
             var relNode = musicNode->AtkResNode.NextSiblingNode;
             relNode->PrevSiblingNode = null;
-            PluginLog.Log("Destroying Text node...");
-            musicNode->AtkResNode.Destroy(true);
-            PluginLog.Log("Decrementing dtr->RootNode->ChildCount by 1...");
+            DisposeTextNode();
+            PluginLog.Debug("Decrementing dtr->RootNode->ChildCount by 1...");
             dtr->RootNode->ChildCount = (ushort) (dtr->RootNode->ChildCount - 1);
-            PluginLog.Log("Calling UpdateDrawNodeList()...");
+            PluginLog.Debug("Calling UpdateDrawNodeList()...");
             dtr->UldManager.UpdateDrawNodeList();
-            PluginLog.Log("Dispose done!");
+            PluginLog.Debug("Dispose done!");
         }
     }
 }

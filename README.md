@@ -1,3 +1,7 @@
+[![Download count](https://img.shields.io/endpoint?url=https%3A%2F%2Fvz32sgcoal.execute-api.us-east-1.amazonaws.com%2Forchestrion)](https://github.com/lmcintyre/OrchestrionPlugin)
+[![Build status](https://github.com/lmcintyre/OrchestrionPlugin/actions/workflows/build.yml/badge.svg)](https://github.com/lmcintyre/OrchestrionPlugin)
+[![Latest release](https://img.shields.io/github/v/release/lmcintyre/OrchestrionPlugin)](https://github.com/lmcintyre/OrchestrionPlugin)
+
 # OrchestrionPlugin (perchbird fork)
 A plugin for goat's [XivLauncher](https://github.com/goaaats/FFXIVQuickLauncher) that adds a simple music player interface to control the in-game BGM, allowing you to set it to any in-game track you want.  The BGM will persist through **most** changes of zone/instance/etc, and usually will stay active until you change it or click Stop.
 
