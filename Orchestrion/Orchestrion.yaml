@@ -2,7 +2,7 @@ name: Orchestrion Plugin
 author: Meli & perchbird
 description: |-
   Orchestrion Plugin allows you to change the currently playing in-game BGM. It includes
-  a curated list of the most accurate in-game song titles, you know exactly what's playing,
+  a curated list of the most accurate in-game song titles, so you know exactly what's playing,
   if you want to know later! Add favorite songs to separate them from the rest.
   Note: This plugin does not currently allow you to play actual orchestrion songs.
 punchline: Adds a simple front-end for browsing and changing the in-game BGM. 
