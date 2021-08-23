@@ -5,9 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Dalamud.Game.Internal;
+using Dalamud.Game;
+using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.IoC;
+using Dalamud.Logging;
 
 namespace Orchestrion
 {
@@ -17,36 +20,49 @@ namespace Orchestrion
     // debug info of which priority is active
     //  notifications/logs of changes even to lower priorities?
 
-    public unsafe class Plugin : IDalamudPlugin, IPlaybackController, IResourceLoader
+    public class OrchestrionPlugin : IDalamudPlugin, IPlaybackController, IResourceLoader
     {
-        public string Name => "Orchestrion plugin";
+        public string Name => "Orchestrion";
         public string AssemblyLocation { get; set; } = Assembly.GetExecutingAssembly().Location;
 
-        private const string songListFile = "xiv_bgm.csv";
-        private const string commandName = "/porch";
+        private const string SongListFile = "xiv_bgm.csv";
+        private const string CommandName = "/porch";
+        private const string NativeNowPlayingPrefix = "♪ ";
 
-        private DalamudPluginInterface pi;
-        private NativeUIUtil nui;
-        private Configuration configuration;
-        private SongList songList;
-        private BGMControl bgmControl;
-        private string localDir;
+        private readonly DalamudPluginInterface pi;
+        private readonly CommandManager commandManager;
+        private readonly ChatGui chatGui;
+        private readonly Framework framework;
+        private readonly NativeUIUtil nui;
+        private readonly Configuration configuration;
+        private readonly SongList songList;
+        private readonly BGMControl bgmControl;
+        private readonly string localDir;
 
-        private const string nativeNowPlayingPrefix = "♪ ";
-        private TextPayload nowPlayingPayload = new("Now playing ");
-        private TextPayload periodPayload = new(".");
+        private readonly TextPayload nowPlayingPayload = new("Now playing ");
+        private readonly TextPayload periodPayload = new(".");
 
-        public void Initialize(DalamudPluginInterface pluginInterface)
+        public OrchestrionPlugin(
+            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
+            [RequiredVersion("1.0")] GameGui gameGui,
+            [RequiredVersion("1.0")] ChatGui chatGui,
+            [RequiredVersion("1.0")] CommandManager commandManager,
+            [RequiredVersion("1.0")] Framework framework,
+            [RequiredVersion("1.0")] SigScanner sigScanner
+            )
         {
             pi = pluginInterface;
+            this.commandManager = commandManager;
+            this.chatGui = chatGui;
+            this.framework = framework;
 
             configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            configuration.Initialize(pluginInterface);
+            configuration.Initialize(pluginInterface, this);
             enableFallbackPlayer = configuration.UseOldPlayback;
 
             localDir = Path.GetDirectoryName(AssemblyLocation);
 
-            var songlistPath = Path.Combine(localDir, songListFile);
+            var songlistPath = Path.Combine(localDir, SongListFile);
             songList = new SongList(songlistPath, configuration, this, this);
 
             // TODO: eventually it might be nice to do this only if the fallback player isn't being used
@@ -54,43 +70,60 @@ namespace Orchestrion
             var addressResolver = new AddressResolver();
             try
             {
-                addressResolver.Setup(pluginInterface.TargetModuleScanner);
+                addressResolver.Setup(sigScanner);
                 bgmControl = new BGMControl(addressResolver);
                 bgmControl.OnSongChanged += HandleSongChanged;
             }
             catch (Exception e)
             {
-                PluginLog.LogError(e, "Failed to find BGM playback objects");
+                PluginLog.Error(e, "Failed to find BGM playback objects");
                 bgmControl = null;
                 enableFallbackPlayer = true;
             }
 
-            nui = new NativeUIUtil(pi);
+            nui = new NativeUIUtil(configuration, gameGui);
 
-            pluginInterface.CommandManager.AddHandler(commandName, new CommandInfo(OnDisplayCommand)
+            commandManager.AddHandler(CommandName, new CommandInfo(OnDisplayCommand)
             {
-                HelpMessage = "Displays the orchestrion player, to view, change, or stop in-game BGM."
+                HelpMessage = "Displays the Orchestrion window, to view, change, or stop in-game BGM."
             });
-            pluginInterface.UiBuilder.OnBuildUi += Display;
-            pluginInterface.UiBuilder.OnOpenConfigUi += (_, _) => songList.SettingsVisible = true;
-            pluginInterface.Framework.OnUpdateEvent += OrchestrionUpdate;
+            pluginInterface.UiBuilder.Draw += Display;
+            pluginInterface.UiBuilder.OpenConfigUi += (_, _) => songList.SettingsVisible = true;
+            framework.OnUpdateEvent += OrchestrionUpdate;
         }
 
         private void OrchestrionUpdate(Framework unused)
         {
             bgmControl.Update();
-            nui.Update();
+            
+            if (configuration.ShowSongInNative)
+                nui.Update();
         }
 
         public void Dispose()
         {
+            framework.OnUpdateEvent -= OrchestrionUpdate;
             songList.Dispose();
             nui.Dispose();
-
-            pi.UiBuilder.OnBuildUi -= Display;
-            pi.CommandManager.RemoveHandler(commandName);
-
+            pi.UiBuilder.Draw -= Display;
+            commandManager.RemoveHandler(CommandName);
             pi.Dispose();
+        }
+
+        public void SetNativeDisplay(bool value)
+        {
+            // Somehow it was set to the same value. This should not occur
+            if (value == configuration.ShowSongInNative) return;
+
+            if (value)
+            {
+                nui.Init();
+                var songName = songList.GetSongTitle(CurrentSong);
+                nui.Update(NativeNowPlayingPrefix + songName);
+            }
+                
+            else
+                nui.Dispose();
         }
 
         private void OnDisplayCommand(string command, string args)
@@ -98,7 +131,7 @@ namespace Orchestrion
             if (!string.IsNullOrEmpty(args) && args.Split(' ')[0].ToLowerInvariant() == "debug")
             {
                 songList.AllowDebug = !songList.AllowDebug;
-                pi.Framework.Gui.Chat.Print($"Orchestrion debug options have been {(songList.AllowDebug ? "enabled" : "disabled")}.");
+                chatGui.Print($"Orchestrion debug options have been {(songList.AllowDebug ? "enabled" : "disabled")}.");
             }
             else
             {
@@ -128,14 +161,15 @@ namespace Orchestrion
                     payloads.Add(EmphasisItalicPayload.ItalicsOff);
                     payloads.Add(periodPayload);
 
-                    pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+                    chatGui.PrintChat(new XivChatEntry
                     {
                         Message = new SeString(payloads),
                         Type = XivChatType.Echo
                     });
                 }
             }
-            nui.Update(nativeNowPlayingPrefix + songName);
+            if (configuration.ShowSongInNative)
+                nui.Update(NativeNowPlayingPrefix + songName);
         }
 
         #region IPlaybackController
@@ -159,13 +193,13 @@ namespace Orchestrion
             }
         }
 
-        public int CurrentSong => EnableFallbackPlayer ? 0 : bgmControl.CurrentSongId;
+        public ushort CurrentSong => EnableFallbackPlayer ? (ushort) 0 : bgmControl.CurrentSongId;
 
         public void PlaySong(int songId)
         {
             if (EnableFallbackPlayer)
             {
-                pi.CommandManager.Commands["/xlbgmset"].Handler("/xlbgmset", songId.ToString());
+                commandManager.Commands["/xlbgmset"].Handler("/xlbgmset", songId.ToString());
             }
             else
             {
@@ -178,7 +212,7 @@ namespace Orchestrion
             if (EnableFallbackPlayer)
             {
                 // still no real way to do this
-                pi.CommandManager.Commands["/xlbgmset"].Handler("/xlbgmset", "9999");
+                commandManager.Commands["/xlbgmset"].Handler("/xlbgmset", "9999");
             }
             else
             {

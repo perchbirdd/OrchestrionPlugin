@@ -5,7 +5,7 @@ using System.IO;
 using System.Net;
 using System.Numerics;
 using System.Text;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 
 namespace Orchestrion
 {
@@ -356,7 +356,7 @@ namespace Orchestrion
                 return;
             }
 
-            var settingsSize = AllowDebug ? new Vector2(490, 270) : new Vector2(490, 120);
+            var settingsSize = AllowDebug ? new Vector2(490, 295) : new Vector2(490, 145);
 
             ImGui.SetNextWindowSize(settingsSize, ImGuiCond.Appearing);
             if (ImGui.Begin("Orchestrion Settings", ref this.settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse))
@@ -367,7 +367,7 @@ namespace Orchestrion
                 }
 
                 ImGui.SetNextItemOpen(true, ImGuiCond.Appearing);
-                if (ImGui.TreeNode("Display##orch options"))
+                if (ImGui.CollapsingHeader("Display##orch options"))
                 {
                     ImGui.Spacing();
 
@@ -382,6 +382,13 @@ namespace Orchestrion
                     if (ImGui.Checkbox("Show \"Now playing\" messages in game chat when the current song changes", ref showSongInChat))
                     {
                         this.configuration.ShowSongInChat = showSongInChat;
+                        this.configuration.Save();
+                    }
+
+                    var showNative = this.configuration.ShowSongInNative;
+                    if (ImGui.Checkbox("Show current song in the \"server info\" UI element in-game", ref showNative))
+                    {
+                        this.configuration.ShowSongInNative = showNative;
                         this.configuration.Save();
                     }
 
@@ -401,7 +408,7 @@ namespace Orchestrion
                 if (this.showDebugOptions && AllowDebug)
                 {
                     ImGui.SetNextItemOpen(true, ImGuiCond.Appearing);
-                    if (ImGui.TreeNode("Debug##orch options"))
+                    if (ImGui.CollapsingHeader("Debug##orch options"))
                     {
                         ImGui.Spacing();
 

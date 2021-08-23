@@ -1,4 +1,5 @@
-﻿using Dalamud.Plugin;
+﻿using Dalamud.Game.Gui;
+using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
@@ -6,39 +7,46 @@ namespace Orchestrion
 {
     public unsafe class NativeUIUtil
     {
-        private const int NodeId = 60;
-        private DalamudPluginInterface _pi;
-        private bool _initialized;
+        // "PBOR" in ASCII
+        private const int NodeId = 0x50424F52;
+        private readonly Configuration configuration;
+        private readonly GameGui gameGui;
 
-        public NativeUIUtil(DalamudPluginInterface pi)
+        internal NativeUIUtil(Configuration configuration, GameGui gameGui)
         {
-            _pi = pi;
+            this.configuration = configuration;
+            this.gameGui = gameGui;
             if (!FFXIVClientStructs.Resolver.Initialized)
                 FFXIVClientStructs.Resolver.Initialize();
         }
 
         private AtkUnitBase* GetDTR()
         {
-            return (AtkUnitBase*) _pi.Framework.Gui.GetUiObjectByName("_DTR", 1).ToPointer();
+            return (AtkUnitBase*) gameGui.GetAddonByName("_DTR", 1).ToPointer();
         }
         
         private AtkTextNode* GetTextNode()
         {
             var dtr = GetDTR();
             if (dtr == null) return null;
-            return dtr->UldManager.NodeListCount > 17 ? (AtkTextNode*)dtr->UldManager.NodeList[17] : null;
+            for (int i = 0; i < dtr->UldManager.NodeListCount; i++)
+            {
+                var node = dtr->UldManager.NodeList[i];
+                if (node->NodeID == NodeId) return (AtkTextNode*) node;
+            }
+
+            return null;
         }
         
-        private void Init()
+        public void Init()
         {
             var dtr = GetDTR();
-            if (dtr == null || dtr->UldManager.NodeListCount < 17) return;
+            if (dtr == null || dtr->UldManager.NodeListCount < 16 || dtr->UldManager.SearchNodeById(NodeId) != null) return;
             PluginLog.Debug($"DTR @ {(ulong) dtr:X}");
             
             // Create text node for jello world
             PluginLog.Debug("Creating our text node.");
             var musicNode = CreateTextNode();
-            musicNode->AtkResNode.NodeID = NodeId;
             PluginLog.Debug("Text node created.");
             
             PluginLog.Debug("Finding last sibling node to add to DTR");
@@ -54,17 +62,17 @@ namespace Orchestrion
             
             dtr->UldManager.UpdateDrawNodeList();
             PluginLog.Debug("Updated node draw list");
-            
-            _initialized = true;
         }
         
         public void Update(string text = null)
         {
-            if (!_initialized)
-                Init();
-
+            // We obtain DTR first to prevent ourselves from attempting to
+            // initialize even when DTR is not visible
             var dtr = GetDTR();
             var musicNode = GetTextNode();
+            
+            if (dtr != null && musicNode == null && configuration.ShowSongInNative)
+                Init();
             
             if (dtr == null || musicNode == null) return;
             var collisionNode = dtr->UldManager.NodeList[1];
@@ -86,10 +94,7 @@ namespace Orchestrion
             // }
 
             if (text != null)
-            {
                 musicNode->SetText(text);
-                // SetTooltip(text);
-            }
         }
         
         private AtkTextNode* CreateTextNode()
@@ -103,6 +108,7 @@ namespace Orchestrion
             IMemorySpace.Memset(newTextNode, 0, (ulong)sizeof(AtkTextNode));
             newTextNode->Ctor();
 
+            newTextNode->AtkResNode.NodeID = NodeId;
             newTextNode->AtkResNode.Type = NodeType.Text;
             newTextNode->AtkResNode.Flags = (short)(NodeFlags.AnchorLeft | NodeFlags.AnchorTop);
             newTextNode->AtkResNode.DrawFlags = 12;
@@ -116,7 +122,7 @@ namespace Orchestrion
             newTextNode->TextFlags = (byte)(TextFlags.Edge);
             newTextNode->TextFlags2 = 0;
             
-            newTextNode->SetText("♪ And Love You Shall Find");
+            newTextNode->SetText("♪ ");
 
             newTextNode->TextColor.R = 255;
             newTextNode->TextColor.G = 255;
