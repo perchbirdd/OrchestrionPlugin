@@ -13,7 +13,7 @@ namespace OrchestrionPlugin
         protected override void Setup64Bit(SigScanner sig)
         {
             // TODO: this is probably on framework or gui somewhere, which might be cleaner if that is exposed
-            this.BaseAddress = sig.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 85 C0 74 42 83 78 08 0A", 3);
+            this.BaseAddress = sig.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 85 C0 74 37 83 78 08 04", 2);
 
             UpdateBGMControl();
         }
