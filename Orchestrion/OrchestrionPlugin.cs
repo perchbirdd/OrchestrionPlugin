@@ -89,7 +89,7 @@ namespace Orchestrion
             });
             pluginInterface.UiBuilder.Draw += Display;
             pluginInterface.UiBuilder.OpenConfigUi += (_, _) => songList.SettingsVisible = true;
-            framework.OnUpdateEvent += OrchestrionUpdate;
+            framework.Update += OrchestrionUpdate;
         }
 
         private void OrchestrionUpdate(Framework unused)
@@ -102,7 +102,7 @@ namespace Orchestrion
 
         public void Dispose()
         {
-            framework.OnUpdateEvent -= OrchestrionUpdate;
+            framework.Update -= OrchestrionUpdate;
             songList.Dispose();
             nui.Dispose();
             pi.UiBuilder.Draw -= Display;
