@@ -88,7 +88,7 @@ namespace Orchestrion
                 HelpMessage = "Displays the Orchestrion window, to view, change, or stop in-game BGM."
             });
             pluginInterface.UiBuilder.Draw += Display;
-            pluginInterface.UiBuilder.OpenConfigUi += (_, _) => songList.SettingsVisible = true;
+            pluginInterface.UiBuilder.OpenConfigUi += () => songList.SettingsVisible = true;
             framework.Update += OrchestrionUpdate;
         }
 
