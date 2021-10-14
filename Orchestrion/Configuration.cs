@@ -13,6 +13,7 @@ namespace Orchestrion
 
         public bool ShowSongInTitleBar { get; set; } = true;
         public bool ShowSongInChat { get; set; } = true;
+        public bool ShowIdInNative { get; set; } = false;
 
         [JsonProperty]
         private bool showSongInNative = true;

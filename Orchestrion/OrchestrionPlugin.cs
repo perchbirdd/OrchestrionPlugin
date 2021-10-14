@@ -23,7 +23,6 @@ namespace Orchestrion
     public class OrchestrionPlugin : IDalamudPlugin, IPlaybackController, IResourceLoader
     {
         public string Name => "Orchestrion";
-        public string AssemblyLocation { get; set; } = Assembly.GetExecutingAssembly().Location;
 
         private const string SongListFile = "xiv_bgm.csv";
         private const string CommandName = "/porch";
@@ -60,7 +59,7 @@ namespace Orchestrion
             configuration.Initialize(pluginInterface, this);
             enableFallbackPlayer = configuration.UseOldPlayback;
 
-            localDir = Path.GetDirectoryName(AssemblyLocation);
+            localDir = Path.GetDirectoryName(pluginInterface.AssemblyLocation.FullName);
 
             var songlistPath = Path.Combine(localDir, SongListFile);
             songList = new SongList(songlistPath, configuration, this, this);
@@ -121,7 +120,6 @@ namespace Orchestrion
                 var songName = songList.GetSongTitle(CurrentSong);
                 nui.Update(NativeNowPlayingPrefix + songName);
             }
-                
             else
                 nui.Dispose();
         }
@@ -168,8 +166,15 @@ namespace Orchestrion
                     });
                 }
             }
-            if (configuration.ShowSongInNative)
-                nui.Update(NativeNowPlayingPrefix + songName);
+
+            if (!configuration.ShowSongInNative) return;
+            
+            var suffix = "";
+            if (songId != 0)
+                suffix = " - ";
+            if (configuration.ShowIdInNative)
+                suffix += $"{songId}";
+            nui.Update(NativeNowPlayingPrefix + songName + suffix);
         }
 
         #region IPlaybackController

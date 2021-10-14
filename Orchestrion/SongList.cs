@@ -19,6 +19,8 @@ namespace Orchestrion
 
     class SongList : IDisposable
     {
+        private static float Scale => ImGui.GetIO().FontGlobalScale;
+        
         private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc/gviz/tq?tqx=out:csv&sheet=main";
         private Dictionary<int, Song> songs = new Dictionary<int, Song>();
         private Configuration configuration;
@@ -199,8 +201,8 @@ namespace Orchestrion
             }
             windowTitle.Append("###Orchestrion");
 
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, new Vector2(370, 150));
-            ImGui.SetNextWindowSize(new Vector2(370, 440), ImGuiCond.FirstUseEver);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, ScaledVector2(370, 150));
+            ImGui.SetNextWindowSize(ScaledVector2(370, 440), ImGuiCond.FirstUseEver);
             // these flags prevent the entire window from getting a secondary scrollbar sometimes, and also keep it from randomly moving slightly with the scrollwheel
             if (ImGui.Begin(windowTitle.ToString(), ref this.visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
@@ -219,7 +221,7 @@ namespace Orchestrion
 
                 ImGui.Separator();
 
-                ImGui.BeginChild("##songlist", new Vector2(0, -60));
+                ImGui.BeginChild("##songlist", ScaledVector2(0, -60));
                 if (ImGui.BeginTabBar("##songlist tabs"))
                 {
                     if (ImGui.BeginTabItem("All songs"))
@@ -356,9 +358,9 @@ namespace Orchestrion
                 return;
             }
 
-            var settingsSize = AllowDebug ? new Vector2(490, 295) : new Vector2(490, 145);
+            var settingsSize = AllowDebug ? ScaledVector2(490, 325) : ScaledVector2(490, 175);
 
-            ImGui.SetNextWindowSize(settingsSize, ImGuiCond.Appearing);
+            ImGui.SetNextWindowSize(settingsSize, ImGuiCond.Always);
             if (ImGui.Begin("Orchestrion Settings", ref this.settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse))
             {
                 if (ImGui.IsWindowAppearing())
@@ -391,6 +393,19 @@ namespace Orchestrion
                         this.configuration.ShowSongInNative = showNative;
                         this.configuration.Save();
                     }
+
+                    if (!showNative)
+                        ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
+                    
+                    var showIdNative = this.configuration.ShowIdInNative;
+                    if (ImGui.Checkbox("Show song ID in the \"server info\" UI element in-game", ref showIdNative) && showNative)
+                    {
+                        this.configuration.ShowIdInNative = showIdNative;
+                        this.configuration.Save();
+                    }
+                    
+                    if (!showNative)
+                        ImGui.PopStyleVar();
 
                     if (AllowDebug)
                     {
@@ -470,6 +485,11 @@ namespace Orchestrion
                 ImGui.PopTextWrapPos();
                 ImGui.EndTooltip();
             }
+        }
+
+        private static Vector2 ScaledVector2(float x, float y)
+        {
+            return new Vector2(x * Scale, y * Scale);
         }
     }
 }
