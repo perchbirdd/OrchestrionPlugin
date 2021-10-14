@@ -170,10 +170,13 @@ namespace Orchestrion
             if (!configuration.ShowSongInNative) return;
             
             var suffix = "";
-            if (songId != 0)
-                suffix = " - ";
             if (configuration.ShowIdInNative)
-                suffix += $"{songId}";
+            {
+                if (!string.IsNullOrEmpty(songName))
+                    suffix = " - ";
+                suffix += $"{songId}";    
+            }
+            
             nui.Update(NativeNowPlayingPrefix + songName + suffix);
         }
 
