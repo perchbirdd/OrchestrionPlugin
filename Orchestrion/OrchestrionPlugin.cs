@@ -134,7 +134,7 @@ namespace Orchestrion
             else
             {
                 // might be better to fully add/remove the OnBuildUi handler
-                songList.Visible = true;
+                songList.Visible = !songList.Visible;
             }
         }
 

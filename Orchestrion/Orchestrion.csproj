@@ -67,6 +67,6 @@
     </ContentWithTargetPath>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DalamudPackager" Version="1.2.3" />
+    <PackageReference Include="DalamudPackager" Version="2.1.5" />
   </ItemGroup>
 </Project>
