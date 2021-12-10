@@ -15,6 +15,8 @@ namespace Orchestrion
         public bool ShowSongInChat { get; set; } = true;
         public bool ShowIdInNative { get; set; } = false;
 
+        public Dictionary<int, SongReplacement> SongReplacements { get; private set; } = new();
+
         [JsonProperty]
         private bool showSongInNative = true;
 
@@ -29,7 +31,6 @@ namespace Orchestrion
             }
         }
 
-        public bool UseOldPlayback { get; set; } = false;
         public int TargetPriority { get; set; } = 0;
 
         public HashSet<int> FavoriteSongs { get; internal set; } = new HashSet<int>();
@@ -47,7 +48,7 @@ namespace Orchestrion
 
         public void Save()
         {
-            this.pluginInterface.SavePluginConfig(this);
+            pluginInterface.SavePluginConfig(this);
         }
     }
 }

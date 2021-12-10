@@ -29,36 +29,51 @@ namespace Orchestrion
         public fixed byte unk6[2];
     }
 
-    class BGMRecord
-    {
-        public int priority;
-        public ushort songId;
-        // timestamp?
-
-        // because I am lazy
-        public void Set(int priority, ushort songId)
-        {
-            this.priority = priority;
-            this.songId = songId;
-        }
-    }
-
     class BGMControl
     {
-        public ushort CurrentSongId { get; private set; }
+        /// <summary>
+        /// The last song that the game was previously playing.
+        /// </summary>
+        public int OldSongId { get; private set; }
+        
+        /// <summary>
+        /// The priority that OldSongId was playing at.
+        /// </summary>
+        public int OldPriority { get; private set; }
+        
+        /// <summary>
+        /// The song that the game is currently playing. That is, the song
+        /// that is currently playing at the highest priority that is not
+        /// PlayingPriority.
+        /// </summary>
+        public int CurrentSongId { get; private set; }
+        
+        /// <summary>
+        /// The priority that CurrentSongId is playing at.
+        /// </summary>
+        public int CurrentPriority { get; private set; }
 
-        public delegate void SongChangedHandler(ushort newSongId);
+        /// <summary>
+        /// The song that Orchestrion is currently playing.
+        /// </summary>
+        public int PlayingSongId { get; private set; } = 0;
+        
+        /// <summary>
+        /// The priority that PlayingSongId is playing at.
+        /// </summary>
+        public int PlayingPriority { get; private set; } = 0;
+
+        public delegate void SongChangedHandler(int oldSongId, int oldPriority, int newSongId, int newPriority);
         public SongChangedHandler OnSongChanged;
 
         // this seems to always be the number of bgm blocks that exist
         private const int ControlBlockCount = 12;
 
         private AddressResolver Address { get; }
-        private BGMRecord previousSongInfo = new BGMRecord();
 
         public BGMControl(AddressResolver address)
         {
-            this.Address = address;
+            Address = address;
         }
 
         public void Update()
@@ -66,26 +81,28 @@ namespace Orchestrion
             var currentSong = (ushort)0;
             var activePriority = 0;
 
-            this.Address.UpdateBGMControl();
-            if (this.Address.BGMControl != IntPtr.Zero)
+            Address.UpdateBGMControl();
+            if (Address.BGMControl != IntPtr.Zero)
             {
                 unsafe
                 {
-                    var bgms = (BGMPlayback*)this.Address.BGMControl.ToPointer();
+                    var bgms = (BGMPlayback*)Address.BGMControl.ToPointer();
 
                     // as far as I have seen, the control blocks are in priority order
                     // and the highest priority populated song is what the client current plays
                     for (activePriority = 0; activePriority < ControlBlockCount; activePriority++)
                     {
                         // TODO: everything here is awful and makes me sad
+                        
+                        // This is so we can receive BGM change updates even while playing a song
+                        if (PlayingSongId != 0 && activePriority == PlayingPriority)
+                            continue;
 
                         // This value isn't a collection of flags, but it seems like if it's 0 entirely, the song at this
                         // priority isn't playing
                         // Earlying out here since the checks below are already awful enough
                         if (bgms[activePriority].songId == 0)
-                        {
                             continue;
-                        }
 
                         // reading songId2 here, because occasionally songId is something different
                         // not sure of what the meaning is when that is the case
@@ -99,12 +116,12 @@ namespace Orchestrion
                         // hears, but it will very quickly reset songId2 to 0 and then back, while songId3 doesn't change.
                         // This leads to song transition messages to the prio 11 zone music and then back to the overlaid prio 10 music
                         // over and over again, despite the actual music being played not changing.
-                        if (activePriority == previousSongInfo.priority && bgms[activePriority].songId2 == 0
-                            && previousSongInfo.songId != 0 && bgms[activePriority].songId3 == previousSongInfo.songId)
+                        if (activePriority == OldPriority
+                            && OldSongId != 0
+                            && bgms[activePriority].songId2 == 0
+                            && bgms[activePriority].songId3 == OldSongId)
                         {
-#if DEBUG
-                            PluginLog.Log("skipping change from {0} to {1} on prio {2}", previousSongInfo.songId, bgms[activePriority].songId2, activePriority);
-#endif
+                            PluginLog.Debug("skipping change from {0} to {1} on prio {2}", OldSongId, bgms[activePriority].songId2, activePriority);
                             return;
                         }
 
@@ -121,14 +138,13 @@ namespace Orchestrion
             // separate variable because 0 is valid if nothing is playing
             if (CurrentSongId != currentSong)
             {
-#if DEBUG
-                PluginLog.Log($"changed to song {currentSong} at priority {activePriority}");
-#endif
+                PluginLog.Debug($"changed to song {currentSong} at priority {activePriority}");
+                OldSongId = CurrentSongId;
+                OldPriority = CurrentPriority;
                 CurrentSongId = currentSong;
+                CurrentPriority = activePriority;
 
-                OnSongChanged?.Invoke(currentSong);
-
-                previousSongInfo.Set(activePriority, currentSong);
+                OnSongChanged?.Invoke(OldSongId, OldPriority, CurrentSongId, CurrentPriority);
             }
         }
 
@@ -141,12 +157,12 @@ namespace Orchestrion
                 throw new IndexOutOfRangeException();
             }
 
-            this.Address.UpdateBGMControl();
-            if (this.Address.BGMControl != IntPtr.Zero)
+            Address.UpdateBGMControl();
+            if (Address.BGMControl != IntPtr.Zero)
             {
                 unsafe
                 {
-                    var bgms = (BGMPlayback*)this.Address.BGMControl.ToPointer();
+                    var bgms = (BGMPlayback*)Address.BGMControl.ToPointer();
                     // sometimes we only have to set the first and it will set the other 2
                     // but particularly on stop/clear, the 2nd seems important as well
                     bgms[priority].songId = songId;
@@ -156,6 +172,9 @@ namespace Orchestrion
                     // these are probably not necessary, but clear them to be safe
                     bgms[priority].timer = 0;
                     bgms[priority].timerEnable = 0;
+
+                    PlayingSongId = songId;
+                    PlayingPriority = priority;
 
                     // unk5 is set to 0x100 by the game in some cases for priority 0
                     // but I wasn't able to see that it did anything
@@ -167,10 +186,10 @@ namespace Orchestrion
         {
             PluginLog.Log("----- BGM priority dump -----");
 
-            this.Address.UpdateBGMControl();
-            if (this.Address.BGMControl != IntPtr.Zero)
+            Address.UpdateBGMControl();
+            if (Address.BGMControl != IntPtr.Zero)
             {
-                var bgms = (BGMPlayback*)this.Address.BGMControl.ToPointer();
+                var bgms = (BGMPlayback*)Address.BGMControl.ToPointer();
 
                 for (int prio = 0; prio < ControlBlockCount; prio++)
                 {
