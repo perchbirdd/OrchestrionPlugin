@@ -234,6 +234,12 @@ namespace Orchestrion
                         DrawSonglist(true);
                         ImGui.EndTabItem();
                     }
+
+                    if (ImGui.BeginTabItem("Replacements"))
+                    {
+                        DrawReplacements();
+                        ImGui.EndTabItem();
+                    }
                     ImGui.EndTabBar();
                 }
                 ImGui.EndChild();
@@ -273,6 +279,11 @@ namespace Orchestrion
             ImGui.PopStyleVar();
 
             DrawSettings();
+        }
+
+        private void DrawReplacements()
+        {
+            
         }
 
         private void DrawSonglist(bool favoritesOnly)
@@ -491,5 +502,24 @@ namespace Orchestrion
         {
             return new Vector2(x * Scale, y * Scale);
         }
+    }
+
+    public struct SongReplacement
+    {
+        /// <summary>
+        /// Whether or not to ignore this song entirely; that is, continue playing whatever was playing
+        /// before this song began playing.
+        /// </summary>
+        public bool Ignore;
+
+        /// <summary>
+        /// The ID of the song to replace.
+        /// </summary>
+        public int TargetSongId;
+        
+        /// <summary>
+        /// The ID of the replacement track to play if Ignore is false.
+        /// </summary>
+        public int ReplacementId;
     }
 }

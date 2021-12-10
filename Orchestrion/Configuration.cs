@@ -15,6 +15,8 @@ namespace Orchestrion
         public bool ShowSongInChat { get; set; } = true;
         public bool ShowIdInNative { get; set; } = false;
 
+        public Dictionary<uint, SongReplacement> SongReplacements { get; private set; } = new();
+
         [JsonProperty]
         private bool showSongInNative = true;
 
