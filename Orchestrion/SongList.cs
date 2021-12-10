@@ -322,9 +322,13 @@ namespace Orchestrion
                 ImGui.Separator();
             }
 
-            foreach (var toRemove in removalList)
-                configuration.SongReplacements.Remove(toRemove);
-            removalList.Clear();
+            if (removalList.Count > 0)
+            {
+                foreach (var toRemove in removalList)
+                    configuration.SongReplacements.Remove(toRemove);
+                removalList.Clear();    
+                configuration.Save();
+            }
         }
 
         private void RightAlignButton(float y, string text)
