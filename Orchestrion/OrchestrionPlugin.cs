@@ -40,6 +40,9 @@ namespace Orchestrion
 
         private readonly TextPayload nowPlayingPayload = new("Now playing ");
         private readonly TextPayload periodPayload = new(".");
+        private readonly TextPayload emptyPayload = new("");
+        private readonly TextPayload leftBracketPayload = new("[");
+        private readonly TextPayload rightBracketPayload = new("]");
 
         public OrchestrionPlugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
@@ -48,7 +51,7 @@ namespace Orchestrion
             [RequiredVersion("1.0")] CommandManager commandManager,
             [RequiredVersion("1.0")] Framework framework,
             [RequiredVersion("1.0")] SigScanner sigScanner
-            )
+        )
         {
             pi = pluginInterface;
             this.commandManager = commandManager;
@@ -57,15 +60,12 @@ namespace Orchestrion
 
             configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             configuration.Initialize(pluginInterface, this);
-            enableFallbackPlayer = configuration.UseOldPlayback;
 
             localDir = Path.GetDirectoryName(pluginInterface.AssemblyLocation.FullName);
 
             var songlistPath = Path.Combine(localDir, SongListFile);
             songList = new SongList(songlistPath, configuration, this, this);
 
-            // TODO: eventually it might be nice to do this only if the fallback player isn't being used
-            // and to add/remove it on-demand if that changes
             var addressResolver = new AddressResolver();
             try
             {
@@ -77,7 +77,6 @@ namespace Orchestrion
             {
                 PluginLog.Error(e, "Failed to find BGM playback objects");
                 bgmControl = null;
-                enableFallbackPlayer = true;
             }
 
             nui = new NativeUIUtil(configuration, gameGui);
@@ -94,7 +93,7 @@ namespace Orchestrion
         private void OrchestrionUpdate(Framework unused)
         {
             bgmControl.Update();
-            
+
             if (configuration.ShowSongInNative)
                 nui.Update();
         }
@@ -143,106 +142,108 @@ namespace Orchestrion
             songList.Draw();
         }
 
-        private void HandleSongChanged(ushort songId)
+        private void HandleSongChanged(int oldSongId, int oldPriority, int newSongId, int newPriority)
         {
-            PluginLog.Debug($"song id changed {songId}");
-            var songName = songList.GetSongTitle(songId);
-            if (configuration.ShowSongInChat && !EnableFallbackPlayer) // hack to not show 'new' updates when using the old player... temporary hopefully
+            PluginLog.Debug($"Song ID changed from {oldSongId} to {newSongId}");
+
+            if (configuration.SongReplacements.TryGetValue(newSongId, out var replacement))
             {
-                if (!string.IsNullOrEmpty(songName))
-                {
-                    var payloads = new List<Payload>();
-
-                    payloads.Add(nowPlayingPayload);
-                    payloads.Add(EmphasisItalicPayload.ItalicsOn);
-                    payloads.Add(new TextPayload(songName));
-                    payloads.Add(EmphasisItalicPayload.ItalicsOff);
-                    payloads.Add(periodPayload);
-
-                    chatGui.PrintChat(new XivChatEntry
-                    {
-                        Message = new SeString(payloads),
-                        Type = XivChatType.Echo
-                    });
-                }
+                PluginLog.Debug($"Song ID {newSongId} has a replacement of {replacement.ReplacementId}");
+                PlaySong(replacement.ReplacementId);
+                return;
             }
 
+            if (bgmControl.PlayingSongId != 0)
+                StopSong();
+
+            SendSongEcho(newSongId);
+            UpdateNui(newSongId);
+        }
+
+        private void UpdateNui(int songId, bool playedByOrch = false)
+        {
             if (!configuration.ShowSongInNative) return;
-            
+
+            var songName = songList.GetSongTitle(songId);
             var suffix = "";
             if (configuration.ShowIdInNative)
             {
                 if (!string.IsNullOrEmpty(songName))
                     suffix = " - ";
-                suffix += $"{songId}";    
+                suffix += $"{songId}";
             }
-            
-            nui.Update(NativeNowPlayingPrefix + songName + suffix);
+
+            var text = songName + suffix;
+
+            text = playedByOrch ? $"{NativeNowPlayingPrefix} [{text}]" : $"{NativeNowPlayingPrefix} {text}";
+
+            nui.Update(text);
         }
 
-        #region IPlaybackController
-
-        private bool enableFallbackPlayer;
-        public bool EnableFallbackPlayer
+        private void SendSongEcho(int songId, bool playedByOrch = false)
         {
-            get { return enableFallbackPlayer; }
-            set
+            var songName = songList.GetSongTitle(songId);
+            if (!configuration.ShowSongInChat || string.IsNullOrEmpty(songName)) return;
+
+            var payloads = new List<Payload>
             {
-                // we should probably kill bgmControl's update loop when we disable it
-                // but this is hopefully completely temporary anyway
+                nowPlayingPayload,
+                playedByOrch ? leftBracketPayload : emptyPayload,
+                EmphasisItalicPayload.ItalicsOn,
+                new TextPayload(songName),
+                EmphasisItalicPayload.ItalicsOff,
+                playedByOrch ? rightBracketPayload : emptyPayload,
+                periodPayload
+            };
 
-                // if we force disabled due to a failed load, don't allow changing
-                if (bgmControl != null)
-                {
-                    enableFallbackPlayer = value;
-                    configuration.UseOldPlayback = value;
-                    configuration.Save();
-                }
-            }
+            chatGui.PrintChat(new XivChatEntry
+            {
+                Message = new SeString(payloads),
+                Type = XivChatType.Echo
+            });
         }
-
-        public ushort CurrentSong => EnableFallbackPlayer ? (ushort) 0 : bgmControl.CurrentSongId;
+        
+        public int CurrentSong => bgmControl.CurrentSongId;
 
         public void PlaySong(int songId)
         {
-            if (EnableFallbackPlayer)
-            {
-                commandManager.Commands["/xlbgmset"].Handler("/xlbgmset", songId.ToString());
-            }
-            else
-            {
-                bgmControl.SetSong((ushort)songId, configuration.TargetPriority);
-            }
+            bgmControl.SetSong((ushort)songId, configuration.TargetPriority);
+            SendSongEcho(songId, true);
+            UpdateNui(songId, true);
         }
 
         public void StopSong()
         {
-            if (EnableFallbackPlayer)
+            PluginLog.Debug($"Stopping playing {bgmControl.PlayingSongId}...");
+            if (configuration.SongReplacements.TryGetValue(bgmControl.CurrentSongId, out var replacement))
             {
-                // still no real way to do this
-                commandManager.Commands["/xlbgmset"].Handler("/xlbgmset", "9999");
+                PluginLog.Debug($"Song ID {bgmControl.CurrentSongId} has a replacement of {replacement.ReplacementId}...");
+                if (replacement.ReplacementId == bgmControl.PlayingSongId)
+                {
+                    // Stop playing the replacement song, and return to the original BGM
+                    PluginLog.Debug($"But that's the song we're playing [{bgmControl.PlayingSongId}], so let's stop");
+                }
+                else
+                {
+                    // Otherwise, go back to the replacement ID (stop playing the song on TOP of the replacement)
+                    PlaySong(replacement.ReplacementId);
+                    return;    
+                }
             }
-            else
-            {
-                bgmControl.SetSong(0, configuration.TargetPriority);
-            }
+            bgmControl.SetSong(0, configuration.TargetPriority);
+            SendSongEcho(bgmControl.CurrentSongId);
+            UpdateNui(bgmControl.CurrentSongId);
         }
 
         public void DumpDebugInformation()
         {
             bgmControl?.DumpPriorityInfo();
         }
-
-        #endregion
-
-        #region IResourceLoader
-
+        
         public ImGuiScene.TextureWrap LoadUIImage(string imageFile)
         {
             var path = Path.Combine(localDir, imageFile);
             return pi.UiBuilder.LoadImage(path);
         }
-
-        #endregion
     }
 }

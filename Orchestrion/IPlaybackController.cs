@@ -3,11 +3,9 @@ namespace Orchestrion
 {
     interface IPlaybackController
     {
-        ushort CurrentSong { get; }
-        bool EnableFallbackPlayer { get; set; }
+        int CurrentSong { get; }
         void PlaySong(int songId);
         void StopSong();
-
         void DumpDebugInformation();
     }
 }
