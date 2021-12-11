@@ -43,6 +43,10 @@ namespace Orchestrion
         private readonly TextPayload emptyPayload = new("");
         private readonly TextPayload leftBracketPayload = new("[");
         private readonly TextPayload rightBracketPayload = new("]");
+        
+        private bool isPlayingReplacement = false;
+        
+        public int CurrentSong => bgmControl.PlayingSongId == 0 ? bgmControl.CurrentSongId : bgmControl.PlayingSongId;
 
         public OrchestrionPlugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
@@ -146,20 +150,79 @@ namespace Orchestrion
         {
             PluginLog.Debug($"Song ID changed from {oldSongId} to {newSongId}");
 
+            // The user is playing a track manually, so keep playing
+            if (bgmControl.PlayingSongId != 0 && !isPlayingReplacement)
+                return;
+
+            // A replacement is available, so change to it
             if (configuration.SongReplacements.TryGetValue(newSongId, out var replacement))
             {
                 PluginLog.Debug($"Song ID {newSongId} has a replacement of {replacement.ReplacementId}");
-                PlaySong(replacement.ReplacementId);
+                
+                // If the replacement is "do not change" and we are not playing something, play the previous track
+                // If the replacement is "do not change" and we *are* playing something, it'll just keep playing
+                // Else we're only here if we have a replacement, play that 
+                if (replacement.ReplacementId == -1 && bgmControl.PlayingSongId == 0)
+                    PlaySong(bgmControl.OldSongId, true);
+                else if (replacement.ReplacementId != -1)
+                    PlaySong(replacement.ReplacementId, true);
                 return;
             }
-
-            if (bgmControl.PlayingSongId != 0)
+            
+            // A replacement is playing
+            if (isPlayingReplacement)
+            {
+                isPlayingReplacement = false;
                 StopSong();
-
+            }
+            
             SendSongEcho(newSongId);
             UpdateNui(newSongId);
         }
+        
+        public void PlaySong(int songId, bool isReplacement = false)
+        {
+            PluginLog.Debug($"Playing {songId}");
+            isPlayingReplacement = isReplacement;
+            bgmControl.SetSong((ushort)songId, configuration.TargetPriority);
+            SendSongEcho(songId, true);
+            UpdateNui(songId, true);
+        }
 
+        public void StopSong()
+        {
+            PluginLog.Debug($"Stopping playing {bgmControl.PlayingSongId}...");
+            
+            if (configuration.SongReplacements.TryGetValue(bgmControl.CurrentSongId, out var replacement))
+            {
+                PluginLog.Debug($"Song ID {bgmControl.CurrentSongId} has a replacement of {replacement.ReplacementId}...");
+                
+                if (replacement.ReplacementId == bgmControl.PlayingSongId)
+                {
+                    // The replacement is the same track as we're currently playing
+                    // There's no point in continuing to play, so fall through to stop
+                    PluginLog.Debug($"But that's the song we're playing [{bgmControl.PlayingSongId}], so let's stop");
+                }
+                else if (replacement.ReplacementId == -1)
+                {
+                    // We stopped playing a song and the song under it has a replacement, so play that
+                    PlaySong(bgmControl.OldSongId, true);
+                    return;
+                } 
+                else
+                {
+                    // Otherwise, go back to the replacement ID (stop playing the song on TOP of the replacement)
+                    PlaySong(replacement.ReplacementId, true);
+                    return;    
+                }
+            }
+            
+            // If there was no replacement involved, we don't need to do anything else, just stop
+            bgmControl.SetSong(0, configuration.TargetPriority);
+            SendSongEcho(bgmControl.CurrentSongId);
+            UpdateNui(bgmControl.CurrentSongId);
+        }
+        
         private void UpdateNui(int songId, bool playedByOrch = false)
         {
             if (!configuration.ShowSongInNative) return;
@@ -201,38 +264,6 @@ namespace Orchestrion
                 Message = new SeString(payloads),
                 Type = XivChatType.Echo
             });
-        }
-        
-        public int CurrentSong => bgmControl.CurrentSongId;
-
-        public void PlaySong(int songId)
-        {
-            bgmControl.SetSong((ushort)songId, configuration.TargetPriority);
-            SendSongEcho(songId, true);
-            UpdateNui(songId, true);
-        }
-
-        public void StopSong()
-        {
-            PluginLog.Debug($"Stopping playing {bgmControl.PlayingSongId}...");
-            if (configuration.SongReplacements.TryGetValue(bgmControl.CurrentSongId, out var replacement))
-            {
-                PluginLog.Debug($"Song ID {bgmControl.CurrentSongId} has a replacement of {replacement.ReplacementId}...");
-                if (replacement.ReplacementId == bgmControl.PlayingSongId)
-                {
-                    // Stop playing the replacement song, and return to the original BGM
-                    PluginLog.Debug($"But that's the song we're playing [{bgmControl.PlayingSongId}], so let's stop");
-                }
-                else
-                {
-                    // Otherwise, go back to the replacement ID (stop playing the song on TOP of the replacement)
-                    PlaySong(replacement.ReplacementId);
-                    return;    
-                }
-            }
-            bgmControl.SetSong(0, configuration.TargetPriority);
-            SendSongEcho(bgmControl.CurrentSongId);
-            UpdateNui(bgmControl.CurrentSongId);
         }
 
         public void DumpDebugInformation()

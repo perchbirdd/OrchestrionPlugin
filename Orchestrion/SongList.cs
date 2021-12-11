@@ -50,6 +50,7 @@ namespace Orchestrion
         
         private SongReplacement tmpReplacement;
         private List<int> removalList = new();
+        private const string NoChange = "Do not change BGM"; 
 
         private bool visible = false;
         public bool Visible
@@ -102,7 +103,7 @@ namespace Orchestrion
 
                 // Any track without an official name is "???"
                 // While Null BGM tracks and None are also pretty invalid
-                if (string.IsNullOrEmpty(name) || name == "Null BGM" || name == "None") continue;
+                if (string.IsNullOrEmpty(name) || name == "Null BGM") continue;
                     
                 var location = elements[2].Substring(1).Replace("\"\"", "\"");
                 var additionalInfo = elements[3].Substring(1, elements[3].Substring(1).Length - 1).Replace("\"\"", "\"");
@@ -151,7 +152,7 @@ namespace Orchestrion
             tmpReplacement = new SongReplacement
             {
                 TargetSongId = id,
-                ReplacementId = 2,
+                ReplacementId = -1,
             };
         }
 
@@ -218,9 +219,9 @@ namespace Orchestrion
             if (configuration.ShowSongInTitleBar)
             {
                 // TODO: subscribe to the event so this only has to be constructed on change?
-                var currentSong = controller.CurrentSong;
-                if (songs.ContainsKey(currentSong))
-                    windowTitle.Append($" - [{songs[currentSong].Id}] {songs[currentSong].Name}");
+                var song = controller.CurrentSong;
+                if (songs.ContainsKey(song))
+                    windowTitle.Append($" - [{songs[song].Id}] {songs[song].Name}");
             }
             windowTitle.Append("###Orchestrion");
 
@@ -300,10 +301,13 @@ namespace Orchestrion
             {
                 ImGui.Spacing();
                 var target = songs[replacement.TargetSongId];
-                var repl = songs[replacement.ReplacementId];
                 
                 var targetText = $"{replacement.TargetSongId} - {target.Name}";
-                var replText = $"{replacement.ReplacementId} - {repl.Name}";
+                string replText;
+                if (replacement.ReplacementId == -1)
+                    replText = NoChange;
+                else
+                    replText = $"{replacement.ReplacementId} - {songs[replacement.ReplacementId].Name}";
 
                 ImGui.TextWrapped($"{targetText}");
                 if (ImGui.IsItemHovered())
@@ -311,8 +315,8 @@ namespace Orchestrion
 
                 ImGui.Text($"will be replaced with");
                 ImGui.TextWrapped($"{replText}");
-                if (ImGui.IsItemHovered())
-                    DrawBgmTooltip(repl);
+                if (ImGui.IsItemHovered() && replacement.ReplacementId != -1)
+                    DrawBgmTooltip(songs[replacement.ReplacementId]);
                 
                 // Delete button in top right of area
                 RightAlignButton(ImGui.GetCursorPosY(), "Delete");
@@ -344,7 +348,11 @@ namespace Orchestrion
             ImGui.Spacing();
             
             var targetText = $"{songs[tmpReplacement.TargetSongId].Id} - {songs[tmpReplacement.TargetSongId].Name}";
-            var replacementText = $"{songs[tmpReplacement.ReplacementId].Id} - {songs[tmpReplacement.ReplacementId].Name}";
+            string replacementText;
+            if (tmpReplacement.ReplacementId == -1)
+                replacementText = NoChange;
+            else
+                replacementText = $"{songs[tmpReplacement.ReplacementId].Id} - {songs[tmpReplacement.ReplacementId].Name}";
             
             // This fixes the ultra-wide combo boxes, I guess
             var width = ImGui.GetWindowWidth() * 0.60f;
@@ -370,12 +378,18 @@ namespace Orchestrion
             
             if (ImGui.BeginCombo("Replacement Song", replacementText))
             {
+                var tmpText = NoChange;
+                var tmpTextSize = ImGui.CalcTextSize(tmpText);
+                var isSelected = tmpReplacement.TargetSongId == -1;
+                if (ImGui.Selectable(NoChange))
+                    tmpReplacement.ReplacementId = -1;
+
                 foreach (var song in songs.Values)
                 {
                     if (!SearchMatches(song)) continue;
-                    var tmpText = $"{song.Id} - {song.Name}";
-                    var tmpTextSize = ImGui.CalcTextSize(tmpText);
-                    var isSelected = tmpReplacement.TargetSongId == song.Id;
+                    tmpText = $"{song.Id} - {song.Name}";
+                    tmpTextSize = ImGui.CalcTextSize(tmpText);
+                    isSelected = tmpReplacement.ReplacementId == song.Id;
                     if (ImGui.Selectable(tmpText, isSelected, ImGuiSelectableFlags.None, new Vector2(width, tmpTextSize.Y)))
                         tmpReplacement.ReplacementId = song.Id;
                     if (ImGui.IsItemHovered())
