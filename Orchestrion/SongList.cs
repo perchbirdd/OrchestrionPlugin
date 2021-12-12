@@ -290,8 +290,8 @@ namespace Orchestrion
         private void DrawReplacements()
         {
             ImGui.BeginChild("##replacementlist");
-            DrawReplacementList();
             DrawCurrentReplacement();
+            DrawReplacementList();
             ImGui.EndChild();
         }
 
@@ -408,6 +408,8 @@ namespace Orchestrion
                 configuration.Save();
                 ResetReplacement();
             }
+
+            ImGui.Separator();
         }
 
         private bool SearchMatches(Song song)
