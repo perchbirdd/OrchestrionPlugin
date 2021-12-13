@@ -39,14 +39,12 @@ namespace Orchestrion
         private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc/gviz/tq?tqx=out:csv&sheet=main";
         private Dictionary<int, Song> songs = new Dictionary<int, Song>();
         private Configuration configuration;
-        private IPlaybackController controller;
-        private IResourceLoader loader;
+        private OrchestrionPlugin orch;
         private int selectedSong;
         private string searchText = string.Empty;
         private string songListFile = string.Empty;
         private ImGuiScene.TextureWrap favoriteIcon = null;
         private ImGuiScene.TextureWrap settingsIcon = null;
-        private bool showDebugOptions = false;
         
         private SongReplacement tmpReplacement;
         private List<int> removalList = new();
@@ -66,14 +64,11 @@ namespace Orchestrion
             set { settingsVisible = value; }
         }
 
-        public bool AllowDebug { get; set; } = false;
-
-        public SongList(string songListFile, Configuration configuration, IPlaybackController controller, IResourceLoader loader)
+        public SongList(string songListFile, Configuration configuration, OrchestrionPlugin orch)
         {
             this.songListFile = songListFile;
             this.configuration = configuration;
-            this.controller = controller;
-            this.loader = loader;
+            this.orch = orch;
 
             UpdateSheet();
             ResetReplacement();
@@ -158,12 +153,12 @@ namespace Orchestrion
 
         private void Play(int songId)
         {
-            controller.PlaySong(songId);
+            orch.PlaySong(songId);
         }
 
         private void Stop()
         {
-            controller.StopSong();
+            orch.StopSong();
         }
 
         private bool IsFavorite(int songId) => configuration.FavoriteSongs.Contains(songId);
@@ -208,8 +203,8 @@ namespace Orchestrion
             // Hopefully later the UIBuilder API can add an event to notify when it is ready
             if (favoriteIcon == null)
             {
-                favoriteIcon = loader.LoadUIImage("favoriteIcon.png");
-                settingsIcon = loader.LoadUIImage("settings.png");
+                favoriteIcon = orch.LoadUIImage("favoriteIcon.png");
+                settingsIcon = orch.LoadUIImage("settings.png");
             }
 
             if (!Visible) return;
@@ -219,7 +214,7 @@ namespace Orchestrion
             if (configuration.ShowSongInTitleBar)
             {
                 // TODO: subscribe to the event so this only has to be constructed on change?
-                var song = controller.CurrentSong;
+                var song = orch.CurrentSong;
                 if (songs.ContainsKey(song))
                     windowTitle.Append($" - [{songs[song].Id}] {songs[song].Name}");
             }
@@ -260,6 +255,13 @@ namespace Orchestrion
                         DrawReplacements();
                         ImGui.EndTabItem();
                     }
+                    #if DEBUG
+                    if (ImGui.BeginTabItem("Debug"))
+                    {
+                        DrawDebug();
+                        ImGui.EndTabItem();
+                    }
+                    #endif
                     ImGui.EndTabBar();
                 }
             }
@@ -485,19 +487,19 @@ namespace Orchestrion
             DrawFooter();
         }
 
+        private void DrawDebug()
+        {
+            // ImGui.Text();
+        }
+
         public void DrawSettings()
         {
             if (!settingsVisible)
                 return;
 
-            var settingsSize = AllowDebug ? ScaledVector2(490, 325) : ScaledVector2(490, 175);
-
-            ImGui.SetNextWindowSize(settingsSize, ImGuiCond.Always);
+            ImGui.SetNextWindowSize(ScaledVector2(490, 175), ImGuiCond.Always);
             if (ImGui.Begin("Orchestrion Settings", ref settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse))
             {
-                if (ImGui.IsWindowAppearing())
-                    showDebugOptions = false;
-
                 ImGui.SetNextItemOpen(true, ImGuiCond.Appearing);
                 if (ImGui.CollapsingHeader("Display##orch options"))
                 {
@@ -537,51 +539,43 @@ namespace Orchestrion
                     if (!showNative)
                         ImGui.PopStyleVar();
 
-                    if (AllowDebug)
-                        ImGui.Checkbox("Show debug options (Only if you have issues!)", ref showDebugOptions);
-
                     ImGui.TreePop();
                 }
 
-                // I'm sure there are better ways to do this, but I didn't want to change global spacing
-                ImGui.Spacing();
-                ImGui.Spacing();
-                ImGui.Spacing();
-
-                if (showDebugOptions && AllowDebug)
-                {
-                    ImGui.SetNextItemOpen(true, ImGuiCond.Appearing);
-                    if (ImGui.CollapsingHeader("Debug##orch options"))
-                    {
-                        ImGui.Spacing();
-
-                        int targetPriority = configuration.TargetPriority;
-
-                        ImGui.SetNextItemWidth(100.0f);
-                        if (ImGui.SliderInt("BGM priority", ref targetPriority, 0, 11))
-                        {
-                            // stop the current song so it doesn't get 'stuck' on in case we switch to a lower priority
-                            Stop();
-
-                            configuration.TargetPriority = targetPriority;
-                            configuration.Save();
-
-                            // don't (re)start a song here for now
-                        }
-                        ImGui.SameLine();
-                        HelpMarker("Songs play at various priority levels, from 0 to 11.\n" +
-                            "Songs at lower numbers will override anything playing at a higher number, with 0 winning out over everything else.\n" +
-                            "You can experiment with changing this value if you want the game to be able to play certain music even when Orchestrion is active.\n" +
-                            "(Usually) zone music is 10-11, mount music is 6, GATEs are 4.  There is a lot of variety in this, however.\n" +
-                            "The old Orchestrion used to play at level 3 (it now uses 0 by default).");
-
-                        ImGui.Spacing();
-                        if (ImGui.Button("Dump priority info"))
-                            controller.DumpDebugInformation();
-
-                        ImGui.TreePop();
-                    }
-                }
+                // if (showDebugOptions && AllowDebug)
+                // {
+                //     ImGui.SetNextItemOpen(true, ImGuiCond.Appearing);
+                //     if (ImGui.CollapsingHeader("Debug##orch options"))
+                //     {
+                //         ImGui.Spacing();
+                //
+                //         int targetPriority = configuration.TargetPriority;
+                //
+                //         ImGui.SetNextItemWidth(100.0f);
+                //         if (ImGui.SliderInt("BGM priority", ref targetPriority, 0, 11))
+                //         {
+                //             // stop the current song so it doesn't get 'stuck' on in case we switch to a lower priority
+                //             Stop();
+                //
+                //             configuration.TargetPriority = targetPriority;
+                //             configuration.Save();
+                //
+                //             // don't (re)start a song here for now
+                //         }
+                //         ImGui.SameLine();
+                //         HelpMarker("Songs play at various priority levels, from 0 to 11.\n" +
+                //             "Songs at lower numbers will override anything playing at a higher number, with 0 winning out over everything else.\n" +
+                //             "You can experiment with changing this value if you want the game to be able to play certain music even when Orchestrion is active.\n" +
+                //             "(Usually) zone music is 10-11, mount music is 6, GATEs are 4.  There is a lot of variety in this, however.\n" +
+                //             "The old Orchestrion used to play at level 3 (it now uses 0 by default).");
+                //
+                //         ImGui.Spacing();
+                //         if (ImGui.Button("Dump priority info"))
+                //             orch.DumpDebugInformation();
+                //
+                //         ImGui.TreePop();
+                //     }
+                // }
             }
             ImGui.End();
         }
@@ -610,6 +604,12 @@ namespace Orchestrion
                 ImGui.PopTextWrapPos();
                 ImGui.EndTooltip();
             }
+        }
+        
+        public ImGuiScene.TextureWrap LoadUIImage(string imageFile)
+        {
+            var path = Path.Combine(localDir, imageFile);
+            return pi.UiBuilder.LoadImage(path);
         }
 
         private static Vector2 ScaledVector2(float x, float y)

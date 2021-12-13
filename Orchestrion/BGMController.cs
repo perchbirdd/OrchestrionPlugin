@@ -5,7 +5,7 @@ using Dalamud.Logging;
 namespace Orchestrion
 {
     [StructLayout(LayoutKind.Sequential)]
-    unsafe struct BGMPlayback
+    unsafe struct BGMPlayer
     {
         public int priorityIndex;
         public int unk1;   // often has a value, not sure what it is
@@ -29,7 +29,7 @@ namespace Orchestrion
         public fixed byte unk6[2];
     }
 
-    class BGMControl
+    class BGMController
     {
         /// <summary>
         /// The last song that the game was previously playing.
@@ -69,11 +69,9 @@ namespace Orchestrion
         // this seems to always be the number of bgm blocks that exist
         private const int ControlBlockCount = 12;
 
-        private AddressResolver Address { get; }
-
-        public BGMControl(AddressResolver address)
+        public BGMController()
         {
-            Address = address;
+            
         }
 
         public void Update()
@@ -81,12 +79,11 @@ namespace Orchestrion
             var currentSong = (ushort)0;
             var activePriority = 0;
 
-            Address.UpdateBGMControl();
-            if (Address.BGMControl != IntPtr.Zero)
+            if (BGMAddressResolver.BGMController != IntPtr.Zero)
             {
                 unsafe
                 {
-                    var bgms = (BGMPlayback*)Address.BGMControl.ToPointer();
+                    var bgms = (BGMPlayer*)BGMAddressResolver.BGMController.ToPointer();
 
                     // as far as I have seen, the control blocks are in priority order
                     // and the highest priority populated song is what the client current plays
@@ -147,6 +144,8 @@ namespace Orchestrion
                 OnSongChanged?.Invoke(OldSongId, OldPriority, CurrentSongId, CurrentPriority);
             }
         }
+        
+        
 
         // priority ranges from 0 to ControlBlockCount-1, with lower values overriding higher ones
         // so in theory, priority 0 should override everything else
@@ -157,12 +156,11 @@ namespace Orchestrion
                 throw new IndexOutOfRangeException();
             }
 
-            Address.UpdateBGMControl();
-            if (Address.BGMControl != IntPtr.Zero)
+            if (BGMAddressResolver.BGMController != IntPtr.Zero)
             {
                 unsafe
                 {
-                    var bgms = (BGMPlayback*)Address.BGMControl.ToPointer();
+                    var bgms = (BGMPlayer*)BGMAddressResolver.BGMController.ToPointer();
                     // sometimes we only have to set the first and it will set the other 2
                     // but particularly on stop/clear, the 2nd seems important as well
                     bgms[priority].songId = songId;
@@ -180,28 +178,6 @@ namespace Orchestrion
                     // but I wasn't able to see that it did anything
                 }
             }
-        }
-
-        public unsafe void DumpPriorityInfo()
-        {
-            PluginLog.Log("----- BGM priority dump -----");
-
-            Address.UpdateBGMControl();
-            if (Address.BGMControl != IntPtr.Zero)
-            {
-                var bgms = (BGMPlayback*)Address.BGMControl.ToPointer();
-
-                for (int prio = 0; prio < ControlBlockCount; prio++)
-                {
-                    PluginLog.Log($"  Priority {prio}, songId {bgms[prio].songId}, songId2 {bgms[prio].songId2}, songId3 {bgms[prio].songId3}");
-                }
-            }
-            else
-            {
-                PluginLog.Log("BGMControl was null");
-            }
-
-            PluginLog.Log("----- BGM dump done -----");
         }
     }
 }
