@@ -175,7 +175,9 @@ namespace Orchestrion
                 isPlayingReplacement = false;
                 StopSong();
             }
-            
+
+            songList.AddSongToHistory(newSongId);
+
             SendSongEcho(newSongId);
             UpdateNui(newSongId);
         }
@@ -185,6 +187,7 @@ namespace Orchestrion
             PluginLog.Debug($"Playing {songId}");
             isPlayingReplacement = isReplacement;
             bgmControl.SetSong((ushort)songId, configuration.TargetPriority);
+            songList.AddSongToHistory(songId);
             SendSongEcho(songId, true);
             UpdateNui(songId, true);
         }
@@ -207,18 +210,21 @@ namespace Orchestrion
                 {
                     // We stopped playing a song and the song under it has a replacement, so play that
                     PlaySong(bgmControl.OldSongId, true);
+                    songList.AddSongToHistory(bgmControl.OldSongId);
                     return;
                 } 
                 else
                 {
                     // Otherwise, go back to the replacement ID (stop playing the song on TOP of the replacement)
                     PlaySong(replacement.ReplacementId, true);
+                    songList.AddSongToHistory(replacement.ReplacementId);
                     return;    
                 }
             }
             
             // If there was no replacement involved, we don't need to do anything else, just stop
             bgmControl.SetSong(0, configuration.TargetPriority);
+            songList.AddSongToHistory(bgmControl.CurrentSongId);
             SendSongEcho(bgmControl.CurrentSongId);
             UpdateNui(bgmControl.CurrentSongId);
         }
