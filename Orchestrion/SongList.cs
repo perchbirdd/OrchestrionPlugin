@@ -32,6 +32,12 @@ namespace Orchestrion
         public int ReplacementId;
     }
 
+    public struct SongHistoryEntry
+    {
+        public int Id;
+        public DateTime TimePlayed;
+    }
+
     class SongList : IDisposable
     {
         private static float Scale => ImGui.GetIO().FontGlobalScale;
@@ -42,11 +48,14 @@ namespace Orchestrion
         private IPlaybackController controller;
         private IResourceLoader loader;
         private int selectedSong;
+        private int selectedHistoryEntry;
         private string searchText = string.Empty;
         private string songListFile = string.Empty;
         private ImGuiScene.TextureWrap favoriteIcon = null;
         private ImGuiScene.TextureWrap settingsIcon = null;
         private bool showDebugOptions = false;
+
+        private List<SongHistoryEntry> SongHistory = new List<SongHistoryEntry>();
         
         private SongReplacement tmpReplacement;
         private List<int> removalList = new();
@@ -192,7 +201,27 @@ namespace Orchestrion
             }
 
             return "";
-        } 
+        }
+
+        public void AddSongToHistory(int id)
+        {
+            // Don't add silence
+            if (id == 1)
+                return;
+
+            SongHistoryEntry newEntry = new SongHistoryEntry();
+            newEntry.Id = id;
+            newEntry.TimePlayed = DateTime.Now;
+            int CurrentIndex = SongHistory.Count - 1;
+            // Check if we have history, if yes, then check if ID is the same as previous, if not, add to history
+            if (CurrentIndex < 0 ||
+                (CurrentIndex >= 0 && SongHistory[CurrentIndex].Id != id))
+            {
+                SongHistory.Add(newEntry);
+
+                PluginLog.Debug($"Added {id} to history. There are now {CurrentIndex+1} songs in history.");
+            }
+        }
 
         public void Draw()
         {
@@ -255,6 +284,11 @@ namespace Orchestrion
                         DrawSonglist(true);
                         ImGui.EndTabItem();
                     }
+                    if (ImGui.BeginTabItem("History"))
+                    {
+                        DrawSongHistory();
+                        ImGui.EndTabItem();
+                    }
                     if (ImGui.BeginTabItem("Replacements"))
                     {
                         DrawReplacements();
@@ -268,13 +302,21 @@ namespace Orchestrion
             ImGui.PopStyleVar();
         }
 
-        private void DrawFooter()
+        private void DrawFooter(bool isHistory = false)
         {
             ImGui.Separator();
             ImGui.Columns(2, "footer columns", false);
             ImGui.SetColumnWidth(-1, ImGui.GetWindowSize().X - 100);
-            ImGui.TextWrapped(selectedSong > 0 ? songs[selectedSong].Locations : string.Empty);
-            ImGui.TextWrapped(selectedSong > 0 ? songs[selectedSong].AdditionalInfo : string.Empty);
+            if (isHistory)
+            {
+                ImGui.TextWrapped(selectedHistoryEntry > 0 ? songs[SongHistory[selectedHistoryEntry].Id].Locations : string.Empty);
+                ImGui.TextWrapped(selectedHistoryEntry > 0 ? songs[SongHistory[selectedHistoryEntry].Id].AdditionalInfo : string.Empty);
+            }
+            else
+            {
+                ImGui.TextWrapped(selectedSong > 0 ? songs[selectedSong].Locations : string.Empty);
+                ImGui.TextWrapped(selectedSong > 0 ? songs[selectedSong].AdditionalInfo : string.Empty);
+            }
             ImGui.NextColumn();
             ImGui.SameLine();
             ImGui.SetCursorPosX(ImGui.GetWindowSize().X - 100);
@@ -428,61 +470,164 @@ namespace Orchestrion
             // to keep the tab bar always visible and not have it get scrolled out
             ImGui.BeginChild("##songlist_internal", new Vector2(-1f, -60f));
 
-            ImGui.Columns(2, "songlist columns", false);
+            ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit;
 
-            ImGui.SetColumnWidth(-1, 13);
-            ImGui.SetColumnOffset(1, 12);
-
-            foreach (var s in songs)
+            if (ImGui.BeginTable("songlist table", 4, flags))
             {
-                var song = s.Value;
-                if (!SearchMatches(song))
-                    continue;
+                ImGui.TableSetupColumn("fav", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
 
-                bool isFavorite = IsFavorite(song.Id);
+                //ImGui.Columns(2, "songlist columns", false);
 
-                if (favoritesOnly && !isFavorite)
-                    continue;
+                //ImGui.SetColumnWidth(-1, 13);
+                //ImGui.SetColumnOffset(1, 12);
 
-                ImGui.SetCursorPosX(-1);
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3);
-
-                if (isFavorite)
+                foreach (var s in songs)
                 {
-                    ImGui.Image(favoriteIcon.ImGuiHandle, new Vector2(13, 13));
-                    ImGui.SameLine();
-                }
+                    var song = s.Value;
+                    if (!SearchMatches(song))
+                        continue;
 
-                ImGui.NextColumn();
+                    bool isFavorite = IsFavorite(song.Id);
 
-                ImGui.Text(song.Id.ToString());
-                ImGui.SameLine();
-                if (ImGui.Selectable($"{song.Name}##{song.Id}", selectedSong == song.Id, ImGuiSelectableFlags.AllowDoubleClick))
-                {
-                    selectedSong = song.Id;
-                    if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
-                        Play(selectedSong);
-                }
-                if (ImGui.BeginPopupContextItem())
-                {
-                    if (!isFavorite)
+                    if (favoritesOnly && !isFavorite)
+                        continue;
+
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+
+                    //ImGui.SetCursorPosX(-1);
+
+                    if (isFavorite)
                     {
-                        if (ImGui.Selectable("Add to favorites"))
-                            AddFavorite(song.Id);
+                        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3);
+                        ImGui.Image(favoriteIcon.ImGuiHandle, new Vector2(13, 13));
+                    }
+
+                    ImGui.TableNextColumn();
+
+                    ImGui.Text(song.Id.ToString());
+
+                    ImGui.TableNextColumn();
+
+                    if (ImGui.Selectable($"{song.Name}##{song.Id}", selectedSong == song.Id, ImGuiSelectableFlags.AllowDoubleClick))
+                    {
+                        selectedSong = song.Id;
+                        if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                            Play(selectedSong);
+                    }
+                    if (ImGui.BeginPopupContextItem())
+                    {
+                        if (!isFavorite)
+                        {
+                            if (ImGui.Selectable("Add to favorites"))
+                                AddFavorite(song.Id);
+                        }
+                        else
+                        {
+                            if (ImGui.Selectable("Remove from favorites"))
+                                RemoveFavorite(song.Id);
+                        }
+                        ImGui.EndPopup();
+                    }
+                    ImGui.NextColumn();
+                }
+
+                ImGui.EndTable();
+            }
+            ImGui.EndChild();
+            DrawFooter();
+        }
+
+        private void DrawSongHistory()
+        {
+            // to keep the tab bar always visible and not have it get scrolled out
+            ImGui.BeginChild("##songlist_internal", new Vector2(-1f, -60f));
+
+            ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit; //ImGuiTableFlags.SizingStretchSame | ImGuiTableFlags.Resizable | ImGuiTableFlags.BordersOuter | ImGuiTableFlags.BordersV | ImGuiTableFlags.ContextMenuInBody;
+
+            if (ImGui.BeginTable("songlist table", 4, flags))
+            {
+                ImGui.TableSetupColumn("fav", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed);
+                //ImGui.Columns(2, "songlist columns", false);
+
+                //ImGui.SetColumnWidth(-1, 13);
+                //ImGui.SetColumnOffset(1, 12);
+
+                //ImGui.SetColumnWidth(2, 90);
+
+                DateTime now = DateTime.Now;
+
+                // going from the end of the list
+                for (int i = SongHistory.Count - 1; i >= 0; i--)
+                {
+                    var songHistoryEntry = SongHistory[i];
+                    var song = songs[songHistoryEntry.Id];
+
+                    if (!SearchMatches(song))
+                        continue;
+
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+
+                    bool isFavorite = IsFavorite(song.Id);
+                    //ImGui.SetCursorPosX(-1);
+
+                    if (isFavorite)
+                    {
+                        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3);
+                        ImGui.Image(favoriteIcon.ImGuiHandle, new Vector2(13, 13));
+                        //ImGui.SameLine();
+                    }
+                    ImGui.TableNextColumn();
+
+                    ImGui.Text(song.Id.ToString());
+
+                    ImGui.TableNextColumn();
+                    if (ImGui.Selectable($"{song.Name}##{i}", selectedHistoryEntry == i, ImGuiSelectableFlags.AllowDoubleClick))
+                    {
+                        selectedSong = song.Id;
+                        selectedHistoryEntry = i;
+                        if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                            Play(selectedSong);
+                    }
+                    if (ImGui.BeginPopupContextItem())
+                    {
+                        if (!isFavorite)
+                        {
+                            if (ImGui.Selectable("Add to favorites"))
+                                AddFavorite(song.Id);
+                        }
+                        else
+                        {
+                            if (ImGui.Selectable("Remove from favorites"))
+                                RemoveFavorite(song.Id);
+                        }
+                        ImGui.EndPopup();
+                    }
+                    ImGui.TableNextColumn();
+
+                    ImGui.SameLine(8);
+
+                    TimeSpan deltaTime = (now - songHistoryEntry.TimePlayed);
+
+                    if (deltaTime.TotalMinutes >= 1)
+                    {
+                        ImGui.Text($"{(int)deltaTime.TotalMinutes}m ago");
                     }
                     else
                     {
-                        if (ImGui.Selectable("Remove from favorites"))
-                            RemoveFavorite(song.Id);
+                        ImGui.Text($"{(int)deltaTime.TotalSeconds}s ago");
                     }
-                    ImGui.EndPopup();
                 }
-                ImGui.NextColumn();
+                ImGui.EndTable();
             }
-
             ImGui.EndChild();
-            ImGui.Columns(1);
-            DrawFooter();
+            DrawFooter(true);
         }
 
         public void DrawSettings()

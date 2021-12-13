@@ -175,7 +175,9 @@ namespace Orchestrion
                 isPlayingReplacement = false;
                 StopSong();
             }
-            
+
+            songList.AddSongToHistory(newSongId);
+
             SendSongEcho(newSongId);
             UpdateNui(newSongId);
         }
@@ -185,6 +187,7 @@ namespace Orchestrion
             PluginLog.Debug($"Playing {songId}");
             isPlayingReplacement = isReplacement;
             bgmControl.SetSong((ushort)songId, configuration.TargetPriority);
+            songList.AddSongToHistory(songId);
             SendSongEcho(songId, true);
             UpdateNui(songId, true);
         }
