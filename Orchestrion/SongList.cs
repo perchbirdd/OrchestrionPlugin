@@ -55,11 +55,13 @@ namespace Orchestrion
         private ImGuiScene.TextureWrap settingsIcon = null;
         private bool showDebugOptions = false;
 
-        private List<SongHistoryEntry> SongHistory = new List<SongHistoryEntry>();
-        
+
+        private readonly List<SongHistoryEntry> songHistory = new();
         private SongReplacement tmpReplacement;
-        private List<int> removalList = new();
-        private const string NoChange = "Do not change BGM"; 
+        private readonly List<int> removalList = new();
+        private const string NoChange = "Do not change BGM";
+        private const string SecAgo = "s ago";
+        private const string MinAgo = "m ago";
 
         private bool visible = false;
         public bool Visible
@@ -206,20 +208,22 @@ namespace Orchestrion
         public void AddSongToHistory(int id)
         {
             // Don't add silence
-            if (id == 1)
+            if (id == 1 || !songs.ContainsKey(id))
                 return;
 
-            SongHistoryEntry newEntry = new SongHistoryEntry();
-            newEntry.Id = id;
-            newEntry.TimePlayed = DateTime.Now;
-            int CurrentIndex = SongHistory.Count - 1;
-            // Check if we have history, if yes, then check if ID is the same as previous, if not, add to history
-            if (CurrentIndex < 0 ||
-                (CurrentIndex >= 0 && SongHistory[CurrentIndex].Id != id))
+            var newEntry = new SongHistoryEntry
             {
-                SongHistory.Add(newEntry);
-
-                PluginLog.Debug($"Added {id} to history. There are now {CurrentIndex+1} songs in history.");
+                Id = id,
+                TimePlayed = DateTime.Now
+            };
+            
+            var currentIndex = songHistory.Count - 1;
+            
+            // Check if we have history, if yes, then check if ID is the same as previous, if not, add to history
+            if (currentIndex < 0 || songHistory[currentIndex].Id != id)
+            {
+                songHistory.Add(newEntry);
+                PluginLog.Debug($"Added {id} to history. There are now {currentIndex + 1} songs in history.");
             }
         }
 
@@ -309,8 +313,8 @@ namespace Orchestrion
             ImGui.SetColumnWidth(-1, ImGui.GetWindowSize().X - 100);
             if (isHistory)
             {
-                ImGui.TextWrapped(selectedHistoryEntry > 0 ? songs[SongHistory[selectedHistoryEntry].Id].Locations : string.Empty);
-                ImGui.TextWrapped(selectedHistoryEntry > 0 ? songs[SongHistory[selectedHistoryEntry].Id].AdditionalInfo : string.Empty);
+                ImGui.TextWrapped(selectedHistoryEntry > 0 ? songs[songHistory[selectedHistoryEntry].Id].Locations : string.Empty);
+                ImGui.TextWrapped(selectedHistoryEntry > 0 ? songs[songHistory[selectedHistoryEntry].Id].AdditionalInfo : string.Empty);
             }
             else
             {
@@ -553,19 +557,13 @@ namespace Orchestrion
                 ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
                 ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed);
-                //ImGui.Columns(2, "songlist columns", false);
 
-                //ImGui.SetColumnWidth(-1, 13);
-                //ImGui.SetColumnOffset(1, 12);
-
-                //ImGui.SetColumnWidth(2, 90);
-
-                DateTime now = DateTime.Now;
+                var now = DateTime.Now;
 
                 // going from the end of the list
-                for (int i = SongHistory.Count - 1; i >= 0; i--)
+                for (int i = songHistory.Count - 1; i >= 0; i--)
                 {
-                    var songHistoryEntry = SongHistory[i];
+                    var songHistoryEntry = songHistory[i];
                     var song = songs[songHistoryEntry.Id];
 
                     if (!SearchMatches(song))
@@ -574,8 +572,7 @@ namespace Orchestrion
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
 
-                    bool isFavorite = IsFavorite(song.Id);
-                    //ImGui.SetCursorPosX(-1);
+                    var isFavorite = IsFavorite(song.Id);
 
                     if (isFavorite)
                     {
@@ -611,18 +608,23 @@ namespace Orchestrion
                     }
                     ImGui.TableNextColumn();
 
-                    ImGui.SameLine(8);
+                    var deltaTime = now - songHistoryEntry.TimePlayed;
 
-                    TimeSpan deltaTime = (now - songHistoryEntry.TimePlayed);
+                    int unit;
+                    string label;
 
                     if (deltaTime.TotalMinutes >= 1)
                     {
-                        ImGui.Text($"{(int)deltaTime.TotalMinutes}m ago");
+                        unit = (int) deltaTime.TotalMinutes;
+                        label = MinAgo;
                     }
                     else
                     {
-                        ImGui.Text($"{(int)deltaTime.TotalSeconds}s ago");
+                        unit = (int) deltaTime.TotalSeconds;
+                        label = SecAgo;
                     }
+                    
+                    ImGui.Text($"{unit}{label}");
                 }
                 ImGui.EndTable();
             }
