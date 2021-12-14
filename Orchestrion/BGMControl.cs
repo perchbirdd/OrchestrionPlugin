@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using Dalamud.Logging;
 
@@ -96,8 +96,13 @@ namespace Orchestrion
                         
                         // This is so we can receive BGM change updates even while playing a song
                         if (PlayingSongId != 0 && activePriority == PlayingPriority)
+                        {
+                            // If the game overwrote our song, play it again
+                            if (bgms[PlayingPriority].songId2 != PlayingSongId)
+                                SetSong((ushort)PlayingSongId, PlayingPriority);
                             continue;
-
+                        }
+                            
                         // This value isn't a collection of flags, but it seems like if it's 0 entirely, the song at this
                         // priority isn't playing
                         // Earlying out here since the checks below are already awful enough
