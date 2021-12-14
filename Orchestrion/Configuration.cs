@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 namespace Orchestrion
 {
     [Serializable]
-    internal class Configuration : IPluginConfiguration
+    public class Configuration : IPluginConfiguration
     {
         public int Version { get; set; } = 1;
 
