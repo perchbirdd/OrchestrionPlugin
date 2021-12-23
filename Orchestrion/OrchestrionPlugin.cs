@@ -32,9 +32,7 @@ public class OrchestrionPlugin : IDalamudPlugin
     public Framework Framework { get; }
     public NativeUIUtil NativeUI { get; }
     public Configuration Configuration { get; }
-    public SongList SongList { get; }
     public SongUI SongUI { get; }
-    public BGMController BGMController { get; }
 
     private readonly TextPayload nowPlayingPayload = new("Now playing ");
     private readonly TextPayload periodPayload = new(".");
@@ -63,21 +61,10 @@ public class OrchestrionPlugin : IDalamudPlugin
         Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         Configuration.Initialize(pluginInterface, this);
 
-        SongList = new SongList(this);
+        SongList.Init(pluginInterface.AssemblyLocation.DirectoryName);
+        BGMAddressResolver.Init(sigScanner);
+        BGMController.OnSongChanged += HandleSongChanged;
         SongUI = new SongUI(this);
-
-        try
-        {
-            BGMAddressResolver.Setup(sigScanner);
-            BGMController = new BGMController();
-            BGMController.OnSongChanged += HandleSongChanged;
-        }
-        catch (Exception e)
-        {
-            PluginLog.Error(e, "Failed to find BGM playback objects");
-            BGMController = null;
-        }
-
         NativeUI = new NativeUIUtil(Configuration, gameGui);
 
         commandManager.AddHandler(CommandName, new CommandInfo(OnDisplayCommand)

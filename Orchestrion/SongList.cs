@@ -14,17 +14,23 @@ public struct Song
     public string AdditionalInfo;
 }
 
-public class SongList
+public static class SongList
 {
     private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc/gviz/tq?tqx=out:csv&sheet=main";
     private const string SheetFileName = "xiv_bgm.csv";
-    
-    private Dictionary<int, Song> Songs { get; }
 
-    public SongList(OrchestrionPlugin plugin)
+    // private static string _pluginDirectory;
+    private static Dictionary<int, Song> _songs;
+
+    static SongList()
     {
-        var sheetPath = Path.Join(plugin.PluginInterface.AssemblyLocation.DirectoryName, SheetFileName);
-        Songs = new Dictionary<int, Song>();
+        _songs = new Dictionary<int, Song>();
+    }
+
+    public static void Init(string pluginDirectory)
+    {
+        var sheetPath = Path.Join(pluginDirectory, SheetFileName);
+        _songs = new Dictionary<int, Song>();
         
         var existingText = File.ReadAllText(sheetPath);
 
@@ -52,9 +58,9 @@ public class SongList
     
     // Attempts to load supplemental bgm data from the csv file
     // This throws all internal errors
-    private void LoadSheet(string sheetText)
+    private static void LoadSheet(string sheetText)
     {
-        Songs.Clear();
+        _songs.Clear();
         var sheetLines = sheetText.Split('\n'); // gdocs provides \n
         for (int i = 1; i < sheetLines.Length; i++)
         {
@@ -78,22 +84,27 @@ public class SongList
                 AdditionalInfo = additionalInfo
             };
 
-            Songs[id] = song;
+            _songs[id] = song;
         }
     }
+
+    public static Dictionary<int, Song> GetSongs()
+    {
+        return _songs;
+    }
     
-    public Song GetSong(int id, out Song song)
+    public static Song GetSong(int id, out Song song)
     {
-        return Songs.TryGetValue(id, out song) ? song : default;
+        return _songs.TryGetValue(id, out song) ? song : default;
     }
 
-    public bool TryGetSong(int id, out Song song)
+    public static bool TryGetSong(int id, out Song song)
     {
-        return Songs.TryGetValue(id, out song);
+        return _songs.TryGetValue(id, out song);
     }
 
-    public string GetSongName(int id)
+    public static string GetSongName(int id)
     {
-        return Songs.TryGetValue(id, out var song) ? song.Name : "";
+        return _songs.TryGetValue(id, out var song) ? song.Name : "";
     }
 }

@@ -29,52 +29,52 @@ namespace Orchestrion
         public fixed byte unk6[2];
     }
 
-    public class BGMController
+    public static class BGMController
     {
         /// <summary>
         /// The last song that the game was previously playing.
         /// </summary>
-        public int OldSongId { get; private set; }
+        public static int OldSongId { get; private set; }
         
         /// <summary>
         /// The priority that OldSongId was playing at.
         /// </summary>
-        public int OldPriority { get; private set; }
+        public static int OldPriority { get; private set; }
         
         /// <summary>
         /// The song that the game is currently playing. That is, the song
         /// that is currently playing at the highest priority that is not
         /// PlayingPriority.
         /// </summary>
-        public int CurrentSongId { get; private set; }
+        public static int CurrentSongId { get; private set; }
         
         /// <summary>
         /// The priority that CurrentSongId is playing at.
         /// </summary>
-        public int CurrentPriority { get; private set; }
+        public static int CurrentPriority { get; private set; }
 
         /// <summary>
         /// The song that Orchestrion is currently playing.
         /// </summary>
-        public int PlayingSongId { get; private set; } = 0;
+        public static int PlayingSongId { get; private set; } = 0;
         
         /// <summary>
         /// The priority that PlayingSongId is playing at.
         /// </summary>
-        public int PlayingPriority { get; private set; } = 0;
+        public static int PlayingPriority { get; private set; } = 0;
 
         public delegate void SongChangedHandler(int oldSongId, int oldPriority, int newSongId, int newPriority);
-        public SongChangedHandler OnSongChanged;
+        public static SongChangedHandler OnSongChanged;
 
         // this seems to always be the number of bgm blocks that exist
         private const int ControlBlockCount = 12;
 
-        public BGMController()
+        static BGMController()
         {
             
         }
 
-        public void Update()
+        public static void Update()
         {
             var currentSong = (ushort)0;
             var activePriority = 0;
@@ -154,7 +154,7 @@ namespace Orchestrion
 
         // priority ranges from 0 to ControlBlockCount-1, with lower values overriding higher ones
         // so in theory, priority 0 should override everything else
-        public void SetSong(ushort songId, int priority = 0)
+        public static void SetSong(ushort songId, int priority = 0)
         {
             if (priority < 0 || priority >= ControlBlockCount)
             {
