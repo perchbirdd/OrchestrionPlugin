@@ -22,21 +22,23 @@ namespace Orchestrion
 
     public class OrchestrionPlugin : IDalamudPlugin, IPlaybackController, IResourceLoader
     {
-        public string Name => "Orchestrion";
+        private const string ConstName = "Orchestrion";
+        public string Name => ConstName;
 
         private const string SongListFile = "xiv_bgm.csv";
         private const string CommandName = "/porch";
         private const string NativeNowPlayingPrefix = "♪ ";
 
-        private readonly DalamudPluginInterface pi;
+        private readonly DalamudPluginInterface pluginInterface;
         private readonly CommandManager commandManager;
         private readonly ChatGui chatGui;
         private readonly Framework framework;
-        private readonly NativeUIUtil nui;
         private readonly Configuration configuration;
         private readonly SongList songList;
         private readonly BGMControl bgmControl;
         private readonly string localDir;
+        private readonly DtrBar dtrBar;
+        private DtrEntry dtrEntry;
 
         private readonly TextPayload nowPlayingPayload = new("Now playing ");
         private readonly TextPayload periodPayload = new(".");
@@ -52,12 +54,14 @@ namespace Orchestrion
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
             [RequiredVersion("1.0")] GameGui gameGui,
             [RequiredVersion("1.0")] ChatGui chatGui,
+            [RequiredVersion("1.0")] DtrBar dtrBar,
             [RequiredVersion("1.0")] CommandManager commandManager,
             [RequiredVersion("1.0")] Framework framework,
             [RequiredVersion("1.0")] SigScanner sigScanner
         )
         {
-            pi = pluginInterface;
+            this.pluginInterface = pluginInterface;
+            this.dtrBar = dtrBar;
             this.commandManager = commandManager;
             this.chatGui = chatGui;
             this.framework = framework;
@@ -81,15 +85,15 @@ namespace Orchestrion
             {
                 PluginLog.Error(e, "Failed to find BGM playback objects");
                 bgmControl = null;
+                Dispose();
+                return;
             }
-
-            nui = new NativeUIUtil(configuration, gameGui);
-
+            
             commandManager.AddHandler(CommandName, new CommandInfo(OnDisplayCommand)
             {
                 HelpMessage = "Displays the Orchestrion window, to view, change, or stop in-game BGM."
             });
-            pluginInterface.UiBuilder.Draw += Display;
+            pluginInterface.UiBuilder.Draw += Draw;
             pluginInterface.UiBuilder.OpenConfigUi += () => songList.SettingsVisible = true;
             framework.Update += OrchestrionUpdate;
         }
@@ -97,19 +101,15 @@ namespace Orchestrion
         private void OrchestrionUpdate(Framework unused)
         {
             bgmControl.Update();
-
-            if (configuration.ShowSongInNative)
-                nui.Update();
         }
 
         public void Dispose()
         {
             framework.Update -= OrchestrionUpdate;
-            songList.Dispose();
-            nui.Dispose();
-            pi.UiBuilder.Draw -= Display;
+            pluginInterface.UiBuilder.Draw -= Draw;
+            songList?.Dispose();
+            dtrEntry?.Dispose();
             commandManager.RemoveHandler(CommandName);
-            pi.Dispose();
         }
 
         public void SetNativeDisplay(bool value)
@@ -119,12 +119,12 @@ namespace Orchestrion
 
             if (value)
             {
-                nui.Init();
+                dtrEntry = dtrBar.GetEntry(ConstName);
                 var songName = songList.GetSongTitle(CurrentSong);
-                nui.Update(NativeNowPlayingPrefix + songName);
+                dtrEntry.SetText(NativeNowPlayingPrefix + songName);
             }
             else
-                nui.Dispose();
+                dtrEntry.Dispose();
         }
 
         private void OnDisplayCommand(string command, string args)
@@ -141,7 +141,7 @@ namespace Orchestrion
             }
         }
 
-        private void Display()
+        private void Draw()
         {
             songList.Draw();
         }
@@ -179,7 +179,7 @@ namespace Orchestrion
             songList.AddSongToHistory(newSongId);
 
             SendSongEcho(newSongId);
-            UpdateNui(newSongId);
+            UpdateDtr(newSongId);
         }
         
         public void PlaySong(int songId, bool isReplacement = false)
@@ -189,7 +189,7 @@ namespace Orchestrion
             bgmControl.SetSong((ushort)songId, configuration.TargetPriority);
             songList.AddSongToHistory(songId);
             SendSongEcho(songId, true);
-            UpdateNui(songId, true);
+            UpdateDtr(songId, true);
         }
 
         public void StopSong()
@@ -226,10 +226,10 @@ namespace Orchestrion
             bgmControl.SetSong(0, configuration.TargetPriority);
             songList.AddSongToHistory(bgmControl.CurrentSongId);
             SendSongEcho(bgmControl.CurrentSongId);
-            UpdateNui(bgmControl.CurrentSongId);
+            UpdateDtr(bgmControl.CurrentSongId);
         }
         
-        private void UpdateNui(int songId, bool playedByOrch = false)
+        private void UpdateDtr(int songId, bool playedByOrch = false)
         {
             if (!configuration.ShowSongInNative) return;
 
@@ -246,7 +246,7 @@ namespace Orchestrion
 
             text = playedByOrch ? $"{NativeNowPlayingPrefix} [{text}]" : $"{NativeNowPlayingPrefix} {text}";
 
-            nui.Update(text);
+            dtrEntry.SetText(text);
         }
 
         private void SendSongEcho(int songId, bool playedByOrch = false)
@@ -280,7 +280,7 @@ namespace Orchestrion
         public ImGuiScene.TextureWrap LoadUIImage(string imageFile)
         {
             var path = Path.Combine(localDir, imageFile);
-            return pi.UiBuilder.LoadImage(path);
+            return pluginInterface.UiBuilder.LoadImage(path);
         }
     }
 }
