@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using Dalamud.Game;
 using Dalamud.Game.Gui;
+using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.IoC;
@@ -38,7 +39,7 @@ namespace Orchestrion
         private readonly BGMControl bgmControl;
         private readonly string localDir;
         private readonly DtrBar dtrBar;
-        private DtrEntry dtrEntry;
+        private DtrBarEntry dtrEntry;
 
         private readonly TextPayload nowPlayingPayload = new("Now playing ");
         private readonly TextPayload periodPayload = new(".");
@@ -88,7 +89,12 @@ namespace Orchestrion
                 Dispose();
                 return;
             }
-            
+
+            if (configuration.ShowSongInNative)
+            {
+                dtrEntry = dtrBar.Get(ConstName);
+            }
+
             commandManager.AddHandler(CommandName, new CommandInfo(OnDisplayCommand)
             {
                 HelpMessage = "Displays the Orchestrion window, to view, change, or stop in-game BGM."
@@ -119,9 +125,9 @@ namespace Orchestrion
 
             if (value)
             {
-                dtrEntry = dtrBar.GetEntry(ConstName);
+                dtrEntry = dtrBar.Get(ConstName);
                 var songName = songList.GetSongTitle(CurrentSong);
-                dtrEntry.SetText(NativeNowPlayingPrefix + songName);
+                dtrEntry.Text = NativeNowPlayingPrefix + songName;
             }
             else
                 dtrEntry.Dispose();
@@ -246,7 +252,7 @@ namespace Orchestrion
 
             text = playedByOrch ? $"{NativeNowPlayingPrefix} [{text}]" : $"{NativeNowPlayingPrefix} {text}";
 
-            dtrEntry.SetText(text);
+            dtrEntry.Text = text;
         }
 
         private void SendSongEcho(int songId, bool playedByOrch = false)
