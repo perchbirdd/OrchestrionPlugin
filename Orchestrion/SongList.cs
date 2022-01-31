@@ -54,8 +54,7 @@ namespace Orchestrion
         private ImGuiScene.TextureWrap favoriteIcon = null;
         private ImGuiScene.TextureWrap settingsIcon = null;
         private bool showDebugOptions = false;
-
-
+        
         private readonly List<SongHistoryEntry> songHistory = new();
         private SongReplacement tmpReplacement;
         private readonly List<int> removalList = new();
@@ -203,6 +202,48 @@ namespace Orchestrion
             }
 
             return "";
+        }
+
+        public bool SongExists(int id)
+        {
+            return songs.ContainsKey(id);
+        }
+
+        public bool TryGetSongByName(string name, out int songId)
+        {
+            songId = 0;
+            foreach (var song in songs)
+            {
+                if (string.Equals(song.Value.Name, name, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    songId = song.Key;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool TryGetRandomSong(bool limitToFavorites, out int songId)
+        {
+            songId = 0;
+
+            ICollection<int> source = limitToFavorites ? configuration.FavoriteSongs : songs.Keys;
+            if (source.Count == 0) return false;
+
+            var max = source.Max();
+            var random = new Random();
+            var found = false;
+            while (!found)
+            {
+                songId = random.Next(2, max + 1);
+                
+                if (!songs.ContainsKey(songId)) continue;
+                if (limitToFavorites && !IsFavorite(songId)) continue;
+
+                found = true;
+            }
+            return found;
         }
 
         public void AddSongToHistory(int id)
