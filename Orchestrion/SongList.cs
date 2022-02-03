@@ -31,7 +31,7 @@ public static class SongList
     {
         var sheetPath = Path.Join(pluginDirectory, SheetFileName);
         _songs = new Dictionary<int, Song>();
-        
+
         var existingText = File.ReadAllText(sheetPath);
 
         using var client = new WebClient();
@@ -55,7 +55,7 @@ public static class SongList
             LoadSheet(existingText);
         }
     }
-    
+
     // Attempts to load supplemental bgm data from the csv file
     // This throws all internal errors
     private static void LoadSheet(string sheetText)
@@ -92,7 +92,7 @@ public static class SongList
     {
         return _songs;
     }
-    
+
     public static Song GetSong(int id, out Song song)
     {
         return _songs.TryGetValue(id, out song) ? song : default;
@@ -107,4 +107,85 @@ public static class SongList
     {
         return _songs.TryGetValue(id, out var song) ? song.Name : "";
     }
+
+    public string GetSongTitle(int id)
+    {
+        try
+        {
+            return songs.ContainsKey(id) ? songs[id].Name : "";
+        }
+        catch (Exception e)
+        {
+            PluginLog.Error(e, "GetSongTitle");
+        }
+
+        return "";
+    }
+
+    public bool SongExists(int id)
+    {
+        return songs.ContainsKey(id);
+    }
+
+    public bool TryGetSongByName(string name, out int songId)
+    {
+        songId = 0;
+        foreach (var song in songs)
+        {
+            if (string.Equals(song.Value.Name, name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                songId = song.Key;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool TryGetRandomSong(bool limitToFavorites, out int songId)
+    {
+        songId = 0;
+
+        ICollection<int> source = limitToFavorites ? configuration.FavoriteSongs : songs.Keys;
+        if (source.Count == 0) return false;
+
+        var max = source.Max();
+        var random = new Random();
+        var found = false;
+        while (!found)
+        {
+            songId = random.Next(2, max + 1);
+
+            if (!songs.ContainsKey(songId)) continue;
+            if (limitToFavorites && !IsFavorite(songId)) continue;
+
+            found = true;
+        }
+
+        return found;
+    }
+
+    public void AddSongToHistory(int id)
+    {
+        // Don't add silence
+        if (id == 1 || !songs.ContainsKey(id))
+            return;
+
+        var newEntry = new SongHistoryEntry
+        {
+            Id = id,
+            TimePlayed = DateTime.Now
+        };
+
+        var currentIndex = songHistory.Count - 1;
+
+        // Check if we have history, if yes, then check if ID is the same as previous, if not, add to history
+        if (currentIndex < 0 || songHistory[currentIndex].Id != id)
+        {
+            songHistory.Add(newEntry);
+            PluginLog.Debug($"Added {id} to history. There are now {currentIndex + 1} songs in history.");
+        }
+    }
+}
+
 }

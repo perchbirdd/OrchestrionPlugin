@@ -1,10 +1,10 @@
 ﻿using Dalamud.Game.Command;
 using Dalamud.Game.Text;
 using Dalamud.Plugin;
-using System;
 using System.Collections.Generic;
 using Dalamud.Game;
 using Dalamud.Game.Gui;
+using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.IoC;
@@ -20,7 +20,8 @@ namespace Orchestrion;
 
 public class OrchestrionPlugin : IDalamudPlugin
 {
-    public string Name => "Orchestrion";
+    private const string ConstName = "Orchestrion";
+    public string Name => ConstName;
 
     private const string SongListFile = "xiv_bgm.csv";
     private const string CommandName = "/porch";
@@ -30,17 +31,20 @@ public class OrchestrionPlugin : IDalamudPlugin
     public CommandManager CommandManager { get; }
     public ChatGui ChatGui { get; }
     public Framework Framework { get; }
+    public DtrBar DtrBar { get; }
+    
     public NativeUIUtil NativeUI { get; }
     public Configuration Configuration { get; }
     public SongUI SongUI { get; }
 
-    private readonly TextPayload nowPlayingPayload = new("Now playing ");
+    private readonly TextPayload nowPlayingPayload = new("Orchestrion: Now playing ");
     private readonly TextPayload periodPayload = new(".");
     private readonly TextPayload emptyPayload = new("");
     private readonly TextPayload leftBracketPayload = new("[");
     private readonly TextPayload rightBracketPayload = new("]");
 
     private bool isPlayingReplacement = false;
+    private DtrBarEntry dtrEntry;
 
     public int CurrentSong => BGMController.PlayingSongId == 0 ? BGMController.CurrentSongId : BGMController.PlayingSongId;
 
@@ -48,12 +52,14 @@ public class OrchestrionPlugin : IDalamudPlugin
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
         [RequiredVersion("1.0")] GameGui gameGui,
         [RequiredVersion("1.0")] ChatGui chatGui,
+        [RequiredVersion("1.0")] DtrBar dtrBar,
         [RequiredVersion("1.0")] CommandManager commandManager,
         [RequiredVersion("1.0")] Framework framework,
         [RequiredVersion("1.0")] SigScanner sigScanner
     )
     {
         PluginInterface = pluginInterface;
+        DtrBar = dtrBar;
         CommandManager = commandManager;
         ChatGui = chatGui;
         Framework = framework;
@@ -61,11 +67,15 @@ public class OrchestrionPlugin : IDalamudPlugin
         Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         Configuration.Initialize(pluginInterface, this);
 
+        if (Configuration.ShowSongInNative)
+        {
+            dtrEntry = dtrBar.Get(ConstName);
+        }
+
         SongList.Init(pluginInterface.AssemblyLocation.DirectoryName);
         BGMAddressResolver.Init(sigScanner);
         BGMController.OnSongChanged += HandleSongChanged;
         SongUI = new SongUI(this);
-        NativeUI = new NativeUIUtil(Configuration, gameGui);
 
         commandManager.AddHandler(CommandName, new CommandInfo(OnDisplayCommand)
         {
@@ -79,18 +89,14 @@ public class OrchestrionPlugin : IDalamudPlugin
     private void OrchestrionUpdate(Framework unused)
     {
         BGMController.Update();
-
-        if (Configuration.ShowSongInNative)
-            NativeUI.Update();
     }
 
     public void Dispose()
     {
         Framework.Update -= OrchestrionUpdate;
-        NativeUI.Dispose();
         PluginInterface.UiBuilder.Draw -= Display;
+        dtrEntry?.Dispose();
         CommandManager.RemoveHandler(CommandName);
-        PluginInterface.Dispose();
     }
 
     public void SetNativeDisplay(bool value)
@@ -100,19 +106,79 @@ public class OrchestrionPlugin : IDalamudPlugin
 
         if (value)
         {
-            NativeUI.Init();
-            var songName = SongUI.GetSongTitle(CurrentSong);
-            NativeUI.Update(NativeNowPlayingPrefix + songName);
+            dtrEntry = DtrBar.Get(ConstName);
+            var songName = SongList.GetSongTitle(CurrentSong);
+            dtrEntry.Text = NativeNowPlayingPrefix + songName;
         }
         else
-        {
-            NativeUI.Dispose();
-        }
+            dtrEntry.Dispose();
     }
-
-    private void OnDisplayCommand(string command, string args)
+    
+    private void OnCommand(string command, string args)
     {
-        SongUI.Visible = !SongUI.Visible;
+        var argSplit = args.Split(' ');
+        var argLen = argSplit.Length;
+
+        switch (argLen)
+        {
+            case 1 when string.IsNullOrEmpty(argSplit[0]):
+                songList.Visible = !songList.Visible;
+                break;
+            case 1 when argSplit[0].ToLowerInvariant() == "stop":
+                StopSong();
+                break;
+            case 1 when argSplit[0].ToLowerInvariant() == "play":
+                chatGui.PrintError("You must specify a song to play.");
+                break;
+            case 1 when argSplit[0].ToLowerInvariant() == "random":
+                if (songList.TryGetRandomSong(limitToFavorites: false, out var randomSong))
+                    PlaySong(randomSong);
+                else
+                    chatGui.PrintError("No possible songs found."); // This should never happen but...
+                break;
+            case 2 when argSplit[0].ToLowerInvariant() == "random" && argSplit[1].ToLowerInvariant() == "favorites":
+                if (songList.TryGetRandomSong(limitToFavorites: true, out var randomFavoriteSong))
+                    PlaySong(randomFavoriteSong);
+                else
+                    chatGui.PrintError("No possible songs found.");
+                break;
+            case 2 when argSplit[0].ToLowerInvariant() == "play" && int.TryParse(argSplit[1], out var songId):
+                if (songList.SongExists(songId))
+                    PlaySong(songId);
+                else
+                    chatGui.PrintError($"Song {argSplit[1]} not found.");
+                break;
+            case >= 2 when argSplit[0] == "play".ToLowerInvariant() && !int.TryParse(argSplit[1], out _):
+                var songName = argSplit.Skip(1).Aggregate((x, y) => $"{x} {y}");
+                if (songList.TryGetSongByName(songName, out var songIdFromName))
+                {
+                    PlaySong(songIdFromName);
+                }
+                else
+                {
+                    var payloads = new List<Payload>
+                    {
+                        new TextPayload("Orchestrion: Song "),
+                        EmphasisItalicPayload.ItalicsOn,
+                        new TextPayload(songName),
+                        EmphasisItalicPayload.ItalicsOff,
+                        new TextPayload(" not found.")
+                    };
+                    chatGui.PrintError(new SeString(payloads));
+                }
+                break;
+            default:
+                if (argSplit[0].ToLowerInvariant() != "help") break;
+                chatGui.Print(CommandName + " help: ");
+                chatGui.Print("/porch help - Display this message");
+                chatGui.Print("/porch - Display the Orchestrion UI");
+                chatGui.Print("/porch play [songId] - Play the specified song");
+                chatGui.Print("/porch play [song name] - Play the specified song");
+                chatGui.Print("/porch random - Play a random song");
+                chatGui.Print("/porch random favorites - Play a random song from favorites");
+                chatGui.Print("/porch stop - Stop the current playing song or replacement song");
+                break;
+        }
     }
 
     private void Display()
@@ -153,7 +219,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         SongUI.AddSongToHistory(newSongId);
 
         SendSongEcho(newSongId);
-        UpdateNui(newSongId);
+        UpdateDtr(newSongId);
     }
 
     public void PlaySong(int songId, bool isReplacement = false)
@@ -163,7 +229,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         BGMController.SetSong((ushort)songId, Configuration.TargetPriority);
         SongUI.AddSongToHistory(songId);
         SendSongEcho(songId, true);
-        UpdateNui(songId, true);
+        UpdateDtr(songId, true);
     }
 
     public void StopSong()
@@ -203,7 +269,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         UpdateNui(BGMController.CurrentSongId);
     }
 
-    private void UpdateNui(int songId, bool playedByOrch = false)
+    private void UpdateDtr(int songId, bool playedByOrch = false)
     {
         if (!Configuration.ShowSongInNative) return;
 
@@ -219,8 +285,8 @@ public class OrchestrionPlugin : IDalamudPlugin
         var text = songName + suffix;
 
         text = playedByOrch ? $"{NativeNowPlayingPrefix} [{text}]" : $"{NativeNowPlayingPrefix} {text}";
-
-        NativeUI.Update(text);
+        
+        dtrEntry.Text = text;
     }
 
     private void SendSongEcho(int songId, bool playedByOrch = false)
