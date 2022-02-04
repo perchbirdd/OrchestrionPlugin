@@ -78,7 +78,7 @@ public class SongUI : IDisposable
 
     private void ResetReplacement()
     {
-        var id = songs.Keys.First(x => !configuration.SongReplacements.ContainsKey(x));
+        var id = SongList.GetFirstReplacementCandidateId();
         tmpReplacement = new SongReplacement
         {
             TargetSongId = id,
@@ -96,24 +96,10 @@ public class SongUI : IDisposable
         orch.StopSong();
     }
 
-    private bool IsFavorite(int songId) => orch.Configuration.FavoriteSongs.Contains(songId);
-
-    private void AddFavorite(int songId)
-    {
-        orch.Configuration.FavoriteSongs.Add(songId);
-        orch.Configuration.Save();
-    }
-
-    private void RemoveFavorite(int songId)
-    {
-        orch.Configuration.FavoriteSongs.Remove(songId);
-        orch.Configuration.Save();
-    }
-
     public void AddSongToHistory(int id)
     {
         // Don't add silence
-        if (id == 1 || !orch.SongList.TryGetSong(id, out _))
+        if (id == 1 || !SongList.TryGetSong(id, out _))
             return;
 
         var newEntry = new SongHistoryEntry
@@ -157,7 +143,7 @@ public class SongUI : IDisposable
         {
             // TODO: subscribe to the event so this only has to be constructed on change?
             var songId = orch.CurrentSong;
-            if (orch.SongList.TryGetSong(songId, out var song))
+            if (SongList.TryGetSong(songId, out var song))
                 windowTitle.Append($" - [{song.Id}] {song.Name}");
         }
 
@@ -209,7 +195,7 @@ public class SongUI : IDisposable
 #if DEBUG
                 if (ImGui.BeginTabItem("Debug"))
                 {
-                    // DrawDebug();
+                    DrawDebug();
                     ImGui.EndTabItem();
                 }
 #endif
@@ -227,17 +213,14 @@ public class SongUI : IDisposable
         ImGui.Separator();
         ImGui.Columns(2, "footer columns", false);
         ImGui.SetColumnWidth(-1, ImGui.GetWindowSize().X - 100);
-        if (isHistory)
+        
+        var songId = isHistory ? songHistory[selectedHistoryEntry].Id : orch.CurrentSong;
+        if (SongList.TryGetSong(songId, out var song))
         {
-            ImGui.TextWrapped(selectedHistoryEntry > 0 ? orch.SongList.TryGetSong[songHistory[selectedHistoryEntry].Id].Locations : string.Empty);
-            ImGui.TextWrapped(selectedHistoryEntry > 0 ? songs[songHistory[selectedHistoryEntry].Id].AdditionalInfo : string.Empty);
+            ImGui.TextWrapped(song.Locations);
+            ImGui.TextWrapped(song.AdditionalInfo);    
         }
-        else
-        {
-            ImGui.TextWrapped(selectedSong > 0 ? songs[selectedSong].Locations : string.Empty);
-            ImGui.TextWrapped(selectedSong > 0 ? songs[selectedSong].AdditionalInfo : string.Empty);
-        }
-
+        
         ImGui.NextColumn();
         ImGui.SameLine();
         ImGui.SetCursorPosX(ImGui.GetWindowSize().X - 100);
@@ -260,18 +243,14 @@ public class SongUI : IDisposable
 
     private void DrawReplacementList()
     {
-        foreach (var replacement in configuration.SongReplacements.Values)
+        foreach (var replacement in orch.Configuration.SongReplacements.Values)
         {
             ImGui.Spacing();
-            var target = songs[replacement.TargetSongId];
+            SongList.TryGetSong(replacement.TargetSongId, out var target);
 
             var targetText = $"{replacement.TargetSongId} - {target.Name}";
-            string replText;
-            if (replacement.ReplacementId == -1)
-                replText = NoChange;
-            else
-                replText = $"{replacement.ReplacementId} - {songs[replacement.ReplacementId].Name}";
-
+            string replText = replacement.ReplacementId == -1 ? NoChange : $"{replacement.ReplacementId} - {SongList.GetSong(replacement.ReplacementId).Name}";
+            
             ImGui.TextWrapped($"{targetText}");
             if (ImGui.IsItemHovered())
                 DrawBgmTooltip(target);
@@ -279,7 +258,7 @@ public class SongUI : IDisposable
             ImGui.Text($"will be replaced with");
             ImGui.TextWrapped($"{replText}");
             if (ImGui.IsItemHovered() && replacement.ReplacementId != -1)
-                DrawBgmTooltip(songs[replacement.ReplacementId]);
+                DrawBgmTooltip(SongList.GetSong(replacement.ReplacementId));
 
             // Delete button in top right of area
             RightAlignButton(ImGui.GetCursorPosY(), "Delete");
@@ -292,10 +271,19 @@ public class SongUI : IDisposable
         if (removalList.Count > 0)
         {
             foreach (var toRemove in removalList)
-                configuration.SongReplacements.Remove(toRemove);
+                orch.Configuration.SongReplacements.Remove(toRemove);
             removalList.Clear();
-            configuration.Save();
+            orch.Configuration.Save();
         }
+    }
+
+    private void DrawDebug()
+    {
+        var addr = BGMAddressResolver.BGMController;
+        var addrStr = $"{addr.ToInt64():X}";
+        ImGui.Text(addrStr);
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+            ImGui.SetClipboardText(addrStr);
     }
 
     private void RightAlignButton(float y, string text)
@@ -310,22 +298,22 @@ public class SongUI : IDisposable
     {
         ImGui.Spacing();
 
-        var targetText = $"{songs[tmpReplacement.TargetSongId].Id} - {songs[tmpReplacement.TargetSongId].Name}";
+        var targetText = $"{SongList.GetSong(tmpReplacement.TargetSongId).Id} - {SongList.GetSong(tmpReplacement.TargetSongId).Name}";
         string replacementText;
         if (tmpReplacement.ReplacementId == -1)
             replacementText = NoChange;
         else
-            replacementText = $"{songs[tmpReplacement.ReplacementId].Id} - {songs[tmpReplacement.ReplacementId].Name}";
+            replacementText = $"{SongList.GetSong(tmpReplacement.ReplacementId).Id} - {SongList.GetSong(tmpReplacement.ReplacementId).Name}";
 
         // This fixes the ultra-wide combo boxes, I guess
         var width = ImGui.GetWindowWidth() * 0.60f;
 
         if (ImGui.BeginCombo("Target Song", targetText))
         {
-            foreach (var song in songs.Values)
+            foreach (var song in SongList.GetSongs().Values)
             {
                 if (!SearchMatches(song)) continue;
-                if (configuration.SongReplacements.ContainsKey(song.Id)) continue;
+                if (orch.Configuration.SongReplacements.ContainsKey(song.Id)) continue;
                 var tmpText = $"{song.Id} - {song.Name}";
                 var tmpTextSize = ImGui.CalcTextSize(tmpText);
                 var isSelected = tmpReplacement.TargetSongId == song.Id;
@@ -348,7 +336,7 @@ public class SongUI : IDisposable
             if (ImGui.Selectable(NoChange))
                 tmpReplacement.ReplacementId = -1;
 
-            foreach (var song in songs.Values)
+            foreach (var song in SongList.GetSongs().Values)
             {
                 if (!SearchMatches(song)) continue;
                 tmpText = $"{song.Id} - {song.Name}";
@@ -369,8 +357,8 @@ public class SongUI : IDisposable
         RightAlignButton(ImGui.GetCursorPosY(), "Add as song replacement");
         if (ImGui.Button("Add as song replacement"))
         {
-            configuration.SongReplacements.Add(tmpReplacement.TargetSongId, tmpReplacement);
-            configuration.Save();
+            orch.Configuration.SongReplacements.Add(tmpReplacement.TargetSongId, tmpReplacement);
+            orch.Configuration.Save();
             ResetReplacement();
         }
 
@@ -406,13 +394,13 @@ public class SongUI : IDisposable
             //ImGui.SetColumnWidth(-1, 13);
             //ImGui.SetColumnOffset(1, 12);
 
-            foreach (var s in songs)
+            foreach (var s in SongList.GetSongs())
             {
                 var song = s.Value;
                 if (!SearchMatches(song))
                     continue;
 
-                bool isFavorite = IsFavorite(song.Id);
+                bool isFavorite = SongList.IsFavorite(song.Id);
 
                 if (favoritesOnly && !isFavorite)
                     continue;
@@ -446,12 +434,12 @@ public class SongUI : IDisposable
                     if (!isFavorite)
                     {
                         if (ImGui.Selectable("Add to favorites"))
-                            AddFavorite(song.Id);
+                            SongList.AddFavorite(song.Id);
                     }
                     else
                     {
                         if (ImGui.Selectable("Remove from favorites"))
-                            RemoveFavorite(song.Id);
+                            SongList.RemoveFavorite(song.Id);
                     }
 
                     ImGui.EndPopup();
@@ -487,7 +475,7 @@ public class SongUI : IDisposable
             for (int i = songHistory.Count - 1; i >= 0; i--)
             {
                 var songHistoryEntry = songHistory[i];
-                var song = songs[songHistoryEntry.Id];
+                var song = SongList.GetSong(songHistoryEntry.Id);
 
                 if (!SearchMatches(song))
                     continue;
@@ -495,7 +483,7 @@ public class SongUI : IDisposable
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                var isFavorite = IsFavorite(song.Id);
+                var isFavorite = SongList.IsFavorite(song.Id);
 
                 if (isFavorite)
                 {
@@ -521,12 +509,12 @@ public class SongUI : IDisposable
                     if (!isFavorite)
                     {
                         if (ImGui.Selectable("Add to favorites"))
-                            AddFavorite(song.Id);
+                            SongList.AddFavorite(song.Id);
                     }
                     else
                     {
                         if (ImGui.Selectable("Remove from favorites"))
-                            RemoveFavorite(song.Id);
+                            SongList.RemoveFavorite(song.Id);
                     }
 
                     ImGui.EndPopup();
@@ -560,35 +548,35 @@ public class SongUI : IDisposable
             {
                 ImGui.Spacing();
 
-                var showSongInTitlebar = configuration.ShowSongInTitleBar;
+                var showSongInTitlebar = orch.Configuration.ShowSongInTitleBar;
                 if (ImGui.Checkbox("Show current song in player title bar", ref showSongInTitlebar))
                 {
-                    configuration.ShowSongInTitleBar = showSongInTitlebar;
-                    configuration.Save();
+                    orch.Configuration.ShowSongInTitleBar = showSongInTitlebar;
+                    orch.Configuration.Save();
                 }
 
-                var showSongInChat = configuration.ShowSongInChat;
+                var showSongInChat = orch.Configuration.ShowSongInChat;
                 if (ImGui.Checkbox("Show \"Now playing\" messages in game chat when the current song changes", ref showSongInChat))
                 {
-                    configuration.ShowSongInChat = showSongInChat;
-                    configuration.Save();
+                    orch.Configuration.ShowSongInChat = showSongInChat;
+                    orch.Configuration.Save();
                 }
 
-                var showNative = configuration.ShowSongInNative;
+                var showNative = orch.Configuration.ShowSongInNative;
                 if (ImGui.Checkbox("Show current song in the \"server info\" UI element in-game", ref showNative))
                 {
-                    configuration.ShowSongInNative = showNative;
-                    configuration.Save();
+                    orch.Configuration.ShowSongInNative = showNative;
+                    orch.Configuration.Save();
                 }
 
                 if (!showNative)
                     ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
 
-                var showIdNative = configuration.ShowIdInNative;
+                var showIdNative = orch.Configuration.ShowIdInNative;
                 if (ImGui.Checkbox("Show song ID in the \"server info\" UI element in-game", ref showIdNative) && showNative)
                 {
-                    configuration.ShowIdInNative = showIdNative;
-                    configuration.Save();
+                    orch.Configuration.ShowIdInNative = showIdNative;
+                    orch.Configuration.Save();
                 }
 
                 if (!showNative)
@@ -604,7 +592,7 @@ public class SongUI : IDisposable
             //     {
             //         ImGui.Spacing();
             //
-            //         int targetPriority = configuration.TargetPriority;
+            //         int targetPriority = orch.Configuration.TargetPriority;
             //
             //         ImGui.SetNextItemWidth(100.0f);
             //         if (ImGui.SliderInt("BGM priority", ref targetPriority, 0, 11))
@@ -612,8 +600,8 @@ public class SongUI : IDisposable
             //             // stop the current song so it doesn't get 'stuck' on in case we switch to a lower priority
             //             Stop();
             //
-            //             configuration.TargetPriority = targetPriority;
-            //             configuration.Save();
+            //             orch.Configuration.TargetPriority = targetPriority;
+            //             orch.Configuration.Save();
             //
             //             // don't (re)start a song here for now
             //         }

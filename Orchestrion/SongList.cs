@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using Dalamud.Logging;
 
@@ -19,7 +20,7 @@ public static class SongList
     private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc/gviz/tq?tqx=out:csv&sheet=main";
     private const string SheetFileName = "xiv_bgm.csv";
 
-    // private static string _pluginDirectory;
+    private static OrchestrionPlugin _plugin;
     private static Dictionary<int, Song> _songs;
 
     static SongList()
@@ -27,8 +28,10 @@ public static class SongList
         _songs = new Dictionary<int, Song>();
     }
 
-    public static void Init(string pluginDirectory)
+    public static void Init(string pluginDirectory, OrchestrionPlugin plugin)
     {
+        _plugin = plugin;
+        
         var sheetPath = Path.Join(pluginDirectory, SheetFileName);
         _songs = new Dictionary<int, Song>();
 
@@ -88,14 +91,33 @@ public static class SongList
         }
     }
 
+    public static bool IsFavorite(int songId) => _plugin.Configuration.FavoriteSongs.Contains(songId);
+
+    public static void AddFavorite(int songId)
+    {
+        _plugin.Configuration.FavoriteSongs.Add(songId);
+        _plugin.Configuration.Save();
+    }
+
+    public static void RemoveFavorite(int songId)
+    {
+        _plugin.Configuration.FavoriteSongs.Remove(songId);
+        _plugin.Configuration.Save();
+    }
+
+    public static int GetFirstReplacementCandidateId()
+    {
+        return _songs.Keys.First(x => !_plugin.Configuration.SongReplacements.ContainsKey(x));
+    }
+
     public static Dictionary<int, Song> GetSongs()
     {
         return _songs;
     }
 
-    public static Song GetSong(int id, out Song song)
+    public static Song GetSong(int id)
     {
-        return _songs.TryGetValue(id, out song) ? song : default;
+        return _songs.TryGetValue(id, out var song) ? song : default;
     }
 
     public static bool TryGetSong(int id, out Song song)
@@ -108,11 +130,11 @@ public static class SongList
         return _songs.TryGetValue(id, out var song) ? song.Name : "";
     }
 
-    public string GetSongTitle(int id)
+    public static string GetSongTitle(int id)
     {
         try
         {
-            return songs.ContainsKey(id) ? songs[id].Name : "";
+            return _songs.ContainsKey(id) ? _songs[id].Name : "";
         }
         catch (Exception e)
         {
@@ -122,15 +144,15 @@ public static class SongList
         return "";
     }
 
-    public bool SongExists(int id)
+    public static bool SongExists(int id)
     {
-        return songs.ContainsKey(id);
+        return _songs.ContainsKey(id);
     }
 
-    public bool TryGetSongByName(string name, out int songId)
+    public static bool TryGetSongByName(string name, out int songId)
     {
         songId = 0;
-        foreach (var song in songs)
+        foreach (var song in _songs)
         {
             if (string.Equals(song.Value.Name, name, StringComparison.InvariantCultureIgnoreCase))
             {
@@ -142,11 +164,11 @@ public static class SongList
         return false;
     }
 
-    public bool TryGetRandomSong(bool limitToFavorites, out int songId)
+    public static bool TryGetRandomSong(bool limitToFavorites, out int songId)
     {
         songId = 0;
 
-        ICollection<int> source = limitToFavorites ? configuration.FavoriteSongs : songs.Keys;
+        ICollection<int> source = limitToFavorites ? _plugin.Configuration.FavoriteSongs : _songs.Keys;
         if (source.Count == 0) return false;
 
         var max = source.Max();
@@ -156,7 +178,7 @@ public static class SongList
         {
             songId = random.Next(2, max + 1);
 
-            if (!songs.ContainsKey(songId)) continue;
+            if (!_songs.ContainsKey(songId)) continue;
             if (limitToFavorites && !IsFavorite(songId)) continue;
 
             found = true;
@@ -164,28 +186,4 @@ public static class SongList
 
         return found;
     }
-
-    public void AddSongToHistory(int id)
-    {
-        // Don't add silence
-        if (id == 1 || !songs.ContainsKey(id))
-            return;
-
-        var newEntry = new SongHistoryEntry
-        {
-            Id = id,
-            TimePlayed = DateTime.Now
-        };
-
-        var currentIndex = songHistory.Count - 1;
-
-        // Check if we have history, if yes, then check if ID is the same as previous, if not, add to history
-        if (currentIndex < 0 || songHistory[currentIndex].Id != id)
-        {
-            songHistory.Add(newEntry);
-            PluginLog.Debug($"Added {id} to history. There are now {currentIndex + 1} songs in history.");
-        }
-    }
-}
-
 }

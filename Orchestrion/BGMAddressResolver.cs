@@ -1,6 +1,7 @@
 ﻿using Dalamud.Game;
 using System;
 using System.Runtime.InteropServices;
+using Dalamud.Logging;
 
 namespace Orchestrion
 {
@@ -13,6 +14,9 @@ namespace Orchestrion
         public static void Init(SigScanner sig)
         {
             _baseAddress = sig.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 85 C0 74 37 83 78 08 04", 2);
+            // var baseObject = Marshal.ReadIntPtr(_baseAddress);
+            // var ret = baseObject == IntPtr.Zero ? IntPtr.Zero : Marshal.ReadIntPtr(baseObject + 0xC0); 
+            PluginLog.Debug($"BGMAddressResolver init: baseaddress at {_baseAddress.ToInt64():X}");
         }
 
         public static IntPtr BGMController

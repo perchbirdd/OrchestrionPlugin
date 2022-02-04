@@ -2,6 +2,7 @@
 using Dalamud.Game.Text;
 using Dalamud.Plugin;
 using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Game;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Gui.Dtr;
@@ -23,7 +24,6 @@ public class OrchestrionPlugin : IDalamudPlugin
     private const string ConstName = "Orchestrion";
     public string Name => ConstName;
 
-    private const string SongListFile = "xiv_bgm.csv";
     private const string CommandName = "/porch";
     private const string NativeNowPlayingPrefix = "♪ ";
 
@@ -33,7 +33,6 @@ public class OrchestrionPlugin : IDalamudPlugin
     public Framework Framework { get; }
     public DtrBar DtrBar { get; }
     
-    public NativeUIUtil NativeUI { get; }
     public Configuration Configuration { get; }
     public SongUI SongUI { get; }
 
@@ -72,12 +71,12 @@ public class OrchestrionPlugin : IDalamudPlugin
             dtrEntry = dtrBar.Get(ConstName);
         }
 
-        SongList.Init(pluginInterface.AssemblyLocation.DirectoryName);
+        SongList.Init(pluginInterface.AssemblyLocation.DirectoryName, this);
         BGMAddressResolver.Init(sigScanner);
         BGMController.OnSongChanged += HandleSongChanged;
         SongUI = new SongUI(this);
 
-        commandManager.AddHandler(CommandName, new CommandInfo(OnDisplayCommand)
+        commandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "Displays the Orchestrion window, to view, change, or stop in-game BGM."
         });
@@ -122,35 +121,35 @@ public class OrchestrionPlugin : IDalamudPlugin
         switch (argLen)
         {
             case 1 when string.IsNullOrEmpty(argSplit[0]):
-                songList.Visible = !songList.Visible;
+                SongUI.Visible = !SongUI.Visible;
                 break;
             case 1 when argSplit[0].ToLowerInvariant() == "stop":
                 StopSong();
                 break;
             case 1 when argSplit[0].ToLowerInvariant() == "play":
-                chatGui.PrintError("You must specify a song to play.");
+                ChatGui.PrintError("You must specify a song to play.");
                 break;
             case 1 when argSplit[0].ToLowerInvariant() == "random":
-                if (songList.TryGetRandomSong(limitToFavorites: false, out var randomSong))
+                if (SongList.TryGetRandomSong(limitToFavorites: false, out var randomSong))
                     PlaySong(randomSong);
                 else
-                    chatGui.PrintError("No possible songs found."); // This should never happen but...
+                    ChatGui.PrintError("No possible songs found."); // This should never happen but...
                 break;
             case 2 when argSplit[0].ToLowerInvariant() == "random" && argSplit[1].ToLowerInvariant() == "favorites":
-                if (songList.TryGetRandomSong(limitToFavorites: true, out var randomFavoriteSong))
+                if (SongList.TryGetRandomSong(limitToFavorites: true, out var randomFavoriteSong))
                     PlaySong(randomFavoriteSong);
                 else
-                    chatGui.PrintError("No possible songs found.");
+                    ChatGui.PrintError("No possible songs found.");
                 break;
             case 2 when argSplit[0].ToLowerInvariant() == "play" && int.TryParse(argSplit[1], out var songId):
-                if (songList.SongExists(songId))
+                if (SongList.SongExists(songId))
                     PlaySong(songId);
                 else
-                    chatGui.PrintError($"Song {argSplit[1]} not found.");
+                    ChatGui.PrintError($"Song {argSplit[1]} not found.");
                 break;
             case >= 2 when argSplit[0] == "play".ToLowerInvariant() && !int.TryParse(argSplit[1], out _):
                 var songName = argSplit.Skip(1).Aggregate((x, y) => $"{x} {y}");
-                if (songList.TryGetSongByName(songName, out var songIdFromName))
+                if (SongList.TryGetSongByName(songName, out var songIdFromName))
                 {
                     PlaySong(songIdFromName);
                 }
@@ -164,19 +163,19 @@ public class OrchestrionPlugin : IDalamudPlugin
                         EmphasisItalicPayload.ItalicsOff,
                         new TextPayload(" not found.")
                     };
-                    chatGui.PrintError(new SeString(payloads));
+                    ChatGui.PrintError(new SeString(payloads));
                 }
                 break;
             default:
                 if (argSplit[0].ToLowerInvariant() != "help") break;
-                chatGui.Print(CommandName + " help: ");
-                chatGui.Print("/porch help - Display this message");
-                chatGui.Print("/porch - Display the Orchestrion UI");
-                chatGui.Print("/porch play [songId] - Play the specified song");
-                chatGui.Print("/porch play [song name] - Play the specified song");
-                chatGui.Print("/porch random - Play a random song");
-                chatGui.Print("/porch random favorites - Play a random song from favorites");
-                chatGui.Print("/porch stop - Stop the current playing song or replacement song");
+                ChatGui.Print(CommandName + " help: ");
+                ChatGui.Print("/porch help - Display this message");
+                ChatGui.Print("/porch - Display the Orchestrion UI");
+                ChatGui.Print("/porch play [songId] - Play the specified song");
+                ChatGui.Print("/porch play [song name] - Play the specified song");
+                ChatGui.Print("/porch random - Play a random song");
+                ChatGui.Print("/porch random favorites - Play a random song from favorites");
+                ChatGui.Print("/porch stop - Stop the current playing song or replacement song");
                 break;
         }
     }
@@ -266,14 +265,14 @@ public class OrchestrionPlugin : IDalamudPlugin
         BGMController.SetSong(0, Configuration.TargetPriority);
         SongUI.AddSongToHistory(BGMController.CurrentSongId);
         SendSongEcho(BGMController.CurrentSongId);
-        UpdateNui(BGMController.CurrentSongId);
+        UpdateDtr(BGMController.CurrentSongId);
     }
 
     private void UpdateDtr(int songId, bool playedByOrch = false)
     {
         if (!Configuration.ShowSongInNative) return;
 
-        var songName = SongUI.GetSongTitle(songId);
+        var songName = SongList.GetSongTitle(songId);
         var suffix = "";
         if (Configuration.ShowIdInNative)
         {
@@ -291,7 +290,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 
     private void SendSongEcho(int songId, bool playedByOrch = false)
     {
-        var songName = SongUI.GetSongTitle(songId);
+        var songName = SongList.GetSongTitle(songId);
         if (!Configuration.ShowSongInChat || string.IsNullOrEmpty(songName)) return;
 
         var payloads = new List<Payload>

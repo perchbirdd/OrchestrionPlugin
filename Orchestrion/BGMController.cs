@@ -150,8 +150,6 @@ namespace Orchestrion
             }
         }
         
-        
-
         // priority ranges from 0 to ControlBlockCount-1, with lower values overriding higher ones
         // so in theory, priority 0 should override everything else
         public static void SetSong(ushort songId, int priority = 0)
