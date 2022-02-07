@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using Dalamud.Interface;
 using Dalamud.Logging;
 
 namespace Orchestrion;
@@ -160,9 +161,9 @@ public class SongUI : IDisposable
             ImGui.InputText("##searchbox", ref searchText, 32);
 
             ImGui.SameLine();
-            ImGui.SetCursorPosX(ImGui.GetWindowSize().X - 32);
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 1);
-            if (ImGui.ImageButton(settingsIcon.ImGuiHandle, new Vector2(16, 16)))
+            ImGui.SetCursorPosX(ImGui.GetWindowSize().X - (32 * ImGuiHelpers.GlobalScale));
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (1 * ImGuiHelpers.GlobalScale));
+            if (ImGui.ImageButton(settingsIcon.ImGuiHandle, ScaledVector2(16, 16)))
                 settingsVisible = true;
 
             ImGui.Separator();
@@ -212,7 +213,7 @@ public class SongUI : IDisposable
     {
         ImGui.Separator();
         ImGui.Columns(2, "footer columns", false);
-        ImGui.SetColumnWidth(-1, ImGui.GetWindowSize().X - 100);
+        ImGui.SetColumnWidth(-1, ImGui.GetWindowSize().X - (100 * ImGuiHelpers.GlobalScale));
         
         var songId = isHistory ? songHistory[selectedHistoryEntry].Id : orch.CurrentSong;
         if (SongList.TryGetSong(songId, out var song))
@@ -223,8 +224,8 @@ public class SongUI : IDisposable
         
         ImGui.NextColumn();
         ImGui.SameLine();
-        ImGui.SetCursorPosX(ImGui.GetWindowSize().X - 100);
-        ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - 30);
+        ImGui.SetCursorPosX(ImGui.GetWindowSize().X - (100 * ImGuiHelpers.GlobalScale));
+        ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - (30 * ImGuiHelpers.GlobalScale));
         if (ImGui.Button("Stop"))
             Stop();
         ImGui.SameLine();
@@ -379,7 +380,7 @@ public class SongUI : IDisposable
     private void DrawSonglist(bool favoritesOnly)
     {
         // to keep the tab bar always visible and not have it get scrolled out
-        ImGui.BeginChild("##songlist_internal", new Vector2(-1f, -60f));
+        ImGui.BeginChild("##songlist_internal", ScaledVector2(-1f, -60f));
 
         ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit;
 
