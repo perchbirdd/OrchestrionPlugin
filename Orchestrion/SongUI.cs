@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Text;
 using Dalamud.Interface;
@@ -41,22 +40,22 @@ public class SongUI : IDisposable
     private int selectedSong;
     private int selectedHistoryEntry;
     private string searchText = string.Empty;
-    private ImGuiScene.TextureWrap favoriteIcon = null;
-    private ImGuiScene.TextureWrap settingsIcon = null;
+    private ImGuiScene.TextureWrap favoriteIcon;
+    private ImGuiScene.TextureWrap settingsIcon;
 
     private readonly OrchestrionPlugin orch;
     private readonly List<SongHistoryEntry> songHistory = new();
     private readonly List<int> removalList = new();
     private SongReplacement tmpReplacement;
 
-    private bool visible = false;
+    private bool visible;
     public bool Visible
     {
         get => visible;
         set => visible = value;
     }
 
-    private bool settingsVisible = false;
+    private bool settingsVisible;
     public bool SettingsVisible
     {
         get => settingsVisible;
@@ -215,7 +214,7 @@ public class SongUI : IDisposable
         ImGui.Columns(2, "footer columns", false);
         ImGui.SetColumnWidth(-1, ImGui.GetWindowSize().X - (100 * ImGuiHelpers.GlobalScale));
         
-        var songId = isHistory ? songHistory[selectedHistoryEntry].Id : orch.CurrentSong;
+        var songId = isHistory ? songHistory[selectedHistoryEntry].Id : selectedSong;
         if (SongList.TryGetSong(songId, out var song))
         {
             ImGui.TextWrapped(song.Locations);
@@ -331,18 +330,15 @@ public class SongUI : IDisposable
 
         if (ImGui.BeginCombo("Replacement Song", replacementText))
         {
-            var tmpText = NoChange;
-            var tmpTextSize = ImGui.CalcTextSize(tmpText);
-            var isSelected = tmpReplacement.TargetSongId == -1;
             if (ImGui.Selectable(NoChange))
                 tmpReplacement.ReplacementId = -1;
 
             foreach (var song in SongList.GetSongs().Values)
             {
                 if (!SearchMatches(song)) continue;
-                tmpText = $"{song.Id} - {song.Name}";
-                tmpTextSize = ImGui.CalcTextSize(tmpText);
-                isSelected = tmpReplacement.ReplacementId == song.Id;
+                var tmpText = $"{song.Id} - {song.Name}";
+                var tmpTextSize = ImGui.CalcTextSize(tmpText);
+                var isSelected = tmpReplacement.ReplacementId == song.Id;
                 if (ImGui.Selectable(tmpText, isSelected, ImGuiSelectableFlags.None, new Vector2(width, tmpTextSize.Y)))
                     tmpReplacement.ReplacementId = song.Id;
                 if (ImGui.IsItemHovered())
@@ -382,19 +378,12 @@ public class SongUI : IDisposable
         // to keep the tab bar always visible and not have it get scrolled out
         ImGui.BeginChild("##songlist_internal", ScaledVector2(-1f, -60f));
 
-        ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit;
-
-        if (ImGui.BeginTable("songlist table", 4, flags))
+        if (ImGui.BeginTable("songlist table", 4, ImGuiTableFlags.SizingFixedFit))
         {
             ImGui.TableSetupColumn("fav", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
-
-            //ImGui.Columns(2, "songlist columns", false);
-
-            //ImGui.SetColumnWidth(-1, 13);
-            //ImGui.SetColumnOffset(1, 12);
-
+            
             foreach (var s in SongList.GetSongs())
             {
                 var song = s.Value;
@@ -408,8 +397,6 @@ public class SongUI : IDisposable
 
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-
-                //ImGui.SetCursorPosX(-1);
 
                 if (isFavorite)
                 {
@@ -460,10 +447,8 @@ public class SongUI : IDisposable
     {
         // to keep the tab bar always visible and not have it get scrolled out
         ImGui.BeginChild("##songlist_internal", new Vector2(-1f, -60f));
-
-        ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit; //ImGuiTableFlags.SizingStretchSame | ImGuiTableFlags.Resizable | ImGuiTableFlags.BordersOuter | ImGuiTableFlags.BordersV | ImGuiTableFlags.ContextMenuInBody;
-
-        if (ImGui.BeginTable("songlist table", 4, flags))
+        
+        if (ImGui.BeginTable("songlist table", 4, ImGuiTableFlags.SizingFixedFit))
         {
             ImGui.TableSetupColumn("fav", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
@@ -536,7 +521,7 @@ public class SongUI : IDisposable
         DrawFooter(true);
     }
 
-    public void DrawSettings()
+    private void DrawSettings()
     {
         if (!settingsVisible)
             return;
