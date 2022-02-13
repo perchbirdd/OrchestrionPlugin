@@ -9,7 +9,9 @@ namespace Orchestrion
     {
         private static IntPtr _baseAddress;
 
-        static BGMAddressResolver() { }
+        static BGMAddressResolver()
+        {
+        }
 
         public static void Init(SigScanner sig)
         {
@@ -17,6 +19,16 @@ namespace Orchestrion
             // var baseObject = Marshal.ReadIntPtr(_baseAddress);
             // var ret = baseObject == IntPtr.Zero ? IntPtr.Zero : Marshal.ReadIntPtr(baseObject + 0xC0); 
             PluginLog.Debug($"BGMAddressResolver init: baseaddress at {_baseAddress.ToInt64():X}");
+        }
+
+        public static IntPtr BGMManager
+        {
+            get
+            {
+                var baseObject = Marshal.ReadIntPtr(_baseAddress);
+
+                return baseObject;
+            }
         }
 
         public static IntPtr BGMController

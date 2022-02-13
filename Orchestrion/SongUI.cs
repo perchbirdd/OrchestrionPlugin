@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Interface;
 using Dalamud.Logging;
@@ -279,7 +280,8 @@ public class SongUI : IDisposable
 
     private void DrawDebug()
     {
-        var addr = BGMAddressResolver.BGMController;
+        var addr = BGMAddressResolver.BGMManager;
+        if (addr == IntPtr.Zero) return;
         var addrStr = $"{addr.ToInt64():X}";
         ImGui.Text(addrStr);
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
