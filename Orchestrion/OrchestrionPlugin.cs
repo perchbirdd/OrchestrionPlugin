@@ -1,13 +1,16 @@
-﻿using Dalamud.Game.Command;
+﻿using System;
+using Dalamud.Game.Command;
 using Dalamud.Game.Text;
 using Dalamud.Plugin;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Hooking;
 using Dalamud.IoC;
 using Dalamud.Logging;
 
@@ -29,6 +32,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 
     public DalamudPluginInterface PluginInterface { get; }
     public CommandManager CommandManager { get; }
+    public DataManager DataManager { get; }
     public ChatGui ChatGui { get; }
     public Framework Framework { get; }
     public DtrBar DtrBar { get; }
@@ -49,9 +53,9 @@ public class OrchestrionPlugin : IDalamudPlugin
 
     public OrchestrionPlugin(
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-        [RequiredVersion("1.0")] GameGui gameGui,
         [RequiredVersion("1.0")] ChatGui chatGui,
         [RequiredVersion("1.0")] DtrBar dtrBar,
+        [RequiredVersion("1.0")] DataManager dataManager,
         [RequiredVersion("1.0")] CommandManager commandManager,
         [RequiredVersion("1.0")] Framework framework,
         [RequiredVersion("1.0")] SigScanner sigScanner
@@ -60,6 +64,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         PluginInterface = pluginInterface;
         DtrBar = dtrBar;
         CommandManager = commandManager;
+        DataManager = dataManager;
         ChatGui = chatGui;
         Framework = framework;
 
@@ -95,6 +100,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         Framework.Update -= OrchestrionUpdate;
         PluginInterface.UiBuilder.Draw -= Display;
         dtrEntry?.Dispose();
+        BGMController.Dispose();
         CommandManager.RemoveHandler(CommandName);
     }
 

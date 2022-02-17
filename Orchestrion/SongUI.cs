@@ -280,7 +280,7 @@ public class SongUI : IDisposable
 
     private void DrawDebug()
     {
-        var addr = BGMAddressResolver.BGMManager;
+        var addr = BGMAddressResolver.BGMSceneManager;
         if (addr == IntPtr.Zero) return;
         var addrStr = $"{addr.ToInt64():X}";
         ImGui.Text(addrStr);

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using Dalamud.Logging;
+using Lumina.Excel.GeneratedSheets;
 
 namespace Orchestrion;
 
@@ -13,6 +14,7 @@ public struct Song
     public string Name;
     public string Locations;
     public string AdditionalInfo;
+    public BGM Bgm;
 }
 
 public static class SongList
@@ -64,6 +66,7 @@ public static class SongList
     private static void LoadSheet(string sheetText)
     {
         _songs.Clear();
+        var bgms = _plugin.DataManager.Excel.GetSheet<BGM>()!.ToDictionary(k => k.RowId, v => v);
         var sheetLines = sheetText.Split('\n'); // gdocs provides \n
         for (int i = 1; i < sheetLines.Length; i++)
         {
@@ -84,7 +87,8 @@ public static class SongList
                 Id = id,
                 Name = name,
                 Locations = location,
-                AdditionalInfo = additionalInfo
+                AdditionalInfo = additionalInfo,
+                Bgm = bgms[(uint) id]
             };
 
             _songs[id] = song;
