@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Interface;
 using Dalamud.Logging;
@@ -140,7 +139,7 @@ public class SongUI : IDisposable
         if (!Visible) return;
 
         var windowTitle = new StringBuilder("Orchestrion");
-        if (orch.Configuration.ShowSongInTitleBar)
+        if (OrchestrionPlugin.Configuration.ShowSongInTitleBar)
         {
             // TODO: subscribe to the event so this only has to be constructed on change?
             var songId = orch.CurrentSong;
@@ -244,7 +243,7 @@ public class SongUI : IDisposable
 
     private void DrawReplacementList()
     {
-        foreach (var replacement in orch.Configuration.SongReplacements.Values)
+        foreach (var replacement in OrchestrionPlugin.Configuration.SongReplacements.Values)
         {
             ImGui.Spacing();
             SongList.TryGetSong(replacement.TargetSongId, out var target);
@@ -272,15 +271,15 @@ public class SongUI : IDisposable
         if (removalList.Count > 0)
         {
             foreach (var toRemove in removalList)
-                orch.Configuration.SongReplacements.Remove(toRemove);
+                OrchestrionPlugin.Configuration.SongReplacements.Remove(toRemove);
             removalList.Clear();
-            orch.Configuration.Save();
+            OrchestrionPlugin.Configuration.Save();
         }
     }
 
     private void DrawDebug()
     {
-        var addr = BGMAddressResolver.BGMManager;
+        var addr = BGMAddressResolver.BGMSceneManager;
         if (addr == IntPtr.Zero) return;
         var addrStr = $"{addr.ToInt64():X}";
         ImGui.Text(addrStr);
@@ -315,7 +314,7 @@ public class SongUI : IDisposable
             foreach (var song in SongList.GetSongs().Values)
             {
                 if (!SearchMatches(song)) continue;
-                if (orch.Configuration.SongReplacements.ContainsKey(song.Id)) continue;
+                if (OrchestrionPlugin.Configuration.SongReplacements.ContainsKey(song.Id)) continue;
                 var tmpText = $"{song.Id} - {song.Name}";
                 var tmpTextSize = ImGui.CalcTextSize(tmpText);
                 var isSelected = tmpReplacement.TargetSongId == song.Id;
@@ -356,8 +355,8 @@ public class SongUI : IDisposable
         RightAlignButton(ImGui.GetCursorPosY(), "Add as song replacement");
         if (ImGui.Button("Add as song replacement"))
         {
-            orch.Configuration.SongReplacements.Add(tmpReplacement.TargetSongId, tmpReplacement);
-            orch.Configuration.Save();
+            OrchestrionPlugin.Configuration.SongReplacements.Add(tmpReplacement.TargetSongId, tmpReplacement);
+            OrchestrionPlugin.Configuration.Save();
             ResetReplacement();
         }
 
@@ -528,47 +527,54 @@ public class SongUI : IDisposable
         if (!settingsVisible)
             return;
 
-        ImGui.SetNextWindowSize(ScaledVector2(490, 175), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(ScaledVector2(490, 200), ImGuiCond.Always);
         if (ImGui.Begin("Orchestrion Settings", ref settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse))
         {
-            ImGui.SetNextItemOpen(true, ImGuiCond.Appearing);
+            ImGui.SetNextItemOpen(true, ImGuiCond.Always);
             if (ImGui.CollapsingHeader("Display##orch options"))
             {
                 ImGui.Spacing();
 
-                var showSongInTitlebar = orch.Configuration.ShowSongInTitleBar;
+                var showSongInTitlebar = OrchestrionPlugin.Configuration.ShowSongInTitleBar;
                 if (ImGui.Checkbox("Show current song in player title bar", ref showSongInTitlebar))
                 {
-                    orch.Configuration.ShowSongInTitleBar = showSongInTitlebar;
-                    orch.Configuration.Save();
+                    OrchestrionPlugin.Configuration.ShowSongInTitleBar = showSongInTitlebar;
+                    OrchestrionPlugin.Configuration.Save();
                 }
 
-                var showSongInChat = orch.Configuration.ShowSongInChat;
+                var showSongInChat = OrchestrionPlugin.Configuration.ShowSongInChat;
                 if (ImGui.Checkbox("Show \"Now playing\" messages in game chat when the current song changes", ref showSongInChat))
                 {
-                    orch.Configuration.ShowSongInChat = showSongInChat;
-                    orch.Configuration.Save();
+                    OrchestrionPlugin.Configuration.ShowSongInChat = showSongInChat;
+                    OrchestrionPlugin.Configuration.Save();
                 }
 
-                var showNative = orch.Configuration.ShowSongInNative;
+                var showNative = OrchestrionPlugin.Configuration.ShowSongInNative;
                 if (ImGui.Checkbox("Show current song in the \"server info\" UI element in-game", ref showNative))
                 {
-                    orch.Configuration.ShowSongInNative = showNative;
-                    orch.Configuration.Save();
+                    OrchestrionPlugin.Configuration.ShowSongInNative = showNative;
+                    OrchestrionPlugin.Configuration.Save();
                 }
 
                 if (!showNative)
                     ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
 
-                var showIdNative = orch.Configuration.ShowIdInNative;
+                var showIdNative = OrchestrionPlugin.Configuration.ShowIdInNative;
                 if (ImGui.Checkbox("Show song ID in the \"server info\" UI element in-game", ref showIdNative) && showNative)
                 {
-                    orch.Configuration.ShowIdInNative = showIdNative;
-                    orch.Configuration.Save();
+                    OrchestrionPlugin.Configuration.ShowIdInNative = showIdNative;
+                    OrchestrionPlugin.Configuration.Save();
                 }
 
                 if (!showNative)
                     ImGui.PopStyleVar();
+
+                var handleSpecial = OrchestrionPlugin.Configuration.HandleSpecialModes;
+                if (ImGui.Checkbox("Handle special \"in-combat\" and mount movement BGM modes", ref handleSpecial))
+                {
+                    OrchestrionPlugin.Configuration.HandleSpecialModes = handleSpecial;
+                    OrchestrionPlugin.Configuration.Save();
+                }
 
                 ImGui.TreePop();
             }
@@ -580,7 +586,7 @@ public class SongUI : IDisposable
             //     {
             //         ImGui.Spacing();
             //
-            //         int targetPriority = orch.Configuration.TargetPriority;
+            //         int targetPriority = OrchestrionPlugin.Configuration.TargetPriority;
             //
             //         ImGui.SetNextItemWidth(100.0f);
             //         if (ImGui.SliderInt("BGM priority", ref targetPriority, 0, 11))
@@ -588,8 +594,8 @@ public class SongUI : IDisposable
             //             // stop the current song so it doesn't get 'stuck' on in case we switch to a lower priority
             //             Stop();
             //
-            //             orch.Configuration.TargetPriority = targetPriority;
-            //             orch.Configuration.Save();
+            //             OrchestrionPlugin.Configuration.TargetPriority = targetPriority;
+            //             OrchestrionPlugin.Configuration.Save();
             //
             //             // don't (re)start a song here for now
             //         }
@@ -602,7 +608,7 @@ public class SongUI : IDisposable
             //
             //         ImGui.Spacing();
             //         if (ImGui.Button("Dump priority info"))
-            //             orch.DumpDebugInformation();
+            //             OrchestrionPlugin.DumpDebugInformation();
             //
             //         ImGui.TreePop();
             //     }
@@ -640,8 +646,8 @@ public class SongUI : IDisposable
 
     private ImGuiScene.TextureWrap LoadUIImage(string imageFile)
     {
-        var path = Path.Combine(Path.GetDirectoryName(orch.PluginInterface.AssemblyLocation.FullName), imageFile);
-        return orch.PluginInterface.UiBuilder.LoadImage(path);
+        var path = Path.Combine(Path.GetDirectoryName(OrchestrionPlugin.PluginInterface.AssemblyLocation.FullName), imageFile);
+        return OrchestrionPlugin.PluginInterface.UiBuilder.LoadImage(path);
     }
 
     private static Vector2 ScaledVector2(float x, float y)

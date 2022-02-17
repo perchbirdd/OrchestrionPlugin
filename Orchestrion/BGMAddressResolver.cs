@@ -8,20 +8,21 @@ namespace Orchestrion
     static class BGMAddressResolver
     {
         private static IntPtr _baseAddress;
-
-        static BGMAddressResolver()
-        {
-        }
+        private static IntPtr _addRestartId;
+        private static IntPtr _getSpecialMode;
 
         public static void Init(SigScanner sig)
         {
             _baseAddress = sig.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 85 C0 74 37 83 78 08 04", 2);
-            // var baseObject = Marshal.ReadIntPtr(_baseAddress);
-            // var ret = baseObject == IntPtr.Zero ? IntPtr.Zero : Marshal.ReadIntPtr(baseObject + 0xC0); 
+            _addRestartId = sig.ScanText("48 89 5C 24 ?? 57 48 83 EC 30 48 8B 41 20 48 8D 79 18");
+            _getSpecialMode = sig.ScanText("48 89 5C 24 ?? 57 48 83 EC 20 8B 41 10 33 DB");
             PluginLog.Debug($"BGMAddressResolver init: baseaddress at {_baseAddress.ToInt64():X}");
         }
+        
+        public static IntPtr AddRestartId => _addRestartId;
+        public static IntPtr GetSpecialMode => _getSpecialMode;
 
-        public static IntPtr BGMManager
+        public static IntPtr BGMSceneManager
         {
             get
             {
@@ -30,8 +31,8 @@ namespace Orchestrion
                 return baseObject;
             }
         }
-
-        public static IntPtr BGMController
+        
+        public static IntPtr BGMSceneList
         {
             get
             {

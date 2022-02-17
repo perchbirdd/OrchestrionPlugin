@@ -3,6 +3,7 @@ using Dalamud.Game.Text;
 using Dalamud.Plugin;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Gui.Dtr;
@@ -14,12 +15,6 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace Orchestrion;
 
-// TODO:
-// try to find what writes to bgm 0, block it if we are playing?
-//   or save/restore if we preempt it?
-// debug info of which priority is active
-//  notifications/logs of changes even to lower priorities?
-
 public class OrchestrionPlugin : IDalamudPlugin
 {
     private const string ConstName = "Orchestrion";
@@ -28,14 +23,15 @@ public class OrchestrionPlugin : IDalamudPlugin
     private const string CommandName = "/porch";
     private const string NativeNowPlayingPrefix = "♪ ";
 
-    public DalamudPluginInterface PluginInterface { get; }
-    public CommandManager CommandManager { get; }
-    public ChatGui ChatGui { get; }
-    public Framework Framework { get; }
-    public DtrBar DtrBar { get; }
-    private GameGui GameGui { get; }
+    public static DalamudPluginInterface PluginInterface { get; private set; }
+    public static CommandManager CommandManager { get; private set; }
+    public static DataManager DataManager { get; private set; }
+    public static ChatGui ChatGui { get; private set; }
+    public static Framework Framework { get; private set; }
+    public static DtrBar DtrBar { get; private set; }
+    public static GameGui GameGui { get; private set; }
     
-    public Configuration Configuration { get; }
+    public static Configuration Configuration { get; private set; }
     public SongUI SongUI { get; }
 
     private readonly TextPayload nowPlayingPayload = new("Orchestrion: Now playing ");
@@ -44,7 +40,7 @@ public class OrchestrionPlugin : IDalamudPlugin
     private readonly TextPayload leftBracketPayload = new("[");
     private readonly TextPayload rightBracketPayload = new("]");
 
-    private bool isPlayingReplacement = false;
+    private bool isPlayingReplacement;
     private DtrBarEntry dtrEntry;
 
     private List<Payload> songEchoPayload = null;
@@ -53,9 +49,10 @@ public class OrchestrionPlugin : IDalamudPlugin
 
     public OrchestrionPlugin(
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-        [RequiredVersion("1.0")] GameGui gameGui,
         [RequiredVersion("1.0")] ChatGui chatGui,
+        [RequiredVersion("1.0")] GameGui gameGui,
         [RequiredVersion("1.0")] DtrBar dtrBar,
+        [RequiredVersion("1.0")] DataManager dataManager,
         [RequiredVersion("1.0")] CommandManager commandManager,
         [RequiredVersion("1.0")] Framework framework,
         [RequiredVersion("1.0")] SigScanner sigScanner
@@ -65,6 +62,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         GameGui = gameGui;
         DtrBar = dtrBar;
         CommandManager = commandManager;
+        DataManager = dataManager;
         ChatGui = chatGui;
         Framework = framework;
 
@@ -76,7 +74,7 @@ public class OrchestrionPlugin : IDalamudPlugin
             dtrEntry = dtrBar.Get(ConstName);
         }
 
-        SongList.Init(pluginInterface.AssemblyLocation.DirectoryName, this);
+        SongList.Init(pluginInterface.AssemblyLocation.DirectoryName);
         BGMAddressResolver.Init(sigScanner);
         BGMController.OnSongChanged += HandleSongChanged;
         SongUI = new SongUI(this);
@@ -122,6 +120,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         Framework.Update -= OrchestrionUpdate;
         PluginInterface.UiBuilder.Draw -= Display;
         dtrEntry?.Dispose();
+        BGMController.Dispose();
         CommandManager.RemoveHandler(CommandName);
     }
 

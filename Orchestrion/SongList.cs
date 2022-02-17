@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using Dalamud.Logging;
+using Lumina.Excel.GeneratedSheets;
 
 namespace Orchestrion;
 
@@ -13,6 +14,7 @@ public struct Song
     public string Name;
     public string Locations;
     public string AdditionalInfo;
+    public BGM Bgm;
 }
 
 public static class SongList
@@ -20,7 +22,6 @@ public static class SongList
     private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc/gviz/tq?tqx=out:csv&sheet=main";
     private const string SheetFileName = "xiv_bgm.csv";
 
-    private static OrchestrionPlugin _plugin;
     private static Dictionary<int, Song> _songs;
 
     static SongList()
@@ -28,10 +29,8 @@ public static class SongList
         _songs = new Dictionary<int, Song>();
     }
 
-    public static void Init(string pluginDirectory, OrchestrionPlugin plugin)
+    public static void Init(string pluginDirectory)
     {
-        _plugin = plugin;
-        
         var sheetPath = Path.Join(pluginDirectory, SheetFileName);
         _songs = new Dictionary<int, Song>();
 
@@ -64,6 +63,7 @@ public static class SongList
     private static void LoadSheet(string sheetText)
     {
         _songs.Clear();
+        var bgms = OrchestrionPlugin.DataManager.Excel.GetSheet<BGM>()!.ToDictionary(k => k.RowId, v => v);
         var sheetLines = sheetText.Split('\n'); // gdocs provides \n
         for (int i = 1; i < sheetLines.Length; i++)
         {
@@ -84,30 +84,31 @@ public static class SongList
                 Id = id,
                 Name = name,
                 Locations = location,
-                AdditionalInfo = additionalInfo
+                AdditionalInfo = additionalInfo,
+                Bgm = bgms[(uint) id]
             };
 
             _songs[id] = song;
         }
     }
 
-    public static bool IsFavorite(int songId) => _plugin.Configuration.FavoriteSongs.Contains(songId);
+    public static bool IsFavorite(int songId) => OrchestrionPlugin.Configuration.FavoriteSongs.Contains(songId);
 
     public static void AddFavorite(int songId)
     {
-        _plugin.Configuration.FavoriteSongs.Add(songId);
-        _plugin.Configuration.Save();
+        OrchestrionPlugin.Configuration.FavoriteSongs.Add(songId);
+        OrchestrionPlugin.Configuration.Save();
     }
 
     public static void RemoveFavorite(int songId)
     {
-        _plugin.Configuration.FavoriteSongs.Remove(songId);
-        _plugin.Configuration.Save();
+        OrchestrionPlugin.Configuration.FavoriteSongs.Remove(songId);
+        OrchestrionPlugin.Configuration.Save();
     }
 
     public static int GetFirstReplacementCandidateId()
     {
-        return _songs.Keys.First(x => !_plugin.Configuration.SongReplacements.ContainsKey(x));
+        return _songs.Keys.First(x => !OrchestrionPlugin.Configuration.SongReplacements.ContainsKey(x));
     }
 
     public static Dictionary<int, Song> GetSongs()
@@ -168,7 +169,7 @@ public static class SongList
     {
         songId = 0;
 
-        ICollection<int> source = limitToFavorites ? _plugin.Configuration.FavoriteSongs : _songs.Keys;
+        ICollection<int> source = limitToFavorites ? OrchestrionPlugin.Configuration.FavoriteSongs : _songs.Keys;
         if (source.Count == 0) return false;
 
         var max = source.Max();
