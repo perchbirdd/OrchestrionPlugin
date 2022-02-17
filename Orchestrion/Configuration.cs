@@ -30,6 +30,20 @@ namespace Orchestrion
                 showSongInNative = value;
             }
         }
+        
+        [JsonProperty]
+        private bool handleSpecialModes = true;
+
+        [JsonIgnore]
+        public bool HandleSpecialModes
+        {
+            get => handleSpecialModes;
+            set
+            {
+                BGMController.SetSpecialModeHandling(value);
+                handleSpecialModes = value;
+            }
+        }
 
         public int TargetPriority { get; set; } = 0;
 

@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
@@ -60,6 +61,18 @@ namespace Orchestrion
         [FieldOffset(0x4D)] public byte specialModeType;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct DisableRestart
+    {
+        public ushort disableRestartId;
+        public bool isTimedOut; // ?
+        public byte padding1;
+        public float resetWaitTime;
+        public float elapsedTime;
+        public bool timerEnabled;
+        // 3 byte padding
+    }
+
     public static class BGMController
     {
         /// <summary>
@@ -101,7 +114,7 @@ namespace Orchestrion
 
         private const SceneFlags SceneZeroFlags = SceneFlags.Resume;
         
-        private unsafe delegate void AddDisableRestartIdPrototype(BGMScene* scene, ushort songId);
+        private unsafe delegate DisableRestart* AddDisableRestartIdPrototype(BGMScene* scene, ushort songId);
         private static readonly AddDisableRestartIdPrototype AddDisableRestartId;
         
         private unsafe delegate int GetSpecialModeByScenePrototype(BasicBGMPlayer* bgmPlayer, byte specialModeType);
@@ -118,6 +131,14 @@ namespace Orchestrion
         {
             GetSpecialModeForSceneHook?.Disable();
             GetSpecialModeForSceneHook?.Dispose();
+        }
+
+        public static void SetSpecialModeHandling(bool value)
+        {
+            if (value)
+                GetSpecialModeForSceneHook.Enable();
+            else
+                GetSpecialModeForSceneHook.Disable();
         }
 
         public static void Update()
@@ -222,10 +243,21 @@ namespace Orchestrion
 
                     if (!SongList.TryGetSong(songId, out var song)) return;
 
-                    bgms[priority].flags = GetSceneFlagsNeededForBgm(song.Bgm);
                     
+                    // I hate my life
                     if (song.Bgm.DisableRestart)
-                        AddDisableRestartId(&bgms[priority], songId);
+                    {
+                        bgms[priority].flags = SceneFlags.EnableDisableRestart;
+                        var disableRestart = AddDisableRestartId(&bgms[priority], songId);
+                        PluginLog.Debug($"AddDisableRestartId: {(ulong) disableRestart:X}");
+                        bgms[priority].flags = SceneZeroFlags;
+                    }
+
+                    // A lot.
+                    Task.Delay(500).ContinueWith(_ =>
+                    {
+                        bgms[priority].flags = GetSceneFlagsNeededForBgm(song.Bgm);
+                    });
                 }
             }
         }
@@ -255,12 +287,13 @@ namespace Orchestrion
 
         private static SceneFlags GetSceneFlagsNeededForBgm(BGM bgm)
         {
-            var sceneFlags = SceneFlags.None;
+            // var sceneFlags = SceneFlags.None;
+            var sceneFlags = SceneZeroFlags;
             if (bgm.DisableRestart) sceneFlags |= SceneFlags.EnableDisableRestart;
             // if (bgm.PassEnd) sceneFlags |= SceneFlags.EnablePassEnd;
             
             // This one is an assumption...
-            if (bgm.DisableRestartTimeOut) sceneFlags |= SceneFlags.Resume;
+            // if (bgm.DisableRestartTimeOut) sceneFlags |= SceneFlags.Resume;
 
             return sceneFlags;
         }
