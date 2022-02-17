@@ -10,6 +10,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.IoC;
 using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace Orchestrion;
 
@@ -32,6 +33,7 @@ public class OrchestrionPlugin : IDalamudPlugin
     public ChatGui ChatGui { get; }
     public Framework Framework { get; }
     public DtrBar DtrBar { get; }
+    private GameGui GameGui { get; }
     
     public Configuration Configuration { get; }
     public SongUI SongUI { get; }
@@ -44,6 +46,8 @@ public class OrchestrionPlugin : IDalamudPlugin
 
     private bool isPlayingReplacement = false;
     private DtrBarEntry dtrEntry;
+
+    private List<Payload> songEchoPayload = null;
 
     public int CurrentSong => BGMController.PlayingSongId == 0 ? BGMController.CurrentSongId : BGMController.PlayingSongId;
 
@@ -58,6 +62,7 @@ public class OrchestrionPlugin : IDalamudPlugin
     )
     {
         PluginInterface = pluginInterface;
+        GameGui = gameGui;
         DtrBar = dtrBar;
         CommandManager = commandManager;
         ChatGui = chatGui;
@@ -88,6 +93,28 @@ public class OrchestrionPlugin : IDalamudPlugin
     private void OrchestrionUpdate(Framework unused)
     {
         BGMController.Update();
+
+        if (songEchoPayload != null)
+        {
+            bool loadingScreen = false;
+            unsafe
+            {
+                var titleCard = (AtkUnitBase*)GameGui.GetAddonByName("_LocationTitle", 1);
+                var blackScreen = (AtkUnitBase*)GameGui.GetAddonByName("FadeMiddle", 1);
+                loadingScreen = titleCard != null && titleCard->IsVisible || blackScreen != null && blackScreen->IsVisible;
+            }
+
+            if (!loadingScreen)
+            {
+                ChatGui.PrintChat(new XivChatEntry
+                {
+                    Message = new SeString(songEchoPayload),
+                    Type = XivChatType.Echo
+                });
+
+                songEchoPayload = null;
+            }
+        }
     }
 
     public void Dispose()
@@ -293,7 +320,8 @@ public class OrchestrionPlugin : IDalamudPlugin
         var songName = SongList.GetSongTitle(songId);
         if (!Configuration.ShowSongInChat || string.IsNullOrEmpty(songName)) return;
 
-        var payloads = new List<Payload>
+        // the actual echoing is done during framework update
+        songEchoPayload = new List<Payload>
         {
             nowPlayingPayload,
             playedByOrch ? leftBracketPayload : emptyPayload,
@@ -303,11 +331,5 @@ public class OrchestrionPlugin : IDalamudPlugin
             playedByOrch ? rightBracketPayload : emptyPayload,
             periodPayload
         };
-
-        ChatGui.PrintChat(new XivChatEntry
-        {
-            Message = new SeString(payloads),
-            Type = XivChatType.Echo
-        });
     }
 }
