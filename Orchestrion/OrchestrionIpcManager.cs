@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Dalamud.Logging;
 using Dalamud.Plugin.Ipc;
+using Lumina.Excel.GeneratedSheets;
 
 namespace Orchestrion;
 
@@ -10,6 +11,7 @@ public class OrchestrionIpcManager : IDisposable
     private readonly OrchestrionPlugin _plugin;
 
     private const string IpcDisplayName = "Orchestrion Plugin";
+    private const uint WotsitIconId = 67;
 
     private ICallGateSubscriber<string, string, string, uint, string> _wotsitRegister;
     private ICallGateSubscriber<string, bool> _wotsitUnregister;
@@ -22,11 +24,16 @@ public class OrchestrionIpcManager : IDisposable
     private const string PlayRandomFavorites = "Play a random track from favorites";
     private const string Stop = "Stop playing";
 
+    private ICallGateProvider<int> _currentSongProvider;
+    private ICallGateProvider<int, bool> _playSongProvider;
+    private ICallGateProvider<int, bool> _orchSongChangeProvider;
+    private ICallGateProvider<int, bool> _songChangeProvider;
+
     public OrchestrionIpcManager(OrchestrionPlugin plugin)
     {
         _plugin = plugin;
 
-        // InitForSelf();
+        InitForSelf();
 
         try
         {
@@ -41,6 +48,49 @@ public class OrchestrionIpcManager : IDisposable
         wotsitAvailable.Subscribe(InitForWotsit);
     }
 
+    private void InitForSelf()
+    {
+        _currentSongProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int>("Orch.CurrentSong");
+        _playSongProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.PlaySong");
+        _orchSongChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.OrchSongChange");
+        _songChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.SongChange");
+        _currentSongProvider.RegisterFunc(CurrentSongFunc);
+        _playSongProvider.RegisterFunc(PlaySongFunc);
+        
+        PluginLog.Verbose("Firing Orch.Available.");
+        var cgAvailable = OrchestrionPlugin.PluginInterface.GetIpcProvider<bool>("Orch.Available");
+        cgAvailable.SendMessage();
+    }
+
+    private int CurrentSongFunc()
+    {
+        if (BGMController.PlayingSongId == 0) return BGMController.CurrentSongId;
+            
+        if (OrchestrionPlugin.Configuration.SongReplacements.TryGetValue(BGMController.CurrentSongId, out var replacement)
+            && replacement.ReplacementId == SongReplacement.NoChangeId)
+            return BGMController.SecondSongId;
+        return BGMController.PlayingSongId;
+    }
+
+    private bool PlaySongFunc(int songId)
+    {
+        if (songId == 0) 
+            _plugin.StopSong();
+        else
+            _plugin.PlaySong(songId);
+        return true;
+    }
+
+    public void InvokeOrchSongChanged(int song)
+    {
+        _orchSongChangeProvider.SendMessage(song);
+    }
+
+    public void InvokeSongChanged(int song)
+    {
+        _songChangeProvider.SendMessage(song);
+    }
+
     private void InitForWotsit()
     {
         _wotsitRegister = OrchestrionPlugin.PluginInterface.GetIpcSubscriber<string, string, string, uint, string>("FA.RegisterWithSearch");
@@ -53,13 +103,13 @@ public class OrchestrionIpcManager : IDisposable
         
         foreach (var song in SongList.GetSongs())
         {
-            var guid = _wotsitRegister.InvokeFunc(IpcDisplayName, $"Play {song.Value.Name}", GetSearchString(song.Value), 67);
+            var guid = _wotsitRegister.InvokeFunc(IpcDisplayName, $"Play {song.Value.Name}", GetSearchString(song.Value), WotsitIconId);
             _wotsitSongIpcs.Add(guid, song.Value);  
         }
         
-        _wotsitRandomGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, PlayRandom, PlayRandom, 67);
-        _wotsitRandomFavoriteGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, PlayRandomFavorites, PlayRandomFavorites, 67);
-        _wotsitStopGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, Stop, Stop, 67);
+        _wotsitRandomGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, PlayRandom, PlayRandom, WotsitIconId);
+        _wotsitRandomFavoriteGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, PlayRandomFavorites, PlayRandomFavorites, WotsitIconId);
+        _wotsitStopGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, Stop, Stop, WotsitIconId);
 
         PluginLog.Debug($"Registered {_wotsitSongIpcs.Count} songs with Wotsit");
     }
@@ -91,6 +141,10 @@ public class OrchestrionIpcManager : IDisposable
 
     public void Dispose()
     {
-        _wotsitUnregister.InvokeFunc(IpcDisplayName);
+        _wotsitUnregister?.InvokeFunc(IpcDisplayName);
+        _currentSongProvider?.UnregisterFunc();
+        _playSongProvider?.UnregisterFunc();
+        _orchSongChangeProvider?.UnregisterFunc();
+        _songChangeProvider?.UnregisterFunc();
     }
 }

@@ -208,13 +208,17 @@ public class OrchestrionPlugin : IDalamudPlugin
 
     private void HandleSongChanged(bool currentChanged, bool secondChanged)
     {
-        // The user is playing a track manually, so keep playing
-        if (BGMController.PlayingSongId != 0 && !isPlayingReplacement) return;
-        
         if (currentChanged)
+        {
             PluginLog.Debug($"Current Song ID changed from {BGMController.OldSongId} to {BGMController.CurrentSongId}");
+            IpcManager.InvokeSongChanged(CurrentSong);
+        }
+        
         if (secondChanged)
             PluginLog.Debug($"Second song ID changed from {BGMController.OldSecondSongId} to {BGMController.SecondSongId}");
+
+        // The user is playing a track manually, so keep playing
+        if (BGMController.PlayingSongId != 0 && !isPlayingReplacement) return;
         
         // We don't really care about the "behind" song if we're not playing a replacement
         if (secondChanged && !currentChanged && !isPlayingReplacement) return;
@@ -286,6 +290,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         SongUI.AddSongToHistory(songId);
         SendSongEcho(songId, true);
         UpdateDtr(songId, true);
+        IpcManager.InvokeOrchSongChanged(songId);
     }
 
     public void StopSong()
@@ -325,6 +330,8 @@ public class OrchestrionPlugin : IDalamudPlugin
         SongUI.AddSongToHistory(BGMController.CurrentSongId);
         SendSongEcho(BGMController.CurrentSongId);
         UpdateDtr(BGMController.CurrentSongId);
+        IpcManager.InvokeOrchSongChanged(0);
+        IpcManager.InvokeSongChanged(BGMController.CurrentSongId);
     }
 
     private void UpdateDtr(int songId, bool playedByOrch = false)
