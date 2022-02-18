@@ -9,6 +9,7 @@ namespace Orchestrion;
 public class OrchestrionIpcManager : IDisposable
 {
     private readonly OrchestrionPlugin _plugin;
+    private List<Song> _songListCache;
 
     private const string IpcDisplayName = "Orchestrion Plugin";
     private const uint WotsitIconId = 67;
@@ -34,6 +35,7 @@ public class OrchestrionIpcManager : IDisposable
     public OrchestrionIpcManager(OrchestrionPlugin plugin)
     {
         _plugin = plugin;
+        _songListCache = SongList.GetSongs().Select(x => x.Value).ToList();
 
         InitForSelf();
 
@@ -62,7 +64,7 @@ public class OrchestrionIpcManager : IDisposable
         _songInfoProvider.RegisterFunc(songId => SongList.SongExists(songId) ? SongList.GetSong(songId) : default);
         
         _allSongInfoProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<List<Song>>("Orch.AllSongInfo");
-        _allSongInfoProvider.RegisterFunc(() => SongList.GetSongs().Select(x => x.Value).ToList());
+        _allSongInfoProvider.RegisterFunc(() => _songListCache);
         
         _orchSongChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.OrchSongChange");
         _songChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.SongChange");
