@@ -31,6 +31,7 @@ public class OrchestrionPlugin : IDalamudPlugin
     public static DtrBar DtrBar { get; private set; }
     public static GameGui GameGui { get; private set; }
 
+    public static OrchestrionIpcManager IpcManager { get; private set; }
     public static Configuration Configuration { get; private set; }
     public SongUI SongUI { get; }
 
@@ -78,6 +79,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         BGMAddressResolver.Init(sigScanner);
         BGMController.OnSongChanged += HandleSongChanged;
         SongUI = new SongUI(this);
+        IpcManager = new OrchestrionIpcManager(this);
 
         commandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -108,6 +110,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         Framework.Update -= OrchestrionUpdate;
         PluginInterface.UiBuilder.Draw -= Display;
         dtrEntry?.Dispose();
+        IpcManager.Dispose();
         BGMController.SetSong(0);
         BGMController.Dispose();
         CommandManager.RemoveHandler(CommandName);
@@ -145,16 +148,10 @@ public class OrchestrionPlugin : IDalamudPlugin
                 ChatGui.PrintError("You must specify a song to play.");
                 break;
             case 1 when argSplit[0].ToLowerInvariant() == "random":
-                if (SongList.TryGetRandomSong(limitToFavorites: false, out var randomSong))
-                    PlaySong(randomSong);
-                else
-                    ChatGui.PrintError("No possible songs found."); // This should never happen but...
+                PlayRandomSong();
                 break;
             case 2 when argSplit[0].ToLowerInvariant() == "random" && argSplit[1].ToLowerInvariant() == "favorites":
-                if (SongList.TryGetRandomSong(limitToFavorites: true, out var randomFavoriteSong))
-                    PlaySong(randomFavoriteSong);
-                else
-                    ChatGui.PrintError("No possible songs found.");
+                PlayRandomSong(restrictToFavorites: true);
                 break;
             case 2 when argSplit[0].ToLowerInvariant() == "play" && int.TryParse(argSplit[1], out var songId):
                 if (SongList.SongExists(songId))
@@ -196,12 +193,19 @@ public class OrchestrionPlugin : IDalamudPlugin
         }
     }
 
+    public void PlayRandomSong(bool restrictToFavorites = false)
+    {
+        if (SongList.TryGetRandomSong(restrictToFavorites, out var randomFavoriteSong))
+            PlaySong(randomFavoriteSong);
+        else
+            ChatGui.PrintError("No possible songs found.");
+    }
+
     private void Display()
     {
         SongUI.Draw();
     }
 
-    // private void HandleSongChanged(int oldSongId, int oldPriority, int newSongId, int newPriority)
     private void HandleSongChanged(bool currentChanged, bool secondChanged)
     {
         // The user is playing a track manually, so keep playing
