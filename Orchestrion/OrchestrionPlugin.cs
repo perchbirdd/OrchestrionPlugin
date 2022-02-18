@@ -30,7 +30,7 @@ public class OrchestrionPlugin : IDalamudPlugin
     public static Framework Framework { get; private set; }
     public static DtrBar DtrBar { get; private set; }
     public static GameGui GameGui { get; private set; }
-    
+
     public static Configuration Configuration { get; private set; }
     public SongUI SongUI { get; }
 
@@ -43,7 +43,7 @@ public class OrchestrionPlugin : IDalamudPlugin
     private bool isPlayingReplacement;
     private DtrBarEntry dtrEntry;
 
-    private List<Payload> songEchoPayload = null;
+    private List<Payload> songEchoPayload;
 
     public int CurrentSong => BGMController.PlayingSongId == 0 ? BGMController.CurrentSongId : BGMController.PlayingSongId;
 
@@ -92,27 +92,15 @@ public class OrchestrionPlugin : IDalamudPlugin
     {
         BGMController.Update();
 
-        if (songEchoPayload != null)
+        if (songEchoPayload == null || IsLoadingScreen()) return;
+        
+        ChatGui.PrintChat(new XivChatEntry
         {
-            bool loadingScreen = false;
-            unsafe
-            {
-                var titleCard = (AtkUnitBase*)GameGui.GetAddonByName("_LocationTitle", 1);
-                var blackScreen = (AtkUnitBase*)GameGui.GetAddonByName("FadeMiddle", 1);
-                loadingScreen = titleCard != null && titleCard->IsVisible || blackScreen != null && blackScreen->IsVisible;
-            }
+            Message = new SeString(songEchoPayload),
+            Type = XivChatType.Echo
+        });
 
-            if (!loadingScreen)
-            {
-                ChatGui.PrintChat(new XivChatEntry
-                {
-                    Message = new SeString(songEchoPayload),
-                    Type = XivChatType.Echo
-                });
-
-                songEchoPayload = null;
-            }
-        }
+        songEchoPayload = null;
     }
 
     public void Dispose()
@@ -120,6 +108,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         Framework.Update -= OrchestrionUpdate;
         PluginInterface.UiBuilder.Draw -= Display;
         dtrEntry?.Dispose();
+        BGMController.SetSong(0);
         BGMController.Dispose();
         CommandManager.RemoveHandler(CommandName);
     }
@@ -138,7 +127,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         else
             dtrEntry.Dispose();
     }
-    
+
     private void OnCommand(string command, string args)
     {
         var argSplit = args.Split(' ');
@@ -191,6 +180,7 @@ public class OrchestrionPlugin : IDalamudPlugin
                     };
                     ChatGui.PrintError(new SeString(payloads));
                 }
+
                 break;
             default:
                 if (argSplit[0].ToLowerInvariant() != "help") break;
@@ -211,47 +201,84 @@ public class OrchestrionPlugin : IDalamudPlugin
         SongUI.Draw();
     }
 
-    private void HandleSongChanged(int oldSongId, int oldPriority, int newSongId, int newPriority)
+    // private void HandleSongChanged(int oldSongId, int oldPriority, int newSongId, int newPriority)
+    private void HandleSongChanged(bool currentChanged, bool secondChanged)
     {
-        PluginLog.Debug($"Song ID changed from {oldSongId} to {newSongId}");
-
         // The user is playing a track manually, so keep playing
-        if (BGMController.PlayingSongId != 0 && !isPlayingReplacement)
-            return;
+        if (BGMController.PlayingSongId != 0 && !isPlayingReplacement) return;
+        
+        if (currentChanged)
+            PluginLog.Debug($"Current Song ID changed from {BGMController.OldSongId} to {BGMController.CurrentSongId}");
+        if (secondChanged)
+            PluginLog.Debug($"Second song ID changed from {BGMController.OldSecondSongId} to {BGMController.SecondSongId}");
+        
+        // We don't really care about the "behind" song if we're not playing a replacement
+        if (secondChanged && !currentChanged && !isPlayingReplacement) return;
+        
+        // We got a new "behind" song and we're playing a replacement
+        if (secondChanged)
+        {
+            // Check if the current song has a replacement of NoChangeId
+            if (Configuration.SongReplacements.TryGetValue(BGMController.CurrentSongId, out var currentSongReplacement))
+            {
+                if (currentSongReplacement.ReplacementId == SongReplacement.NoChangeId)
+                {
+                    // If so, we should start playing the "behind" track...
+                    // ... unless it has a replacement.
+                    var toPlay = BGMController.SecondSongId;
+                    if (Configuration.SongReplacements.TryGetValue(toPlay, out var secondSongReplacement))
+                        toPlay = secondSongReplacement.ReplacementId;
+                    
+                    // If the replacement is NoChangeId, I'm just giving up here whatever
+                    if (toPlay == SongReplacement.NoChangeId) return;
+                    
+                    PlaySong(toPlay, true);
+                    SongUI.AddSongToHistory(toPlay);
+                    SendSongEcho(toPlay, true);
+                    UpdateDtr(toPlay, true);
+                }
+            }
+        }
 
         // A replacement is available, so change to it
-        if (Configuration.SongReplacements.TryGetValue(newSongId, out var replacement))
+        if (Configuration.SongReplacements.TryGetValue(BGMController.CurrentSongId, out var replacement))
         {
-            PluginLog.Debug($"Song ID {newSongId} has a replacement of {replacement.ReplacementId}");
-
-            // If the replacement is "do not change" and we are not playing something, play the previous track
-            // If the replacement is "do not change" and we *are* playing something, it'll just keep playing
-            // Else we're only here if we have a replacement, play that 
-            if (replacement.ReplacementId == -1 && BGMController.PlayingSongId == 0)
+            PluginLog.Debug($"Song ID {BGMController.CurrentSongId} has a replacement of {replacement.ReplacementId}");
+            
+            // If we're looking to play a "do not change", then, when we start playing this replacement,
+            // we don't want to immediately start playing the "behind" track, or the BGM may change, rather
+            // than staying the same, which is the intended behavior. We don't want to play
+            // the behind track to begin with, we want to play the track that was already playing. Only
+            // future "behind" track changes will be handled with the "behind" track.
+            if (replacement.ReplacementId == SongReplacement.NoChangeId && BGMController.PlayingSongId == 0)
+            {
+                // Play the track that was just playing (this will result in no net BGM change for the user)
                 PlaySong(BGMController.OldSongId, true);
-            else if (replacement.ReplacementId != -1)
+            }
+            else if (replacement.ReplacementId != SongReplacement.NoChangeId)
+            {
+                // Play a standard replacement
                 PlaySong(replacement.ReplacementId, true);
+            }
             return;
         }
 
-        // A replacement is playing
         if (isPlayingReplacement)
         {
             isPlayingReplacement = false;
-            StopSong();
+            StopSong();   
         }
 
-        SongUI.AddSongToHistory(newSongId);
-
-        SendSongEcho(newSongId);
-        UpdateDtr(newSongId);
+        SongUI.AddSongToHistory(BGMController.CurrentSongId);
+        SendSongEcho(BGMController.CurrentSongId);
+        UpdateDtr(BGMController.CurrentSongId);
     }
 
     public void PlaySong(int songId, bool isReplacement = false)
     {
         PluginLog.Debug($"Playing {songId}");
         isPlayingReplacement = isReplacement;
-        BGMController.SetSong((ushort)songId, Configuration.TargetPriority);
+        BGMController.SetSong((ushort)songId);
         SongUI.AddSongToHistory(songId);
         SendSongEcho(songId, true);
         UpdateDtr(songId, true);
@@ -271,12 +298,14 @@ public class OrchestrionPlugin : IDalamudPlugin
                 // There's no point in continuing to play, so fall through to stop
                 PluginLog.Debug($"But that's the song we're playing [{BGMController.PlayingSongId}], so let's stop");
             }
-            else if (replacement.ReplacementId == -1)
+            else if (replacement.ReplacementId == SongReplacement.NoChangeId)
             {
-                // We stopped playing a song and the song under it has a replacement, so play that
-                PlaySong(BGMController.OldSongId, true);
-                SongUI.AddSongToHistory(BGMController.OldSongId);
-                return;
+                // We stopped playing a song and the song under it has a replacement
+                // PlaySong(BGMController.SecondSongId, true);
+                // SongUI.AddSongToHistory(BGMController.SecondSongId);
+                // return;
+                // We're playing a "no change", we should always be playing a track here, so fall through to stop
+                PluginLog.Debug($"We're playing a no-change replacement, so let's stop");
             }
             else
             {
@@ -288,7 +317,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         }
 
         // If there was no replacement involved, we don't need to do anything else, just stop
-        BGMController.SetSong(0, Configuration.TargetPriority);
+        BGMController.SetSong(0);
         SongUI.AddSongToHistory(BGMController.CurrentSongId);
         SendSongEcho(BGMController.CurrentSongId);
         UpdateDtr(BGMController.CurrentSongId);
@@ -310,7 +339,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         var text = songName + suffix;
 
         text = playedByOrch ? $"{NativeNowPlayingPrefix} [{text}]" : $"{NativeNowPlayingPrefix} {text}";
-        
+
         dtrEntry.Text = text;
     }
 
@@ -330,5 +359,12 @@ public class OrchestrionPlugin : IDalamudPlugin
             playedByOrch ? rightBracketPayload : emptyPayload,
             periodPayload
         };
+    }
+
+    private unsafe bool IsLoadingScreen()
+    {
+        var titleCard = (AtkUnitBase*)GameGui.GetAddonByName("_LocationTitle", 1);
+        var blackScreen = (AtkUnitBase*)GameGui.GetAddonByName("FadeMiddle", 1);
+        return titleCard != null && titleCard->IsVisible || blackScreen != null && blackScreen->IsVisible;
     }
 }

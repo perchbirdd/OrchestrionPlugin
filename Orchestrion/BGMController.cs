@@ -81,21 +81,41 @@ namespace Orchestrion
         public static int OldSongId { get; private set; }
         
         /// <summary>
-        /// The priority that OldSongId was playing at.
+        /// The scene that OldSongId was playing at.
         /// </summary>
-        public static int OldPriority { get; private set; }
+        public static int OldScene { get; private set; }
         
         /// <summary>
         /// The song that the game is currently playing. That is, the song
-        /// that is currently playing at the highest priority that is not
+        /// that is currently playing at the highest scene that is not
         /// PlayingPriority.
         /// </summary>
         public static int CurrentSongId { get; private set; }
         
         /// <summary>
-        /// The priority that CurrentSongId is playing at.
+        /// The scene that CurrentSongId is playing at.
         /// </summary>
-        public static int CurrentPriority { get; private set; }
+        public static int CurrentScene { get; private set; }
+        
+        /// <summary>
+        /// The song that the game is currently playing behind CurrentSongId.
+        /// </summary>
+        public static int SecondSongId { get; private set; }
+        
+        /// <summary>
+        /// The scene that SecondSongId is currently playing at.
+        /// </summary>
+        public static int SecondScene { get; private set; }
+        
+        /// <summary>
+        /// The previous song that the game was playing behind CurrentSongId.
+        /// </summary>
+        public static int OldSecondSongId { get; private set; }
+        
+        /// <summary>
+        /// The scene that OldSecondSongId was playing at.
+        /// </summary>
+        public static int OldSecondScene { get; private set; }
 
         /// <summary>
         /// The song that Orchestrion is currently playing.
@@ -103,11 +123,16 @@ namespace Orchestrion
         public static int PlayingSongId { get; private set; }
         
         /// <summary>
-        /// The priority that PlayingSongId is playing at.
+        /// The scene that PlayingSongId is playing at.
         /// </summary>
-        public static int PlayingPriority { get; private set; }
+        public static int PlayingScene { get; private set; }
 
-        public delegate void SongChangedHandler(int oldSongId, int oldPriority, int newSongId, int newPriority);
+        /// <summary>
+        /// The event that fires when the game changes songs.
+        /// Note that there are no song parameters - up-to-date fields of BGMController
+        /// are available at all times.
+        /// </summary>
+        public delegate void SongChangedHandler(bool currentChanged, bool secondChanged);
         public static SongChangedHandler OnSongChanged;
 
         private const int SceneCount = 12;
@@ -143,79 +168,86 @@ namespace Orchestrion
 
         public static void Update()
         {
-            var currentSong = (ushort)0;
-            var activePriority = 0;
+            ushort currentSong = 0;
+            ushort secondSong = 0;
+            var currentScene = 0;
+            var secondScene = 0;
 
             if (BGMAddressResolver.BGMSceneList != IntPtr.Zero)
             {
                 unsafe
                 {
                     var bgms = (BGMScene*)BGMAddressResolver.BGMSceneList.ToPointer();
-
-                    // as far as I have seen, the control blocks are in priority order
-                    // and the highest priority populated song is what the client current plays
-                    for (activePriority = 0; activePriority < SceneCount; activePriority++)
+                    
+                    for (int sceneIdx = 0; sceneIdx < SceneCount; sceneIdx++)
                     {
-                        // TODO: everything here is awful and makes me sad
-                        
                         // This is so we can receive BGM change updates even while playing a song
-                        if (PlayingSongId != 0 && activePriority == PlayingPriority)
+                        if (PlayingSongId != 0 && sceneIdx == PlayingScene)
                         {
                             // If the game overwrote our song, play it again
-                            if (bgms[PlayingPriority].bgmId != PlayingSongId)
-                                SetSong((ushort)PlayingSongId, PlayingPriority);
+                            if (bgms[PlayingScene].bgmId != PlayingSongId)
+                                SetSong((ushort)PlayingSongId, PlayingScene);
                             continue;
                         }
                         
-                        if (bgms[activePriority].bgmReference == 0)
-                            continue;
-                        
-                        // An attempt to deal with the weird "fighting" sound issue, which results in a lot of incorrect spam
-                        // of song changes.
-                        // Often with overlaid zone music (beast tribes, festivals, etc), prio 10 will be the actual music the user
-                        // hears, but it will very quickly reset songId2 to 0 and then back, while songId3 doesn't change.
-                        // This leads to song transition messages to the prio 11 zone music and then back to the overlaid prio 10 music
-                        // over and over again, despite the actual music being played not changing.
-                        if (activePriority == OldPriority
-                            && OldSongId != 0
-                            && bgms[activePriority].bgmId == 0
-                            && bgms[activePriority].previousBgmId == OldSongId)
-                        {
-                            PluginLog.Debug("skipping change from {0} to {1} on prio {2}", OldSongId, bgms[activePriority].bgmId, activePriority);
-                            return;
-                        }
+                        if (bgms[sceneIdx].bgmReference == 0) continue;
 
-                        // TODO: might want to have a method to check if an id is valid, in case there are other weird cases
-                        if (bgms[activePriority].bgmId != 0 && bgms[activePriority].bgmId != 9999)
+                        if (bgms[sceneIdx].bgmId != 0 && bgms[sceneIdx].bgmId != 9999)
                         {
-                            currentSong = bgms[activePriority].bgmId;
-                            break;
+                            if (currentSong == 0)
+                            {
+                                currentSong = bgms[sceneIdx].bgmId;
+                                currentScene = sceneIdx;
+                            }
+                            else
+                            {
+                                secondSong = bgms[sceneIdx].bgmId;
+                                secondScene = sceneIdx;
+                                break;
+                            }
                         }
                     }
                 }
             }
-
-            // separate variable because 0 is valid if nothing is playing
+            
+            var currentChanged = false;
+            var secondChanged = false;
+            
             if (CurrentSongId != currentSong)
             {
-                PluginLog.Debug($"changed to song {currentSong} at priority {activePriority}");
                 OldSongId = CurrentSongId;
-                OldPriority = CurrentPriority;
+                OldScene = CurrentScene;
                 CurrentSongId = currentSong;
-                CurrentPriority = activePriority;
-
-                OnSongChanged?.Invoke(OldSongId, OldPriority, CurrentSongId, CurrentPriority);
+                CurrentScene = currentScene;
+                currentChanged = true;
             }
+            
+            if (SecondSongId != secondSong)
+            {
+                OldSecondSongId = SecondSongId;
+                OldSecondScene = SecondScene;
+                SecondSongId = secondSong;
+                SecondScene = secondScene;
+                secondChanged = true;
+            }
+
+            if (currentChanged || secondChanged) OnSongChanged?.Invoke(currentChanged, secondChanged);
         }
+
+        // private static bool CurrentSongShouldBeIgnored()
+        // {
+        //     if (OrchestrionPlugin.Configuration.SongReplacements.TryGetValue(CurrentSongId, out var potentialReplacement))
+        //     {
+        //         if (PlayingSongId != 0 && potentialReplacement.ReplacementId == SongReplacement.NoChangeId)
+        //             return true;
+        //     }
+        //
+        //     return false;
+        // } 
         
-        // priority ranges from 0 to ControlBlockCount-1, with lower values overriding higher ones
-        // so in theory, priority 0 should override everything else
         public static void SetSong(ushort songId, int priority = 0)
         {
-            if (priority < 0 || priority >= SceneCount)
-            {
-                throw new IndexOutOfRangeException();
-            }
+            if (priority < 0 || priority >= SceneCount) throw new IndexOutOfRangeException();
 
             if (BGMAddressResolver.BGMSceneList != IntPtr.Zero)
             {
@@ -236,7 +268,7 @@ namespace Orchestrion
                     bgms[priority].timerEnable = 0;
 
                     PlayingSongId = songId;
-                    PlayingPriority = priority;
+                    PlayingScene = priority;
 
                     // unk5 is set to 0x100 by the game in some cases for priority 0
                     // but I wasn't able to see that it did anything
@@ -251,13 +283,13 @@ namespace Orchestrion
                         var disableRestart = AddDisableRestartId(&bgms[priority], songId);
                         PluginLog.Debug($"AddDisableRestartId: {(ulong) disableRestart:X}");
                         bgms[priority].flags = SceneZeroFlags;
+                        
+                        // A lot.
+                        Task.Delay(500).ContinueWith(_ =>
+                        {
+                            bgms[priority].flags = GetSceneFlagsNeededForBgm(song.Bgm);
+                        });
                     }
-
-                    // A lot.
-                    Task.Delay(500).ContinueWith(_ =>
-                    {
-                        bgms[priority].flags = GetSceneFlagsNeededForBgm(song.Bgm);
-                    });
                 }
             }
         }
@@ -265,7 +297,7 @@ namespace Orchestrion
         private static unsafe int GetSpecialModeBySceneDetour(BasicBGMPlayer* player, byte specialModeType)
         {
             // Let the game do what it needs to do
-            if (player->bgmScene != PlayingPriority
+            if (player->bgmScene != PlayingScene
                 || player->bgmId != PlayingSongId
                 || specialModeType == 0) 
                 return GetSpecialModeForSceneHook.Original(player, specialModeType);

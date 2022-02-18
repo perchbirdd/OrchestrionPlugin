@@ -11,14 +11,15 @@ namespace Orchestrion;
 
 public struct SongReplacement
 {
+    public const int NoChangeId = -1;
+    
     /// <summary>
     /// The ID of the song to replace.
     /// </summary>
     public int TargetSongId;
 
     /// <summary>
-    /// The ID of the replacement track to play. -1 means "ignore this song" and continue playing
-    /// what was previously playing.
+    /// The ID of the replacement track to play. -1 (NoChangeId) means "ignore this song"
     /// </summary>
     public int ReplacementId;
 }
@@ -82,7 +83,7 @@ public class SongUI : IDisposable
         tmpReplacement = new SongReplacement
         {
             TargetSongId = id,
-            ReplacementId = -1,
+            ReplacementId = SongReplacement.NoChangeId,
         };
     }
 
@@ -249,7 +250,7 @@ public class SongUI : IDisposable
             SongList.TryGetSong(replacement.TargetSongId, out var target);
 
             var targetText = $"{replacement.TargetSongId} - {target.Name}";
-            string replText = replacement.ReplacementId == -1 ? NoChange : $"{replacement.ReplacementId} - {SongList.GetSong(replacement.ReplacementId).Name}";
+            string replText = replacement.ReplacementId == SongReplacement.NoChangeId ? NoChange : $"{replacement.ReplacementId} - {SongList.GetSong(replacement.ReplacementId).Name}";
             
             ImGui.TextWrapped($"{targetText}");
             if (ImGui.IsItemHovered())
@@ -257,7 +258,7 @@ public class SongUI : IDisposable
 
             ImGui.Text($"will be replaced with");
             ImGui.TextWrapped($"{replText}");
-            if (ImGui.IsItemHovered() && replacement.ReplacementId != -1)
+            if (ImGui.IsItemHovered() && replacement.ReplacementId != SongReplacement.NoChangeId)
                 DrawBgmTooltip(SongList.GetSong(replacement.ReplacementId));
 
             // Delete button in top right of area
@@ -301,7 +302,7 @@ public class SongUI : IDisposable
 
         var targetText = $"{SongList.GetSong(tmpReplacement.TargetSongId).Id} - {SongList.GetSong(tmpReplacement.TargetSongId).Name}";
         string replacementText;
-        if (tmpReplacement.ReplacementId == -1)
+        if (tmpReplacement.ReplacementId == SongReplacement.NoChangeId)
             replacementText = NoChange;
         else
             replacementText = $"{SongList.GetSong(tmpReplacement.ReplacementId).Id} - {SongList.GetSong(tmpReplacement.ReplacementId).Name}";
@@ -332,7 +333,7 @@ public class SongUI : IDisposable
         if (ImGui.BeginCombo("Replacement Song", replacementText))
         {
             if (ImGui.Selectable(NoChange))
-                tmpReplacement.ReplacementId = -1;
+                tmpReplacement.ReplacementId = SongReplacement.NoChangeId;
 
             foreach (var song in SongList.GetSongs().Values)
             {
