@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Logging;
 using Dalamud.Plugin.Ipc;
-using Lumina.Excel.GeneratedSheets;
 
 namespace Orchestrion;
 
@@ -28,6 +28,8 @@ public class OrchestrionIpcManager : IDisposable
     private ICallGateProvider<int, bool> _playSongProvider;
     private ICallGateProvider<int, bool> _orchSongChangeProvider;
     private ICallGateProvider<int, bool> _songChangeProvider;
+    private ICallGateProvider<int, Song> _songInfoProvider;
+    private ICallGateProvider<List<Song>> _allSongInfoProvider;
 
     public OrchestrionIpcManager(OrchestrionPlugin plugin)
     {
@@ -51,12 +53,20 @@ public class OrchestrionIpcManager : IDisposable
     private void InitForSelf()
     {
         _currentSongProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int>("Orch.CurrentSong");
-        _playSongProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.PlaySong");
-        _orchSongChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.OrchSongChange");
-        _songChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.SongChange");
         _currentSongProvider.RegisterFunc(CurrentSongFunc);
+        
+        _playSongProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.PlaySong");
         _playSongProvider.RegisterFunc(PlaySongFunc);
         
+        _songInfoProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, Song>("Orch.SongInfo");
+        _songInfoProvider.RegisterFunc(songId => SongList.SongExists(songId) ? SongList.GetSong(songId) : default);
+        
+        _allSongInfoProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<List<Song>>("Orch.AllSongInfo");
+        _allSongInfoProvider.RegisterFunc(() => SongList.GetSongs().Select(x => x.Value).ToList());
+        
+        _orchSongChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.OrchSongChange");
+        _songChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.SongChange");
+
         PluginLog.Verbose("Firing Orch.Available.");
         var cgAvailable = OrchestrionPlugin.PluginInterface.GetIpcProvider<bool>("Orch.Available");
         cgAvailable.SendMessage();
