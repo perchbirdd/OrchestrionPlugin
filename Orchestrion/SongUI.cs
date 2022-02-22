@@ -5,6 +5,8 @@ using System.IO;
 using System.Numerics;
 using System.Text;
 using Dalamud.Interface;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Style;
 using Dalamud.Logging;
 
 namespace Orchestrion;
@@ -286,6 +288,7 @@ public class SongUI : IDisposable
         ImGui.Text(addrStr);
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
             ImGui.SetClipboardText(addrStr);
+        ImGui.Text($"streaming enabled: {BGMAddressResolver.StreamingEnabled}");
     }
 
     private void RightAlignButton(float y, string text)
@@ -528,7 +531,10 @@ public class SongUI : IDisposable
         if (!settingsVisible)
             return;
 
-        ImGui.SetNextWindowSize(ScaledVector2(490, 200), ImGuiCond.Always);
+        var stream = BGMAddressResolver.StreamingEnabled;
+        var height = stream ? 200 : 300;
+        
+        ImGui.SetNextWindowSize(ScaledVector2(490, height), ImGuiCond.Always);
         if (ImGui.Begin("Orchestrion Settings", ref settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse))
         {
             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
@@ -575,6 +581,14 @@ public class SongUI : IDisposable
                 {
                     OrchestrionPlugin.Configuration.HandleSpecialModes = handleSpecial;
                     OrchestrionPlugin.Configuration.Save();
+                }
+
+                if (!stream)
+                {
+                    ImGui.TextColored(ImGuiColors.DalamudRed, "Audio streaming is disabled. This may be due to Penumbra or Sound Filter.");
+                    ImGui.TextColored(ImGuiColors.DalamudRed, "The above setting may not work as expected and you may encounter other audio");
+                    ImGui.TextColored(ImGuiColors.DalamudRed, "issues such as popping or tracks not swapping channels.");
+                    ImGui.TextColored(ImGuiColors.DalamudRed, "This is not related to the Orchestrion Plugin.");
                 }
 
                 ImGui.TreePop();
