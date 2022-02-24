@@ -153,7 +153,15 @@ public class OrchestrionIpcManager : IDisposable
 
     public void Dispose()
     {
-        _wotsitUnregister?.InvokeFunc(IpcDisplayName);
+        try
+        {
+            _wotsitUnregister?.InvokeFunc(IpcDisplayName);
+        }
+        catch (Exception)
+        {
+            // Wotsit was not installed or too early version
+        }
+        
         _currentSongProvider?.UnregisterFunc();
         _playSongProvider?.UnregisterFunc();
         _orchSongChangeProvider?.UnregisterFunc();
