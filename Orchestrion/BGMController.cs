@@ -55,7 +55,7 @@ namespace Orchestrion
     [StructLayout(LayoutKind.Explicit)]
     struct BasicBGMPlayer
     {
-        [FieldOffset(0x08)] public uint bgmId;
+        [FieldOffset(0x08)] public ushort bgmId;
         [FieldOffset(0x10)] public uint bgmScene;
         [FieldOffset(0x20)] public uint specialMode;
         [FieldOffset(0x4D)] public byte specialModeType;

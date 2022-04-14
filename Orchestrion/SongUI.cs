@@ -289,6 +289,12 @@ public class SongUI : IDisposable
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
             ImGui.SetClipboardText(addrStr);
         ImGui.Text($"streaming enabled: {BGMAddressResolver.StreamingEnabled}");
+        ImGui.Text($"PlayingScene: {BGMController.PlayingScene}");
+        ImGui.Text($"PlayingSongId: {BGMController.PlayingSongId}");
+        ImGui.Text($"OldScene: {BGMController.OldScene}");
+        ImGui.Text($"OldSongId: {BGMController.OldSongId}");
+        ImGui.Text($"OldSecondScene: {BGMController.OldSecondScene}");
+        ImGui.Text($"OldSecondSongId: {BGMController.OldSecondSongId}");
     }
 
     private void RightAlignButton(float y, string text)
