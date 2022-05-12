@@ -6,7 +6,6 @@ using System.Numerics;
 using System.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
-using Dalamud.Interface.Style;
 using Dalamud.Logging;
 
 namespace Orchestrion;
@@ -401,7 +400,7 @@ public class SongUI : IDisposable
                 if (!SearchMatches(song))
                     continue;
 
-                bool isFavorite = SongList.IsFavorite(song.Id);
+                var isFavorite = SongList.IsFavorite(song.Id);
 
                 if (favoritesOnly && !isFavorite)
                     continue;
@@ -417,15 +416,30 @@ public class SongUI : IDisposable
 
                 ImGui.TableNextColumn();
 
+                if (!song.FileExists)
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+                    ImGui.PushStyleColor(ImGuiCol.TextDisabled, ImGuiColors.DalamudRed);
+                }
+                    
+                
                 ImGui.Text(song.Id.ToString());
-
                 ImGui.TableNextColumn();
 
-                if (ImGui.Selectable($"{song.Name}##{song.Id}", selectedSong == song.Id, ImGuiSelectableFlags.AllowDoubleClick))
+                var flags = song.FileExists ? ImGuiSelectableFlags.AllowDoubleClick : ImGuiSelectableFlags.Disabled;
+                
+                if (ImGui.Selectable($"{song.Name}##{song.Id}", selectedSong == song.Id, flags))
                 {
                     selectedSong = song.Id;
                     if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                         Play(selectedSong);
+                }
+                if (!song.FileExists)
+                    ImGui.PopStyleColor(2);
+
+                if (ImGui.IsItemHovered() && !song.FileExists)
+                {
+                    ImGui.SetTooltip("This song is unavailable as it is from an expansion that is not installed.");
                 }
 
                 if (ImGui.BeginPopupContextItem())

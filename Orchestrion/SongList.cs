@@ -1,11 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using Dalamud.Data;
 using Dalamud.Logging;
-using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;
 
 namespace Orchestrion;
@@ -18,6 +16,7 @@ public struct Song
     public string AdditionalInfo;
     public bool DisableRestart;
     public byte SpecialMode;
+    public bool FileExists;
 }
 
 public static class SongList
@@ -91,6 +90,7 @@ public static class SongList
                 AdditionalInfo = additionalInfo,
                 SpecialMode = bgm.SpecialMode,
                 DisableRestart = bgm.DisableRestart,
+                FileExists = OrchestrionPlugin.DataManager.FileExists(bgm.File),
             };
 
             _songs[id] = song;
