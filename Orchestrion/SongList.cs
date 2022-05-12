@@ -1,9 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using Dalamud.Data;
 using Dalamud.Logging;
+using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;
 
 namespace Orchestrion;
@@ -14,7 +16,8 @@ public struct Song
     public string Name;
     public string Locations;
     public string AdditionalInfo;
-    public BGM Bgm;
+    public bool DisableRestart;
+    public byte SpecialMode;
 }
 
 public static class SongList
@@ -79,13 +82,15 @@ public static class SongList
             var location = elements[2].Substring(1).Replace("\"\"", "\"");
             var additionalInfo = elements[3].Substring(1, elements[3].Substring(1).Length - 1).Replace("\"\"", "\"");
 
+            var bgm = bgms[(uint)id];
             var song = new Song
             {
                 Id = id,
                 Name = name,
                 Locations = location,
                 AdditionalInfo = additionalInfo,
-                Bgm = bgms[(uint) id]
+                SpecialMode = bgm.SpecialMode,
+                DisableRestart = bgm.DisableRestart,
             };
 
             _songs[id] = song;

@@ -274,10 +274,9 @@ namespace Orchestrion
                     // but I wasn't able to see that it did anything
 
                     if (!SongList.TryGetSong(songId, out var song)) return;
-
                     
                     // I hate my life
-                    if (song.Bgm.DisableRestart)
+                    if (song.DisableRestart)
                     {
                         bgms[priority].flags = SceneFlags.EnableDisableRestart;
                         var disableRestart = AddDisableRestartId(&bgms[priority], songId);
@@ -287,7 +286,7 @@ namespace Orchestrion
                         // A lot.
                         Task.Delay(500).ContinueWith(_ =>
                         {
-                            bgms[priority].flags = GetSceneFlagsNeededForBgm(song.Bgm);
+                            bgms[priority].flags = GetSceneFlagsNeededForBgm(song);
                         });
                     }
                 }
@@ -306,7 +305,7 @@ namespace Orchestrion
 
             // Default to scene 10 behavior, but if the mode is mount mode, use the mount scene
             uint newScene = 10;
-            if (song.Bgm.SpecialMode == 2)
+            if (song.SpecialMode == 2)
                 newScene = 6;
             
             // Trick the game into giving us the result we want for the scene our song should actually be playing on
@@ -317,11 +316,11 @@ namespace Orchestrion
             return result;
         }
 
-        private static SceneFlags GetSceneFlagsNeededForBgm(BGM bgm)
+        private static SceneFlags GetSceneFlagsNeededForBgm(Song song)
         {
             // var sceneFlags = SceneFlags.None;
             var sceneFlags = SceneZeroFlags;
-            if (bgm.DisableRestart) sceneFlags |= SceneFlags.EnableDisableRestart;
+            if (song.DisableRestart) sceneFlags |= SceneFlags.EnableDisableRestart;
             // if (bgm.PassEnd) sceneFlags |= SceneFlags.EnablePassEnd;
             
             // This one is an assumption...
