@@ -99,7 +99,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         ChatGui.PrintChat(new XivChatEntry
         {
             Message = new SeString(songEchoPayload),
-            Type = XivChatType.Echo
+            Type = PluginInterface.GeneralChatType,
         });
 
         songEchoPayload = null;
