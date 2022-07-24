@@ -1,10 +1,12 @@
-﻿using Dalamud.Game.Command;
+﻿using System;
+using Dalamud.Game.Command;
 using Dalamud.Game.Text;
 using Dalamud.Plugin;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Data;
 using Dalamud.Game;
+using Dalamud.Game.ClientState;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text.SeStringHandling;
@@ -30,6 +32,7 @@ public class OrchestrionPlugin : IDalamudPlugin
     public static Framework Framework { get; private set; }
     public static DtrBar DtrBar { get; private set; }
     public static GameGui GameGui { get; private set; }
+    public static ClientState ClientState { get; private set; }
 
     public static OrchestrionIpcManager IpcManager { get; private set; }
     public static Configuration Configuration { get; private set; }
@@ -56,7 +59,8 @@ public class OrchestrionPlugin : IDalamudPlugin
         [RequiredVersion("1.0")] DataManager dataManager,
         [RequiredVersion("1.0")] CommandManager commandManager,
         [RequiredVersion("1.0")] Framework framework,
-        [RequiredVersion("1.0")] SigScanner sigScanner
+        [RequiredVersion("1.0")] SigScanner sigScanner,
+        [RequiredVersion("1.0")] ClientState clientState
     )
     {
         PluginInterface = pluginInterface;
@@ -66,6 +70,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         DataManager = dataManager;
         ChatGui = chatGui;
         Framework = framework;
+        ClientState = clientState;
 
         Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         Configuration.Initialize(pluginInterface, this);
@@ -88,6 +93,12 @@ public class OrchestrionPlugin : IDalamudPlugin
         pluginInterface.UiBuilder.Draw += Display;
         pluginInterface.UiBuilder.OpenConfigUi += () => SongUI.SettingsVisible = true;
         framework.Update += OrchestrionUpdate;
+        clientState.Logout += ClientStateOnLogout;
+    }
+    
+    private void ClientStateOnLogout(object sender, EventArgs e)
+    {
+        BGMController.SetSong(0);
     }
 
     private void OrchestrionUpdate(Framework unused)
@@ -309,10 +320,6 @@ public class OrchestrionPlugin : IDalamudPlugin
             }
             else if (replacement.ReplacementId == SongReplacement.NoChangeId)
             {
-                // We stopped playing a song and the song under it has a replacement
-                // PlaySong(BGMController.SecondSongId, true);
-                // SongUI.AddSongToHistory(BGMController.SecondSongId);
-                // return;
                 // We're playing a "no change", we should always be playing a track here, so fall through to stop
                 PluginLog.Debug($"We're playing a no-change replacement, so let's stop");
             }

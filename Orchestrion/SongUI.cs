@@ -49,6 +49,7 @@ public class SongUI : IDisposable
     private readonly List<SongHistoryEntry> songHistory = new();
     private readonly List<int> removalList = new();
     private SongReplacement tmpReplacement;
+    private bool bgmTooltipLock;
 
     private bool visible;
     public bool Visible
@@ -148,21 +149,26 @@ public class SongUI : IDisposable
             if (SongList.TryGetSong(songId, out var song))
                 windowTitle.Append($" - [{song.Id}] {song.Name}");
         }
-
         windowTitle.Append("###Orchestrion");
+        
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, ScaledVector2(370, 400));
 
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, ScaledVector2(370, 150));
-        ImGui.SetNextWindowSize(ScaledVector2(370, 440), ImGuiCond.FirstUseEver);
+        ImGui.PushStyleColor(ImGuiCol.ResizeGrip, 0);
+        ImGui.PushStyleColor(ImGuiCol.ResizeGripActive, 0);
+        ImGui.PushStyleColor(ImGuiCol.ResizeGripHovered, 0);
+        
+        ImGui.SetNextWindowSize(ScaledVector2(370, 400), ImGuiCond.FirstUseEver);
         // these flags prevent the entire window from getting a secondary scrollbar sometimes, and also keep it from randomly moving slightly with the scrollwheel
         if (ImGui.Begin(windowTitle.ToString(), ref visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
+            bgmTooltipLock = false;
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Search: ");
             ImGui.SameLine();
             ImGui.InputText("##searchbox", ref searchText, 32);
 
             ImGui.SameLine();
-            ImGui.SetCursorPosX(ImGui.GetWindowSize().X - (32 * ImGuiHelpers.GlobalScale));
+            ImGui.SetCursorPosX(ImGui.GetWindowSize().X - (35 * ImGuiHelpers.GlobalScale));
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (1 * ImGuiHelpers.GlobalScale));
             if (ImGui.ImageButton(settingsIcon.ImGuiHandle, ScaledVector2(16, 16)))
                 settingsVisible = true;
@@ -206,33 +212,45 @@ public class SongUI : IDisposable
         }
 
         ImGui.End();
-
+        ImGui.PopStyleColor(3);
         ImGui.PopStyleVar();
     }
 
     private void DrawFooter(bool isHistory = false)
     {
         ImGui.Separator();
-        ImGui.Columns(2, "footer columns", false);
-        ImGui.SetColumnWidth(-1, ImGui.GetWindowSize().X - (100 * ImGuiHelpers.GlobalScale));
+
+        var songId = selectedSong;
+
+        if (isHistory && songHistory.Count > selectedHistoryEntry)
+            songId = songHistory[selectedHistoryEntry].Id;
+        else if (isHistory)
+            songId = 0;
         
-        var songId = isHistory ? songHistory[selectedHistoryEntry].Id : selectedSong;
         if (SongList.TryGetSong(songId, out var song))
         {
-            ImGui.TextWrapped(song.Locations);
-            ImGui.TextWrapped(song.AdditionalInfo);    
+            // ImGui.TextWrapped(song.Locations);
+            // ImGui.TextWrapped(song.AdditionalInfo);
         }
+
+        var width = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().WindowPadding.X;
+        var buttonHeight = ImGui.CalcTextSize("Stop").Y + ImGui.GetStyle().FramePadding.Y * 2f;
+
+        ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - buttonHeight - ImGui.GetStyle().WindowPadding.Y);
         
-        ImGui.NextColumn();
-        ImGui.SameLine();
-        ImGui.SetCursorPosX(ImGui.GetWindowSize().X - (100 * ImGuiHelpers.GlobalScale));
-        ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - (30 * ImGuiHelpers.GlobalScale));
-        if (ImGui.Button("Stop"))
+        if (BGMController.PlayingSongId == 0) ImGui.BeginDisabled();
+        if (ImGui.Button("Stop", new Vector2(width / 2, buttonHeight)))
             Stop();
+        if (BGMController.PlayingSongId == 0) ImGui.EndDisabled();
+        
         ImGui.SameLine();
-        if (ImGui.Button("Play"))
+        
+        ImGui.BeginDisabled(!song.FileExists);
+        if (ImGui.Button("Play", new Vector2(width / 2, buttonHeight)))
             Play(selectedSong);
-        ImGui.Columns(1);
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            DrawBgmTooltip(song);
     }
 
     private void DrawReplacements()
@@ -386,7 +404,7 @@ public class SongUI : IDisposable
     private void DrawSonglist(bool favoritesOnly)
     {
         // to keep the tab bar always visible and not have it get scrolled out
-        ImGui.BeginChild("##songlist_internal", ScaledVector2(-1f, -60f));
+        ImGui.BeginChild("##songlist_internal", ScaledVector2(-1f, -25f));
 
         if (ImGui.BeginTable("songlist table", 4, ImGuiTableFlags.SizingFixedFit))
         {
@@ -416,17 +434,10 @@ public class SongUI : IDisposable
 
                 ImGui.TableNextColumn();
 
-                if (!song.FileExists)
-                {
-                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
-                    ImGui.PushStyleColor(ImGuiCol.TextDisabled, ImGuiColors.DalamudRed);
-                }
-                    
-                
                 ImGui.Text(song.Id.ToString());
                 ImGui.TableNextColumn();
 
-                var flags = song.FileExists ? ImGuiSelectableFlags.AllowDoubleClick : ImGuiSelectableFlags.Disabled;
+                var flags = song.FileExists ? ImGuiSelectableFlags.AllowDoubleClick : ImGuiSelectableFlags.None;
                 
                 if (ImGui.Selectable($"{song.Name}##{song.Id}", selectedSong == song.Id, flags))
                 {
@@ -434,13 +445,9 @@ public class SongUI : IDisposable
                     if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                         Play(selectedSong);
                 }
-                if (!song.FileExists)
-                    ImGui.PopStyleColor(2);
 
-                if (ImGui.IsItemHovered() && !song.FileExists)
-                {
-                    ImGui.SetTooltip("This song is unavailable as it is from an expansion that is not installed.");
-                }
+                if (ImGui.IsItemHovered())
+                    DrawBgmTooltip(song);
 
                 if (ImGui.BeginPopupContextItem())
                 {
@@ -514,6 +521,9 @@ public class SongUI : IDisposable
                     if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                         Play(selectedSong);
                 }
+
+                if (ImGui.IsItemHovered())
+                    DrawBgmTooltip(song);
 
                 if (ImGui.BeginPopupContextItem())
                 {
@@ -605,49 +615,15 @@ public class SongUI : IDisposable
 
                 if (!stream)
                 {
-                    ImGui.TextColored(ImGuiColors.DalamudRed, "Audio streaming is disabled. This may be due to Penumbra or Sound Filter.");
-                    ImGui.TextColored(ImGuiColors.DalamudRed, "The above setting may not work as expected and you may encounter other audio");
-                    ImGui.TextColored(ImGuiColors.DalamudRed, "issues such as popping or tracks not swapping channels.");
-                    ImGui.TextColored(ImGuiColors.DalamudRed, "This is not related to the Orchestrion Plugin.");
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+                    ImGui.TextWrapped("Audio streaming is disabled. This may be due to Sound Filter or a third-party plugin. The above setting may not work as " +
+                                      "expected and you may encounter other audio issues such as popping or tracks not swapping channels. This is not" +
+                                      " related to the Orchestrion Plugin.");
+                    ImGui.PopStyleColor();
                 }
 
                 ImGui.TreePop();
             }
-
-            // if (showDebugOptions && AllowDebug)
-            // {
-            //     ImGui.SetNextItemOpen(true, ImGuiCond.Appearing);
-            //     if (ImGui.CollapsingHeader("Debug##orch options"))
-            //     {
-            //         ImGui.Spacing();
-            //
-            //         int targetPriority = OrchestrionPlugin.Configuration.TargetPriority;
-            //
-            //         ImGui.SetNextItemWidth(100.0f);
-            //         if (ImGui.SliderInt("BGM priority", ref targetPriority, 0, 11))
-            //         {
-            //             // stop the current song so it doesn't get 'stuck' on in case we switch to a lower priority
-            //             Stop();
-            //
-            //             OrchestrionPlugin.Configuration.TargetPriority = targetPriority;
-            //             OrchestrionPlugin.Configuration.Save();
-            //
-            //             // don't (re)start a song here for now
-            //         }
-            //         ImGui.SameLine();
-            //         HelpMarker("Songs play at various priority levels, from 0 to 11.\n" +
-            //             "Songs at lower numbers will override anything playing at a higher number, with 0 winning out over everything else.\n" +
-            //             "You can experiment with changing this value if you want the game to be able to play certain music even when Orchestrion is active.\n" +
-            //             "(Usually) zone music is 10-11, mount music is 6, GATEs are 4.  There is a lot of variety in this, however.\n" +
-            //             "The old Orchestrion used to play at level 3 (it now uses 0 by default).");
-            //
-            //         ImGui.Spacing();
-            //         if (ImGui.Button("Dump priority info"))
-            //             OrchestrionPlugin.DumpDebugInformation();
-            //
-            //         ImGui.TreePop();
-            //     }
-            // }
         }
 
         ImGui.End();
@@ -655,13 +631,21 @@ public class SongUI : IDisposable
 
     private void DrawBgmTooltip(Song bgm)
     {
+        if (bgm.Id == 0) return;
+        if (bgmTooltipLock) return;
+        bgmTooltipLock = true;
+
         ImGui.BeginTooltip();
-        ImGui.PushTextWrapPos(400f);
+        ImGui.PushTextWrapPos(450 * ImGuiHelpers.GlobalScale);
         ImGui.TextColored(new Vector4(0, 1, 0, 1), "Song Info");
         ImGui.TextWrapped($"Title: {bgm.Name}");
         ImGui.TextWrapped(string.IsNullOrEmpty(bgm.Locations) ? "Location: Unknown" : $"Location: {bgm.Locations}");
         if (!string.IsNullOrEmpty(bgm.AdditionalInfo))
             ImGui.TextWrapped($"Info: {bgm.AdditionalInfo}");
+        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+        if (!bgm.FileExists)
+            ImGui.TextWrapped("This song is unavailable; the track is not present in the current game files.");
+        ImGui.PopStyleColor();
         ImGui.PopTextWrapPos();
         ImGui.EndTooltip();
     }
