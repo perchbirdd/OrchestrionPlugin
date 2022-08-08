@@ -148,7 +148,7 @@ namespace Orchestrion
         static unsafe BGMController()
         {
             AddDisableRestartId = Marshal.GetDelegateForFunctionPointer<AddDisableRestartIdPrototype>(BGMAddressResolver.AddRestartId);
-            GetSpecialModeForSceneHook = new Hook<GetSpecialModeByScenePrototype>(BGMAddressResolver.GetSpecialMode, GetSpecialModeBySceneDetour);
+            GetSpecialModeForSceneHook = Hook<GetSpecialModeByScenePrototype>.FromAddress(BGMAddressResolver.GetSpecialMode, GetSpecialModeBySceneDetour);
             GetSpecialModeForSceneHook.Enable();
         }
 

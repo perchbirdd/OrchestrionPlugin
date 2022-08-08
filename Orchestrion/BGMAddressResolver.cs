@@ -2,6 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Dalamud.Logging;
+using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 
 namespace Orchestrion
 {
@@ -12,7 +13,7 @@ namespace Orchestrion
         private static IntPtr _getSpecialMode;
         private static IntPtr _musicManager;
 
-        public static void Init(SigScanner sig)
+        public static unsafe void Init(SigScanner sig)
         {
             _baseAddress = sig.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 85 C0 74 37 83 78 08 04", 2);
             _addRestartId = sig.ScanText("48 89 5C 24 ?? 57 48 83 EC 30 48 8B 41 20 48 8D 79 18");
@@ -22,7 +23,7 @@ namespace Orchestrion
             
             var musicLoc = sig.ScanText( "48 8B 8E ?? ?? ?? ?? 39 78 20 0F 94 C2 45 33 C0" );
             var musicOffset    = Marshal.ReadInt32(musicLoc + 3);
-            _musicManager = Marshal.ReadIntPtr(OrchestrionPlugin.Framework.Address.BaseAddress + musicOffset);
+            _musicManager = Marshal.ReadIntPtr(new IntPtr(Framework.Instance()) + musicOffset);
             PluginLog.Debug($"MusicManager found at {_musicManager.ToInt64():X}");
         }
         
