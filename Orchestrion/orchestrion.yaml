@@ -10,3 +10,4 @@ repo_url: https://github.com/lmcintyre/OrchestrionPlugin
 tags:
   - bgm
   - music
+changelog: Enhanced UI with buttons that scale better.\nFixed some internal behavior.
