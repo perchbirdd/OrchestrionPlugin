@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 
@@ -38,11 +39,11 @@ public static class SongList
 
         var existingText = File.ReadAllText(sheetPath);
 
-        using var client = new WebClient();
+        using var client = new HttpClient();
         try
         {
             PluginLog.Log("Checking for updated bgm sheet");
-            var newText = client.DownloadString(SheetPath);
+            var newText = client.GetStringAsync(SheetPath).Result;
             LoadSheet(newText);
 
             // would really prefer some kind of proper versioning here

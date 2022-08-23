@@ -21,8 +21,8 @@ namespace Orchestrion
             
             PluginLog.Debug($"BGMAddressResolver init: baseaddress at {_baseAddress.ToInt64():X}");
             
-            var musicLoc = sig.ScanText( "48 8B 8E ?? ?? ?? ?? 39 78 20 0F 94 C2 45 33 C0" );
-            var musicOffset    = Marshal.ReadInt32(musicLoc + 3);
+            var musicLoc = sig.ScanText("48 8B 8F ?? ?? ?? ?? 39 70 20 0F 94 C2 45 33 C0");
+            var musicOffset= Marshal.ReadInt32(musicLoc + 3);
             _musicManager = Marshal.ReadIntPtr(new IntPtr(Framework.Instance()) + musicOffset);
             PluginLog.Debug($"MusicManager found at {_musicManager.ToInt64():X}");
         }
