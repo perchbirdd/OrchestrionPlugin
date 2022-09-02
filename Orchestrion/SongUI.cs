@@ -173,8 +173,6 @@ public class SongUI : IDisposable
             if (ImGui.ImageButton(settingsIcon.ImGuiHandle, ScaledVector2(16, 16)))
                 settingsVisible = true;
 
-            ImGui.Separator();
-
             if (ImGui.BeginTabBar("##songlist tabs"))
             {
                 if (ImGui.BeginTabItem("All songs"))
@@ -218,8 +216,6 @@ public class SongUI : IDisposable
 
     private void DrawFooter(bool isHistory = false)
     {
-        ImGui.Separator();
-
         var songId = selectedSong;
 
         if (isHistory && songHistory.Count > selectedHistoryEntry)
