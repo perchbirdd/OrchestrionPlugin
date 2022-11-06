@@ -434,13 +434,18 @@ public class SongUI : IDisposable
                 ImGui.TableNextColumn();
 
                 var flags = song.FileExists ? ImGuiSelectableFlags.AllowDoubleClick : ImGuiSelectableFlags.None;
-                
+                if (!song.FileExists)
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+
                 if (ImGui.Selectable($"{song.Name}##{song.Id}", selectedSong == song.Id, flags))
                 {
                     selectedSong = song.Id;
                     if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                         Play(selectedSong);
                 }
+
+                if (!song.FileExists)
+                    ImGui.PopStyleColor();
 
                 if (ImGui.IsItemHovered())
                     DrawBgmTooltip(song);
