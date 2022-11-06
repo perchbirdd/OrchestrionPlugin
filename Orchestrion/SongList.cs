@@ -82,16 +82,16 @@ public static class SongList
             var location = elements[2].Substring(1).Replace("\"\"", "\"");
             var additionalInfo = elements[3].Substring(1, elements[3].Substring(1).Length - 1).Replace("\"\"", "\"");
 
-            var bgm = bgms[(uint)id];
+            bgms.TryGetValue((uint)id, out var bgm);
             var song = new Song
             {
                 Id = id,
                 Name = name,
                 Locations = location,
                 AdditionalInfo = additionalInfo,
-                SpecialMode = bgm.SpecialMode,
-                DisableRestart = bgm.DisableRestart,
-                FileExists = OrchestrionPlugin.DataManager.FileExists(bgm.File),
+                SpecialMode = bgm?.SpecialMode ?? 0,
+                DisableRestart = bgm?.DisableRestart ?? false,
+                FileExists = bgm != null && OrchestrionPlugin.DataManager.FileExists(bgm.File),
             };
 
             _songs[id] = song;
