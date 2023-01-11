@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    <PluginVersion>1.8.4.4</PluginVersion>
+    <PluginVersion>1.8.4.5</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net7.0-windows</TargetFramework>
     <LangVersion>preview</LangVersion>
     <AssemblyName>orchestrion</AssemblyName>
     <AssemblyTitle>orchestrion</AssemblyTitle>
@@ -61,7 +61,7 @@
       <Private>False</Private>
     </Reference>
     
-    <PackageReference Include="DalamudPackager" Version="2.1.8" />
+    <PackageReference Include="DalamudPackager" Version="2.1.10" />
   </ItemGroup>
   <ItemGroup>
     <ContentWithTargetPath Include="Data\favoriteIcon.png">
