@@ -15,7 +15,7 @@ namespace Orchestrion
 
         public static unsafe void Init(SigScanner sig)
         {
-            _baseAddress = sig.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 85 C0 74 37 83 78 08 04", 2);
+            _baseAddress = sig.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 85 C0 74 37 83 78 08 04");
             _addRestartId = sig.ScanText("48 89 5C 24 ?? 57 48 83 EC 30 48 8B 41 20 48 8D 79 18");
             _getSpecialMode = sig.ScanText("48 89 5C 24 ?? 57 48 83 EC 20 8B 41 10 33 DB");
             
