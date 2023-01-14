@@ -276,8 +276,15 @@ public class SongUI : IDisposable
             if (ImGui.IsItemHovered() && replacement.ReplacementId != SongReplacement.NoChangeId)
                 DrawBgmTooltip(SongList.GetSong(replacement.ReplacementId));
 
-            // Delete button in top right of area
-            RightAlignButton(ImGui.GetCursorPosY(), "Delete");
+            // Buttons in bottom right of area
+            RightAlignButtons(ImGui.GetCursorPosY(), new[] {"Edit", "Delete"});
+            if (ImGui.Button($"Edit##{replacement.TargetSongId}"))
+            {
+                removalList.Add(replacement.TargetSongId);
+                tmpReplacement.TargetSongId = replacement.TargetSongId;
+                tmpReplacement.ReplacementId = replacement.ReplacementId;
+            }
+            ImGui.SameLine();
             if (ImGui.Button($"Delete##{replacement.TargetSongId}"))
                 removalList.Add(replacement.TargetSongId);
 
@@ -315,6 +322,21 @@ public class SongUI : IDisposable
         var style = ImGui.GetStyle();
         var padding = style.WindowPadding.X + style.FramePadding.X * 2 + style.ScrollbarSize;
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetWindowWidth() - ImGui.CalcTextSize(text).X - padding);
+        ImGui.SetCursorPosY(y);
+    }
+    
+    private void RightAlignButtons(float y, string[] texts)
+    {
+        var style = ImGui.GetStyle();
+        var padding = style.WindowPadding.X + style.FramePadding.X * 2 + style.ScrollbarSize;
+
+        var cursor = ImGui.GetCursorPosX() + ImGui.GetWindowWidth();
+        foreach (var text in texts)
+        {
+            cursor -= ImGui.CalcTextSize(text).X + padding;
+        }
+        
+        ImGui.SetCursorPosX(cursor);
         ImGui.SetCursorPosY(y);
     }
 

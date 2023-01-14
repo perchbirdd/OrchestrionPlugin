@@ -272,12 +272,12 @@ public class OrchestrionPlugin : IDalamudPlugin
             if (replacement.ReplacementId == SongReplacement.NoChangeId && BGMController.PlayingSongId == 0)
             {
                 // Play the track that was just playing (this will result in no net BGM change for the user)
-                PlaySong(BGMController.OldSongId, true);
+                PlaySong(BGMController.OldSongId, isReplacement: true);
             }
             else if (replacement.ReplacementId != SongReplacement.NoChangeId)
             {
                 // Play a standard replacement
-                PlaySong(replacement.ReplacementId, true);
+                PlaySong(replacement.ReplacementId, isReplacement: true);
             }
             return;
         }
@@ -297,9 +297,9 @@ public class OrchestrionPlugin : IDalamudPlugin
     {
         PluginLog.Debug($"Playing {songId}");
         isPlayingReplacement = isReplacement;
+        if (BGMController.PlayingSongId != songId) SendSongEcho(songId, true);
         BGMController.SetSong((ushort)songId);
         SongUI.AddSongToHistory(songId);
-        SendSongEcho(songId, true);
         UpdateDtr(songId, true);
         IpcManager.InvokeOrchSongChanged(songId);
     }
