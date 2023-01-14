@@ -585,67 +585,60 @@ public class SongUI : IDisposable
             return;
 
         var stream = BGMAddressResolver.StreamingEnabled;
-        var height = stream ? 200 : 300;
+        var height = stream ? 170 : 240;
         
-        ImGui.SetNextWindowSize(ScaledVector2(490, height), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(ScaledVector2(520, height), ImGuiCond.Always);
         if (ImGui.Begin("Orchestrion Settings", ref settingsVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse))
         {
             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
-            if (ImGui.CollapsingHeader("Display##orch options"))
+            var showSongInTitlebar = OrchestrionPlugin.Configuration.ShowSongInTitleBar;
+            if (ImGui.Checkbox("Show current song in player title bar", ref showSongInTitlebar))
             {
-                ImGui.Spacing();
+                OrchestrionPlugin.Configuration.ShowSongInTitleBar = showSongInTitlebar;
+                OrchestrionPlugin.Configuration.Save();
+            }
 
-                var showSongInTitlebar = OrchestrionPlugin.Configuration.ShowSongInTitleBar;
-                if (ImGui.Checkbox("Show current song in player title bar", ref showSongInTitlebar))
-                {
-                    OrchestrionPlugin.Configuration.ShowSongInTitleBar = showSongInTitlebar;
-                    OrchestrionPlugin.Configuration.Save();
-                }
+            var showSongInChat = OrchestrionPlugin.Configuration.ShowSongInChat;
+            if (ImGui.Checkbox("Show \"Now playing\" messages in game chat when the current song changes", ref showSongInChat))
+            {
+                OrchestrionPlugin.Configuration.ShowSongInChat = showSongInChat;
+                OrchestrionPlugin.Configuration.Save();
+            }
 
-                var showSongInChat = OrchestrionPlugin.Configuration.ShowSongInChat;
-                if (ImGui.Checkbox("Show \"Now playing\" messages in game chat when the current song changes", ref showSongInChat))
-                {
-                    OrchestrionPlugin.Configuration.ShowSongInChat = showSongInChat;
-                    OrchestrionPlugin.Configuration.Save();
-                }
+            var showNative = OrchestrionPlugin.Configuration.ShowSongInNative;
+            if (ImGui.Checkbox("Show current song in the \"server info\" UI element in-game", ref showNative))
+            {
+                OrchestrionPlugin.Configuration.ShowSongInNative = showNative;
+                OrchestrionPlugin.Configuration.Save();
+            }
 
-                var showNative = OrchestrionPlugin.Configuration.ShowSongInNative;
-                if (ImGui.Checkbox("Show current song in the \"server info\" UI element in-game", ref showNative))
-                {
-                    OrchestrionPlugin.Configuration.ShowSongInNative = showNative;
-                    OrchestrionPlugin.Configuration.Save();
-                }
+            if (!showNative)
+                ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
 
-                if (!showNative)
-                    ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
+            var showIdNative = OrchestrionPlugin.Configuration.ShowIdInNative;
+            if (ImGui.Checkbox("Show song ID in the \"server info\" UI element in-game", ref showIdNative) && showNative)
+            {
+                OrchestrionPlugin.Configuration.ShowIdInNative = showIdNative;
+                OrchestrionPlugin.Configuration.Save();
+            }
 
-                var showIdNative = OrchestrionPlugin.Configuration.ShowIdInNative;
-                if (ImGui.Checkbox("Show song ID in the \"server info\" UI element in-game", ref showIdNative) && showNative)
-                {
-                    OrchestrionPlugin.Configuration.ShowIdInNative = showIdNative;
-                    OrchestrionPlugin.Configuration.Save();
-                }
+            if (!showNative)
+                ImGui.PopStyleVar();
 
-                if (!showNative)
-                    ImGui.PopStyleVar();
+            var handleSpecial = OrchestrionPlugin.Configuration.HandleSpecialModes;
+            if (ImGui.Checkbox("Handle special \"in-combat\" and mount movement BGM modes", ref handleSpecial))
+            {
+                OrchestrionPlugin.Configuration.HandleSpecialModes = handleSpecial;
+                OrchestrionPlugin.Configuration.Save();
+            }
 
-                var handleSpecial = OrchestrionPlugin.Configuration.HandleSpecialModes;
-                if (ImGui.Checkbox("Handle special \"in-combat\" and mount movement BGM modes", ref handleSpecial))
-                {
-                    OrchestrionPlugin.Configuration.HandleSpecialModes = handleSpecial;
-                    OrchestrionPlugin.Configuration.Save();
-                }
-
-                if (!stream)
-                {
-                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
-                    ImGui.TextWrapped("Audio streaming is disabled. This may be due to Sound Filter or a third-party plugin. The above setting may not work as " +
-                                      "expected and you may encounter other audio issues such as popping or tracks not swapping channels. This is not" +
-                                      " related to the Orchestrion Plugin.");
-                    ImGui.PopStyleColor();
-                }
-
-                ImGui.TreePop();
+            if (!stream)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+                ImGui.TextWrapped("Audio streaming is disabled. This may be due to Sound Filter or a third-party plugin. The above setting may not work as " +
+                                  "expected and you may encounter other audio issues such as popping or tracks not swapping channels. This is not" +
+                                  " related to the Orchestrion Plugin.");
+                ImGui.PopStyleColor();
             }
         }
 
