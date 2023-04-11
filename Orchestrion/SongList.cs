@@ -1,72 +1,65 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
+using Orchestrion.Struct;
 
 namespace Orchestrion;
 
-public struct Song
-{
-    public int Id;
-    public string Name;
-    public string Locations;
-    public string AdditionalInfo;
-    public bool DisableRestart;
-    public byte SpecialMode;
-    public bool FileExists;
-}
-
-public static class SongList
+public class SongList
 {
     private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc/gviz/tq?tqx=out:csv&sheet=main";
     private const string SheetFileName = "xiv_bgm.csv";
 
-    private static Dictionary<int, Song> _songs;
+    private readonly Dictionary<int, Song> _songs;
 
-    static SongList()
+    private static SongList _instance;
+    public static SongList Instance => _instance ??= new SongList();
+    
+    private SongList()
     {
         _songs = new Dictionary<int, Song>();
-    }
-
-    public static void Init(string pluginDirectory)
-    {
-        var sheetPath = Path.Join(pluginDirectory, SheetFileName);
+        var sheetPath = Path.Join(DalamudApi.PluginInterface.AssemblyLocation.FullName, SheetFileName);
         _songs = new Dictionary<int, Song>();
 
-        var existingText = File.ReadAllText(sheetPath);
+        var existingText = "";
+
+        try
+        {
+            existingText = File.ReadAllText(sheetPath);
+        }
+        catch (Exception)
+        {
+            // ignore
+        }
 
         using var client = new HttpClient();
         try
         {
-            PluginLog.Log("Checking for updated bgm sheet");
+            PluginLog.Log("[SongList] Checking for updated bgm sheet");
             var newText = client.GetStringAsync(SheetPath).Result;
             LoadSheet(newText);
 
-            // would really prefer some kind of proper versioning here
             if (newText != existingText)
             {
                 File.WriteAllText(sheetPath, newText);
-                PluginLog.Log("Updated bgm sheet to new version");
+                PluginLog.Log("[SongList] Updated bgm sheet to new version");
             }
         }
         catch (Exception e)
         {
-            PluginLog.Error(e, "Orchestrion failed to update bgm sheet; using previous version");
-            // if this throws, something went horribly wrong and we should just break completely
+            PluginLog.Error(e, "[SongList] Orchestrion failed to update bgm sheet; using previous version");
             LoadSheet(existingText);
         }
     }
 
-    // Attempts to load supplemental bgm data from the csv file
-    // This throws all internal errors
-    private static void LoadSheet(string sheetText)
+    private void LoadSheet(string sheetText)
     {
         _songs.Clear();
-        var bgms = OrchestrionPlugin.DataManager.Excel.GetSheet<BGM>()!.ToDictionary(k => k.RowId, v => v);
+        var bgms = DalamudApi.DataManager.Excel.GetSheet<BGM>()!.ToDictionary(k => k.RowId, v => v);
         var sheetLines = sheetText.Split('\n'); // gdocs provides \n
         for (int i = 1; i < sheetLines.Length; i++)
         {
@@ -91,72 +84,44 @@ public static class SongList
                 AdditionalInfo = additionalInfo,
                 SpecialMode = bgm?.SpecialMode ?? 0,
                 DisableRestart = bgm?.DisableRestart ?? false,
-                FileExists = bgm != null && OrchestrionPlugin.DataManager.FileExists(bgm.File),
+                FileExists = bgm != null && DalamudApi.DataManager.FileExists(bgm.File),
             };
 
             _songs[id] = song;
         }
     }
 
-    public static bool IsFavorite(int songId) => OrchestrionPlugin.Configuration.FavoriteSongs.Contains(songId);
-
-    public static void AddFavorite(int songId)
+    public bool IsDisableRestart(int id)
     {
-        OrchestrionPlugin.Configuration.FavoriteSongs.Add(songId);
-        OrchestrionPlugin.Configuration.Save();
+        return _songs.TryGetValue(id, out var song) && song.DisableRestart;
     }
 
-    public static void RemoveFavorite(int songId)
-    {
-        OrchestrionPlugin.Configuration.FavoriteSongs.Remove(songId);
-        OrchestrionPlugin.Configuration.Save();
-    }
-
-    public static int GetFirstReplacementCandidateId()
-    {
-        return _songs.Keys.First(x => !OrchestrionPlugin.Configuration.SongReplacements.ContainsKey(x));
-    }
-
-    public static Dictionary<int, Song> GetSongs()
+    public Dictionary<int, Song> GetSongs()
     {
         return _songs;
     }
 
-    public static Song GetSong(int id)
+    public Song GetSong(int id)
     {
         return _songs.TryGetValue(id, out var song) ? song : default;
     }
 
-    public static bool TryGetSong(int id, out Song song)
+    public bool TryGetSong(int id, out Song song)
     {
         return _songs.TryGetValue(id, out song);
     }
 
-    public static string GetSongName(int id)
+    public string GetSongTitle(int id)
     {
         return _songs.TryGetValue(id, out var song) ? song.Name : "";
     }
 
-    public static string GetSongTitle(int id)
-    {
-        try
-        {
-            return _songs.ContainsKey(id) ? _songs[id].Name : "";
-        }
-        catch (Exception e)
-        {
-            PluginLog.Error(e, "GetSongTitle");
-        }
-
-        return "";
-    }
-
-    public static bool SongExists(int id)
+    public bool SongExists(int id)
     {
         return _songs.ContainsKey(id);
     }
 
-    public static bool TryGetSongByName(string name, out int songId)
+    public bool TryGetSongByName(string name, out int songId)
     {
         songId = 0;
         foreach (var song in _songs)
@@ -171,11 +136,16 @@ public static class SongList
         return false;
     }
 
-    public static bool TryGetRandomSong(bool limitToFavorites, out int songId)
+    public int GetFirstReplacementCandidateId()
+    {
+        return _songs.Keys.First(x => !Configuration.Instance.SongReplacements.ContainsKey(x));
+    }
+    
+    public bool TryGetRandomSong(bool limitToFavorites, out int songId)
     {
         songId = 0;
 
-        ICollection<int> source = limitToFavorites ? OrchestrionPlugin.Configuration.FavoriteSongs : _songs.Keys;
+        ICollection<int> source = limitToFavorites ? Configuration.Instance.FavoriteSongs : _songs.Keys;
         if (source.Count == 0) return false;
 
         var max = source.Max();
@@ -186,7 +156,7 @@ public static class SongList
             songId = random.Next(2, max + 1);
 
             if (!_songs.ContainsKey(songId)) continue;
-            if (limitToFavorites && !IsFavorite(songId)) continue;
+            if (limitToFavorites && !Configuration.Instance.IsFavorite(songId)) continue;
 
             found = true;
         }

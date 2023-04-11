@@ -1,66 +1,51 @@
 ﻿using Dalamud.Configuration;
-using Dalamud.Plugin;
-using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Orchestrion.Struct;
 
-namespace Orchestrion
+namespace Orchestrion;
+
+[Serializable]
+public class Configuration : IPluginConfiguration
 {
-    [Serializable]
-    public class Configuration : IPluginConfiguration
+    public int Version { get; set; } = 2;
+
+    public bool ShowSongInTitleBar { get; set; } = true;
+    public bool ShowSongInChat { get; set; } = true;
+    public bool ShowIdInNative { get; set; } = false;
+    public bool ShowSongInNative { get; set; } = true;
+    public bool HandleSpecialModes { get; set; } = true;
+
+    public Dictionary<int, SongReplacementEntry> SongReplacements { get; private set; } = new();
+    public HashSet<int> FavoriteSongs { get; internal set; } = new();
+
+    private Configuration() { }
+
+    [JsonIgnore]
+    private static Configuration _instance;
+    
+    [JsonIgnore]
+    public static Configuration Instance => _instance ??= DalamudApi.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+    
+    public bool IsFavorite(int songId)
     {
-        public int Version { get; set; } = 1;
+        return FavoriteSongs.Contains(songId); 
+    }
 
-        public bool ShowSongInTitleBar { get; set; } = true;
-        public bool ShowSongInChat { get; set; } = true;
-        public bool ShowIdInNative { get; set; } = false;
+    public void AddFavorite(int songId)
+    {
+        FavoriteSongs.Add(songId);
+        Save();
+    }
 
-        public Dictionary<int, SongReplacement> SongReplacements { get; private set; } = new();
-
-        [JsonProperty]
-        private bool showSongInNative = true;
-
-        [JsonIgnore]
-        public bool ShowSongInNative
-        {
-            get => showSongInNative;
-            set
-            {
-                plugin.SetNativeDisplay(value);
-                showSongInNative = value;
-            }
-        }
-        
-        [JsonProperty]
-        private bool handleSpecialModes = true;
-
-        [JsonIgnore]
-        public bool HandleSpecialModes
-        {
-            get => handleSpecialModes;
-            set
-            {
-                BGMController.SetSpecialModeHandling(value);
-                handleSpecialModes = value;
-            }
-        }
-
-        public HashSet<int> FavoriteSongs { get; internal set; } = new HashSet<int>();
-
-        [NonSerialized]
-        private DalamudPluginInterface pluginInterface;
-
-        [NonSerialized] private OrchestrionPlugin plugin;
-
-        public void Initialize(DalamudPluginInterface pluginInterface, OrchestrionPlugin plugin)
-        {
-            this.pluginInterface = pluginInterface;
-            this.plugin = plugin;
-        }
-
-        public void Save()
-        {
-            pluginInterface.SavePluginConfig(this);
-        }
+    public void RemoveFavorite(int songId)
+    {
+        FavoriteSongs.Remove(songId);
+        Save();
+    }
+    
+    public void Save()
+    {
+        DalamudApi.PluginInterface.SavePluginConfig(this);
     }
 }

@@ -60,6 +60,10 @@
       <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="CheapLoc">
+      <HintPath>$(DalamudLibPath)CheapLoc.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     
     <PackageReference Include="DalamudPackager" Version="2.1.10" />
   </ItemGroup>
@@ -68,13 +72,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>favoriteIcon.png</TargetPath>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="Data\settings.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>settings.png</TargetPath>
-    </ContentWithTargetPath>
     <ContentWithTargetPath Include="Data\xiv_bgm.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>xiv_bgm.csv</TargetPath>
     </ContentWithTargetPath>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Loc" />
   </ItemGroup>
 </Project>
