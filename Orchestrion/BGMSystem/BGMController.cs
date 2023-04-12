@@ -1,12 +1,15 @@
 using System.Threading.Tasks;
 using Dalamud.Hooking;
+using Orchestrion.Game.BGMSystem;
+using Orchestrion.Persistence;
 
-namespace Orchestrion.Game.BGMSystem;
+namespace Orchestrion.BGMSystem;
 
 public class BGMController
 {
     private const SceneFlags SceneZeroFlags = SceneFlags.Resume;
     private const int SceneCount = 12;
+    private const int PlayersCount = 2;
 
     // The last song that the game was previously playing.
     public int OldSongId { get; private set; }
@@ -172,11 +175,11 @@ public class BGMController
                 
                 bgms[priority].Flags = SceneFlags.EnableDisableRestart;
                 _addDisableRestartId(&bgms[priority], songId);
-                bgms[priority].Flags = SceneZeroFlags;
+                bgms[priority].Flags = SceneFlags.ForceAutoReset;
 
                 Task.Delay(500).ContinueWith(_ =>
                 {
-                    bgms[priority].Flags = SceneFlags.EnableDisableRestart;
+                    bgms[priority].Flags = SceneFlags.EnableDisableRestart | SceneFlags.ForceAutoReset;
                 });
             }
         }

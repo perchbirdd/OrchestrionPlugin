@@ -1,4 +1,6 @@
-﻿namespace Orchestrion.Game.BGMSystem;
+﻿using Orchestrion.BGMSystem;
+
+namespace Orchestrion.Game.BGMSystem;
 
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct BGMScene

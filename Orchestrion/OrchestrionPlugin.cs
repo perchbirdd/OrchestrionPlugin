@@ -2,15 +2,22 @@
 using Dalamud.Game.Text;
 using Dalamud.Plugin;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Dalamud.Game;
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
+using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using ImGuiNET;
+using Orchestrion.Audio;
+using Orchestrion.BGMSystem;
 using Orchestrion.Game;
+using Orchestrion.Persistence;
 using Orchestrion.Windows;
 
 namespace Orchestrion;
@@ -19,10 +26,12 @@ namespace Orchestrion;
 public class OrchestrionPlugin : IDalamudPlugin
 {
     private const string ConstName = "Orchestrion";
-    public string Name => ConstName;
-
     private const string CommandName = "/porch";
     private const string NativeNowPlayingPrefix = "♪ ";
+    
+    public static ImFontPtr SymbolsFont { get; private set; }
+    
+    public string Name => ConstName;
 
     private readonly WindowSystem _windowSystem;
     private readonly MainWindow _mainWindow;
@@ -42,10 +51,10 @@ public class OrchestrionPlugin : IDalamudPlugin
     {
         DalamudApi.Initialize(pluginInterface);
 
-        if (Configuration.Instance.ShowSongInNative)
-        {
-            _dtrEntry = DalamudApi.DtrBar.Get(ConstName);
-        }
+        // if (Configuration.Instance.ShowSongInNative)
+        // {
+        //     _dtrEntry = DalamudApi.DtrBar.Get(ConstName);
+        // }
 
         BGMAddressResolver.Init();
         BGMManager.OnSongChanged += OnSongChanged;
@@ -67,13 +76,51 @@ public class OrchestrionPlugin : IDalamudPlugin
         
         DalamudApi.Framework.Update += OrchestrionUpdate;
         DalamudApi.ClientState.Logout += ClientStateOnLogout;
+        
+        // DalamudApi.PluginInterface.UiBuilder.BuildFonts += BuildFonts;
+        
+        // PluginLog.Debug($"Calling RebuildFonts SymbolsFont: {SymbolsFont == default}");
+        // DalamudApi.PluginInterface.UiBuilder.RebuildFonts();
+        // PluginLog.Debug($"Called RebuildFonts SymbolsFont: {SymbolsFont == default}");
     }
     
-    private void ClientStateOnLogout(object sender, EventArgs e)
+    // private unsafe void BuildFonts()
+    // {
+    //     PluginLog.Debug($"Building fonts {SymbolsFont}");
+    //     var builder = new ImFontGlyphRangesBuilderPtr(ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder());
+    //     for(int i = 0xE000; i < 0xF8FF; i++)
+    //     {
+    //         builder.AddChar((ushort)i);
+    //     }
+    //     builder.BuildRanges(out var ranges);
+    //     var config = new ImFontConfigPtr(ImGuiNative.ImFontConfig_ImFontConfig())
+    //     {
+    //         FontDataOwnedByAtlas = false,
+    //     };
+    //     SymbolsFont = ImGui.GetIO().Fonts.AddFontFromFileTTF(Path.Combine(DalamudApi.PluginInterface.AssemblyLocation.DirectoryName, "symbols.ttf"), ImGuiHelpers.GlobalScale * 32, config, ranges.Data);
+    //     builder.Destroy();
+    //     config.Destroy();
+    //     // var data = File.ReadAllBytes();
+    //     // fixed (byte* ptr = data)
+    //     // {
+    //     //     SymbolsFont = ImGui.GetIO().Fonts.AddFontFromMemoryTTF((nint)ptr, data.Length, ImGuiHelpers.GlobalScale * 12);
+    //     // }
+    //     // SymbolsFont = ImGui.GetIO().Fonts.AddFontFromMemoryTTF()
+    //     PluginLog.Debug($"Built fonts {SymbolsFont}");
+    // }
+    
+    public void Dispose()
     {
-        BGMManager.Stop();
+        _mainWindow.Dispose();
+        DalamudApi.Framework.Update -= OrchestrionUpdate;
+        DalamudApi.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
+        // DalamudApi.PluginInterface.UiBuilder.BuildFonts -= BuildFonts;
+        DalamudApi.CommandManager.RemoveHandler(CommandName);
+        _dtrEntry?.Dispose();
+        PlaylistManager.Dispose();
+        BGMManager.Dispose();
     }
-
+    
     private void OrchestrionUpdate(Framework ignored)
     {
         if (_songEchoPayload == null || IsLoadingScreen()) return;
@@ -86,20 +133,16 @@ public class OrchestrionPlugin : IDalamudPlugin
 
         _songEchoPayload = null;
     }
+    
+    private void ClientStateOnLogout(object sender, EventArgs e)
+    {
+        BGMManager.Stop();
+    }
 
     private void OnSongChanged(int oldSong, int newSong, bool playedByOrch)
     {
-        UpdateDtr(newSong, playedByOrch: playedByOrch);
+        // UpdateDtr(newSong, playedByOrch: playedByOrch);
         UpdateChat(newSong, playedByOrch: playedByOrch);
-    }
-
-    public void Dispose()
-    {
-        DalamudApi.Framework.Update -= OrchestrionUpdate;
-        DalamudApi.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
-        DalamudApi.CommandManager.RemoveHandler(CommandName);
-        _dtrEntry?.Dispose();
-        BGMManager.Dispose();
     }
 
     public void OpenMainWindow()
@@ -131,8 +174,8 @@ public class OrchestrionPlugin : IDalamudPlugin
             case 1 when argSplit[0].ToLowerInvariant() == "random":
                 BGMManager.PlayRandomSong();
                 break;
-            case 2 when argSplit[0].ToLowerInvariant() == "random" && argSplit[1].ToLowerInvariant() == "favorites":
-                BGMManager.PlayRandomSong(restrictToFavorites: true);
+            case 2 when argSplit[0].ToLowerInvariant() == "random":
+                BGMManager.PlayRandomSong(argSplit[1]);
                 break;
             case 2 when argSplit[0].ToLowerInvariant() == "play" && int.TryParse(argSplit[1], out var songId):
                 if (SongList.Instance.SongExists(songId))

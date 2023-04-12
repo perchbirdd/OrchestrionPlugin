@@ -1,7 +1,7 @@
 ﻿using Dalamud.Logging;
 using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 
-namespace Orchestrion.Game;
+namespace Orchestrion.BGMSystem;
 
 public static class BGMAddressResolver
 {

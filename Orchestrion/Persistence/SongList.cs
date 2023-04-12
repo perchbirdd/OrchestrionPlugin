@@ -2,12 +2,11 @@
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
 using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
 using Orchestrion.Struct;
 
-namespace Orchestrion;
+namespace Orchestrion.Persistence;
 
 public class SongList
 {
@@ -22,7 +21,7 @@ public class SongList
     private SongList()
     {
         _songs = new Dictionary<int, Song>();
-        var sheetPath = Path.Join(DalamudApi.PluginInterface.AssemblyLocation.FullName, SheetFileName);
+        var sheetPath = Path.Join(DalamudApi.PluginInterface.AssemblyLocation.DirectoryName, SheetFileName);
         _songs = new Dictionary<int, Song>();
 
         var existingText = "";
@@ -73,7 +72,12 @@ public class SongList
             if (string.IsNullOrEmpty(name) || name == "Null BGM") continue;
 
             var location = elements[2].Substring(1).Replace("\"\"", "\"");
-            var additionalInfo = elements[3].Substring(1, elements[3].Substring(1).Length - 1).Replace("\"\"", "\"");
+            var additionalInfo = elements[3].Substring(1).Replace("\"\"", "\"");
+
+            var durationStr = elements[4].Substring(1, elements[4].Length - 2).Replace("\"\"", "\"");
+            var parsed = double.TryParse(durationStr, out var durationDbl);
+            var duration = parsed ? TimeSpan.FromSeconds(durationDbl) : TimeSpan.Zero;
+            if (!parsed) PluginLog.Debug($"failed parse {id} {name}: {durationStr}");
 
             bgms.TryGetValue((uint)id, out var bgm);
             var song = new Song
@@ -82,9 +86,11 @@ public class SongList
                 Name = name,
                 Locations = location,
                 AdditionalInfo = additionalInfo,
+                FilePath = bgm?.File ?? "",
                 SpecialMode = bgm?.SpecialMode ?? 0,
                 DisableRestart = bgm?.DisableRestart ?? false,
                 FileExists = bgm != null && DalamudApi.DataManager.FileExists(bgm.File),
+                Duration = duration,
             };
 
             _songs[id] = song;
@@ -141,22 +147,23 @@ public class SongList
         return _songs.Keys.First(x => !Configuration.Instance.SongReplacements.ContainsKey(x));
     }
     
-    public bool TryGetRandomSong(bool limitToFavorites, out int songId)
+    public bool TryGetRandomSong(string limitToPlaylist, out int songId)
     {
         songId = 0;
+        var playlistExists = Configuration.Instance.Playlists.TryGetValue(limitToPlaylist, out var playlist);
+        var isAllSongs = limitToPlaylist == string.Empty;
+        if (!playlistExists && !isAllSongs) return false;
 
-        ICollection<int> source = limitToFavorites ? Configuration.Instance.FavoriteSongs : _songs.Keys;
+        ICollection<int> source = !isAllSongs ? playlist.Songs : _songs.Keys;
         if (source.Count == 0) return false;
 
-        var max = source.Max();
-        var random = new Random();
         var found = false;
         while (!found)
         {
-            songId = random.Next(2, max + 1);
+            var index = Random.Shared.Next(source.Count);
 
-            if (!_songs.ContainsKey(songId)) continue;
-            if (limitToFavorites && !Configuration.Instance.IsFavorite(songId)) continue;
+            var id = source.ElementAt(index);
+            if (!_songs.ContainsKey(id)) continue;
 
             found = true;
         }

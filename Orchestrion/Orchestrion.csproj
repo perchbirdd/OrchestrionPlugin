@@ -76,6 +76,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>xiv_bgm.csv</TargetPath>
     </ContentWithTargetPath>
+    <ContentWithTargetPath Include="Data\symbols.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>symbols.ttf</TargetPath>
+    </ContentWithTargetPath>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Loc" />

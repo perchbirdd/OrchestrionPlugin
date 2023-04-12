@@ -4,10 +4,16 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.GameFonts;
+using Dalamud.Interface.Style;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
+using Orchestrion.Audio;
+using Orchestrion.BGMSystem;
 using Orchestrion.Game;
+using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
 namespace Orchestrion.Windows;
@@ -29,7 +35,12 @@ public class MainWindow : Window, IDisposable
     private int _selectedSong;
     private SongReplacementEntry _tmpReplacement;
     private bool _bgmTooltipLock;
-
+    
+    // Playlist creation
+    private Playlist _newPlaylist;
+    private string _newPlaylistName = "";
+    private int _newPlaylistSong = 0;
+    
     public MainWindow(OrchestrionPlugin orch) : base("Orchestrion###Orchestrion")
     {
         _orch = orch;
@@ -54,15 +65,20 @@ public class MainWindow : Window, IDisposable
         
         if (Configuration.Instance.ShowSongInTitleBar)
         {
-            PluginLog.Debug("[UpdateTitle] Updating title bar");
-            var songTitle = SongList.Instance.GetSongTitle(currentSong);
-            WindowName = $"Orchestrion - [{currentSong}] {songTitle}###Orchestrion";
+            if (currentSong == 0)
+                WindowName = "Orchestrion";
+            else
+            {
+                PluginLog.Debug("[UpdateTitle] Updating title bar");
+                var songTitle = SongList.Instance.GetSongTitle(currentSong);
+                WindowName = $"Orchestrion - [{currentSong}] {songTitle}###Orchestrion";   
+            }
         }
     }
 
     public void Dispose()
     {
-        Stop();
+        BGMManager.Stop();
         _favoriteIcon?.Dispose();
     }
     
@@ -74,16 +90,6 @@ public class MainWindow : Window, IDisposable
             TargetSongId = id,
             ReplacementId = SongReplacementEntry.NoChangeId,
         };
-    }
-
-    private void Play(int songId)
-    {
-        BGMManager.Play(songId);
-    }
-
-    private void Stop()
-    {
-        BGMManager.Stop();
     }
 
     public override void PreDraw()
@@ -117,13 +123,13 @@ public class MainWindow : Window, IDisposable
         {
             if (ImGui.BeginTabItem("All songs"))
             {
-                DrawSongList(false);
+                DrawSongList();
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("Favorites"))
+            if (ImGui.BeginTabItem("Playlists"))
             {
-                DrawSongList(true);
+                DrawPlaylists();
                 ImGui.EndTabItem();
             }
 
@@ -146,6 +152,42 @@ public class MainWindow : Window, IDisposable
             }
 #endif
             ImGui.EndTabBar();
+        }
+
+        DrawNewPlaylistModal();
+    }
+
+    private void DrawNewPlaylistModal()
+    {
+        if (_newPlaylistSong != 0)
+            ImGui.OpenPopup("Create New Playlist");
+
+        var a = true;
+        if (ImGui.BeginPopupModal($"Create New Playlist", ref a, ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.Text("Enter a name for your playlist:");
+            ImGui.InputText("##newplaylistname", ref _newPlaylistName, 64);
+            var invalid = string.IsNullOrWhiteSpace(_newPlaylistName) 
+                          || string.IsNullOrEmpty(_newPlaylistName) 
+                          || Configuration.Instance.Playlists.ContainsKey(_newPlaylistName);
+            ImGui.BeginDisabled(invalid);
+            if (ImGui.Button("Create"))
+            {
+                Configuration.Instance.Playlists.Add(_newPlaylistName, new Playlist(_newPlaylistName, new List<int> {_newPlaylistSong}));
+                Configuration.Instance.Save();
+                _newPlaylistName = "";
+                _newPlaylistSong = 0;
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.EndDisabled();
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel"))
+            {
+                _newPlaylistName = "";
+                _newPlaylistSong = 0;
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.EndPopup();
         }
     }
 
@@ -171,14 +213,14 @@ public class MainWindow : Window, IDisposable
         
         if (BGMManager.PlayingSongId == 0) ImGui.BeginDisabled();
         if (ImGui.Button("Stop", new Vector2(width / 2, buttonHeight)))
-            Stop();
+            BGMManager.Stop();
         if (BGMManager.PlayingSongId == 0) ImGui.EndDisabled();
         
         ImGui.SameLine();
         
         ImGui.BeginDisabled(!song.FileExists);
         if (ImGui.Button("Play", new Vector2(width / 2, buttonHeight)))
-            Play(_selectedSong);
+            BGMManager.Play(_selectedSong);
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             DrawBgmTooltip(song);
@@ -235,18 +277,6 @@ public class MainWindow : Window, IDisposable
         }
     }
 
-    private int _startTime;
-    private int _expiryTime;
-
-    private int _index;
-    private readonly List<Tuple<int, int>> _test = new List<Tuple<int, int>>()
-    {
-        // new(957, 214),
-        new(896, 87),
-        new(901, 97),
-        new(902, 50),
-    };
-
     private void DrawDebug()
     {
         var addr = BGMAddressResolver.BGMSceneManager;
@@ -263,53 +293,6 @@ public class MainWindow : Window, IDisposable
         // ImGui.Text($"OldSecondScene: {BGMManager.OldSecondScene}");
         // ImGui.Text($"OldSecondSongId: {BGMManager.OldSecondSongId}");
         ImGui.Text($"Audible: {BGMManager.CurrentAudibleSong}");
-
-        if (ImGui.Button("Play with expiry"))
-        {
-            Play(_test[_index].Item1);
-            _startTime = Environment.TickCount;
-            _expiryTime = _startTime + _test[_index].Item2 * 1000;
-        }
-        
-        if (_startTime > 0)
-        {
-            var timeLeft = _expiryTime - Environment.TickCount;
-            if (timeLeft < 0)
-            {
-                _index++;
-                if (_index >= _test.Count)
-                    _index = 0;
-                Play(_test[_index].Item1);
-                _startTime = Environment.TickCount;
-                _expiryTime = _startTime + _test[_index].Item2 * 1000;
-            }
-            else
-            {
-                var timeSpent = Environment.TickCount - _startTime;
-                var ts2 = TimeSpan.FromMilliseconds(timeSpent);
-                var len = _test[_index].Item2 * 1000;
-                var frac = timeLeft / (float) len;
-                ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImGuiColors.DalamudWhite);
-                ImGui.ProgressBar(1 - frac, new Vector2(-1, 4));
-                ImGui.PopStyleColor();
-                var current = $"{ts2:mm\\:ss}";
-                var max = $"{TimeSpan.FromMilliseconds(len):mm\\:ss}";
-                var x = ImGui.GetCursorPosX();
-                ImGui.Text(current);
-                ImGui.SameLine();
-                ImGui.SetCursorPosX(x);
-                RightAlignText(ImGui.GetCursorPosY(), max);
-                ImGui.Text(max);
-                // ImGui.Text($"Time left: {timeLeft / 1000f:F1} seconds");
-            }
-        }
-
-        if (ImGui.Button("Stop"))
-        {
-            Stop();
-            _index = 0;
-            _startTime = 0;
-        }
     }
 
     private void DrawCurrentReplacement()
@@ -391,27 +374,20 @@ public class MainWindow : Window, IDisposable
         return matchesSearch || searchEmpty;
     }
 
-    private void DrawSongList(bool favoritesOnly)
+    private void DrawSongList()
     {
         // to keep the tab bar always visible and not have it get scrolled out
         ImGui.BeginChild("##_songList_internal", ImGuiHelpers.ScaledVector2(-1f, -25f));
 
         if (ImGui.BeginTable("_songList table", 4, ImGuiTableFlags.SizingFixedFit))
         {
-            ImGui.TableSetupColumn("fav", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
             
             foreach (var s in SongList.Instance.GetSongs())
             {
                 var song = s.Value;
-                if (!SearchMatches(song))
-                    continue;
-
-                var isFavorite = Configuration.Instance.IsFavorite(song.Id);
-
-                if (favoritesOnly && !isFavorite)
-                    continue;
+                if (!SearchMatches(song)) continue;
 
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
@@ -426,6 +402,247 @@ public class MainWindow : Window, IDisposable
         DrawFooter();
     }
 
+    private void DrawPlayingUI(TimeSpan elapsed, TimeSpan total)
+    {
+        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImGuiColors.DalamudWhite);
+        var frac = elapsed.TotalMilliseconds / total.TotalMilliseconds;
+        if (elapsed == TimeSpan.Zero && total == TimeSpan.Zero)
+            frac = 0;
+        ImGui.ProgressBar((float)frac, new Vector2(-1, 4));
+        ImGui.PopStyleColor();
+        var current = $"{elapsed:mm\\:ss}";
+        var max = $"{total:mm\\:ss}";
+        var x = ImGui.GetCursorPosX();
+        ImGui.Text(current);
+        ImGui.SameLine();
+        ImGui.SetCursorPosX(x);
+        RightAlignText(ImGui.GetCursorPosY(), max);
+        ImGui.Text(max);
+    }
+    
+    private void DrawPlaylists()
+    {
+        var elapsed = TimeSpan.Zero;
+        var total = TimeSpan.Zero;
+
+        if (PlaylistManager.IsPlaying)
+        {
+            elapsed = PlaylistManager.ElapsedDuration;
+            total = PlaylistManager.Duration;
+        }
+
+        DrawPlayingUI(elapsed, total);
+
+        ImGui.BeginChild("##playlist_internal", ImGuiHelpers.ScaledVector2(-1f, -25f));
+        foreach (var playlist in Configuration.Instance.Playlists)
+        {
+            var pName = playlist.Value.Name;
+            var v = DalamudApi.PluginInterface.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Axis18));
+            ImGui.PushFont(v.ImFont);
+            var collHdr = ImGui.CollapsingHeader($"{pName}##pnameheader");
+            ImGui.PopFont();
+            ImGui.SameLine();
+            if (ImGuiComponents.IconButton($"##{pName}_prev", FontAwesomeIcon.EllipsisV))
+            {
+                ImGui.OpenPopup($"##{pName}_popup");
+            }
+
+            if (collHdr)
+            {
+                if (ImGui.BeginPopup($"##{pName}_popup"))
+                {
+                    if (ImGuiComponents.IconButton($"##{pName}_edit", FontAwesomeIcon.Edit))
+                    {
+                        // _playlistEdit = playlist.Value;
+                        ImGui.CloseCurrentPopup();
+                    }
+                    ImGui.SameLine();
+                    if (ImGuiComponents.IconButton($"##{pName}_del", FontAwesomeIcon.Trash))
+                    {
+                        Configuration.Instance.Playlists.Remove(playlist.Key);
+                        Configuration.Instance.Save();
+                        ImGui.CloseCurrentPopup();
+                    }
+                    ImGui.EndPopup();
+                }
+                
+                if (ImGuiComponents.IconButton($"##{pName}_prev", FontAwesomeIcon.Backward))
+                {
+                    PlaylistManager.Next();
+                }
+                ImGui.SameLine();
+                if (PlaylistManager.CurrentPlaylist?.Name == pName)
+                {
+                    if (ImGuiComponents.IconButton($"##{pName}_stop", FontAwesomeIcon.Stop))
+                        PlaylistManager.Stop();
+                }
+                else if (ImGuiComponents.IconButton($"##{pName}_play", FontAwesomeIcon.Play))
+                {
+                    PlaylistManager.Play(playlist.Value.Name);
+                }
+                ImGui.SameLine();
+                if (ImGuiComponents.IconButton($"##{pName}_next", FontAwesomeIcon.Forward))
+                {
+                    PlaylistManager.Next();
+                }
+                ImGui.SameLine();
+                if (ImGuiComponents.IconButton($"##{pName}_del", FontAwesomeIcon.Trash))
+                {
+                    Configuration.Instance.Playlists.Remove(playlist.Key);
+                    Configuration.Instance.Save();
+                }
+                
+                if (ImGui.Button($"Repeat: {playlist.Value.RepeatMode}##{pName}_repeat"))
+                {
+                    // cycle through repeat modes
+                    playlist.Value.RepeatMode = (RepeatMode)(((int)playlist.Value.RepeatMode + 1) % 3);
+                }
+                ImGui.SameLine();
+                if (ImGui.Button($"Shuffle: {playlist.Value.ShuffleMode}##{pName}_shuffle"))
+                {
+                    // cycle through shuffle modes
+                    playlist.Value.ShuffleMode = (ShuffleMode)(((int)playlist.Value.ShuffleMode + 1) % 2);
+                }
+
+                if (ImGui.BeginTable($"playlisttable{playlist.Value.Name}", 4, ImGuiTableFlags.SizingFixedFit))
+                {
+                    ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
+                    ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
+
+                    foreach (var s in playlist.Value.Songs)
+                    {
+                        if (!SongList.Instance.TryGetSong(s, out var song)) continue;
+                        if (!SearchMatches(song)) continue;
+
+                        ImGui.TableNextRow();
+                        ImGui.TableNextColumn();
+
+                        DrawSongListItem(song);
+                    }
+
+                    ImGui.EndTable();
+                }
+            }
+        }
+        ImGui.EndChild();
+        DrawFooter();
+    }
+/*
+    private unsafe void DrawPlaylists2()
+    {
+        var elapsed = TimeSpan.Zero;
+        var total = TimeSpan.Zero;
+
+        if (PlaylistManager.IsPlaying)
+        {
+            elapsed = PlaylistManager.ElapsedDuration;
+            total = PlaylistManager.Duration;
+        }
+
+        DrawPlayingUI(elapsed, total);
+
+        ImGui.BeginChild("##playlist_internal", ImGuiHelpers.ScaledVector2(-1f, -25f));
+        foreach (var playlist in Configuration.Instance.Playlists)
+        {
+            var pName = playlist.Value.Name;
+            var v = DalamudApi.PluginInterface.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Axis18));
+            ImGui.PushFont(v.ImFont);
+            ImGui.Text(pName);
+            ImGui.PopFont();
+
+            // ImGui.SameLine();
+            // if (ImGuiComponents.IconButton($"##{pName}_prev", FontAwesomeIcon.FastBackward))
+            ImGui.PushFont(OrchestrionPlugin.SymbolsFont);
+            if (ImGui.Button($"{Icons.More}##{pName}_more"))
+            {
+                ImGui.OpenPopup($"##playlist_{pName}_more");
+            }
+
+            // ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f);
+            if (ImGui.Button($"{Icons.Previous}##{pName}_prev"))
+            {
+                PlaylistManager.Next();
+            }
+            ImGui.SameLine();
+            if (PlaylistManager.CurrentPlaylist?.Name == pName)
+            {
+                // if (ImGuiComponents.IconButton($"##{pName}_stop", FontAwesomeIcon.Stop))
+                if (ImGui.Button($"{Icons.Stop}##{pName}_stop"))
+                    PlaylistManager.Stop();
+            }
+            // else if (ImGuiComponents.IconButton($"##{pName}_play", FontAwesomeIcon.Play))
+            else if (ImGui.Button($"{Icons.Play}##{pName}_play"))
+            {
+                PlaylistManager.Play(playlist.Value.Name);
+            }
+            ImGui.SameLine();
+            // if (ImGuiComponents.IconButton($"##{pName}_next", FontAwesomeIcon.FastForward))
+            if (ImGui.Button($"{Icons.Next}##{pName}_next"))
+            {
+                PlaylistManager.Next();
+            }
+            ImGui.SameLine();
+            if (ImGui.Button($"{Icons.Trash}##{pName}_del"))
+            {
+                Configuration.Instance.Playlists.Remove(playlist.Key);
+                Configuration.Instance.Save();
+            }
+            ImGui.PopFont();
+            // ImGui.PopStyleVar();
+            
+            if (ImGui.BeginPopup($"##playlist_{pName}_more"))
+            {
+                if (ImGui.MenuItem("Edit"))
+                {
+                    // _playlistEdit = playlist.Value;
+                    // _playlistEditName = playlist.Value.Name;
+                }
+                if (ImGui.MenuItem("Delete"))
+                {
+                    Configuration.Instance.Playlists.Remove(playlist.Key);
+                    Configuration.Instance.Save();
+                }
+                ImGui.EndPopup();
+            }
+            
+            // var repeatModeStr = playlist.Value.RepeatMode == 
+            
+            if (ImGui.Button($"Repeat: {playlist.Value.RepeatMode}##{pName}_repeat"))
+            {
+                // cycle through repeat modes
+                playlist.Value.RepeatMode = (RepeatMode)(((int)playlist.Value.RepeatMode + 1) % 3);
+            }
+            ImGui.SameLine();
+            if (ImGui.Button($"Shuffle: {playlist.Value.ShuffleMode}##{pName}_shuffle"))
+            {
+                // cycle through shuffle modes
+                playlist.Value.ShuffleMode = (ShuffleMode)(((int)playlist.Value.ShuffleMode + 1) % 2);
+            }
+            // ImGuiComponents.IconButton(FontAwesomeIcon.Random, ImGuiColors.DalamudRed, ImGuiColors.HealerGreen);
+
+            if (ImGui.BeginTable($"playlisttable{playlist.Value.Name}", 4, ImGuiTableFlags.SizingFixedFit))
+            {
+                ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
+
+                foreach (var s in playlist.Value.Songs)
+                {
+                    if (!SongList.Instance.TryGetSong(s, out var song)) continue;
+                    if (!SearchMatches(song)) continue;
+
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+
+                    DrawSongListItem(song);
+                }
+
+                ImGui.EndTable();
+            }
+        }
+        ImGui.EndChild();
+        DrawFooter();
+    }
+*/
     private void DrawSongHistory()
     {
         // to keep the tab bar always visible and not have it get scrolled out
@@ -433,7 +650,6 @@ public class MainWindow : Window, IDisposable
         
         if (ImGui.BeginTable("_songList table", 4, ImGuiTableFlags.SizingFixedFit))
         {
-            ImGui.TableSetupColumn("fav", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed);
@@ -463,19 +679,9 @@ public class MainWindow : Window, IDisposable
     // Uses 2 columns, 3 if timePlayed is specified
     private void DrawSongListItem(Song song, int historyIndex = 0, DateTime timePlayed = default)
     {
-        var isFavorite = Configuration.Instance.IsFavorite(song.Id);
         var isHistory = timePlayed != default;
-
-        if (isFavorite)
-        {
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3);
-            ImGui.Image(_favoriteIcon.ImGuiHandle, new Vector2(13, 13));
-        }
-
-        ImGui.TableNextColumn();
-
+        
         ImGui.Text(song.Id.ToString());
-
         ImGui.TableNextColumn();
 
         var selected = false;
@@ -490,26 +696,37 @@ public class MainWindow : Window, IDisposable
             _selectedSong = song.Id;
             if (isHistory) _selectedHistoryEntry = historyIndex;
             if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
-                Play(_selectedSong);
+                BGMManager.Play(_selectedSong);
         }
 
         if (ImGui.IsItemHovered())
             DrawBgmTooltip(song);
-
+        
         if (ImGui.BeginPopupContextItem())
         {
             _selectedSong = song.Id;
             if (isHistory) _selectedHistoryEntry = historyIndex;
-            
-            if (!isFavorite)
+
+            if (ImGui.BeginMenu($"Add to..."))
             {
-                if (ImGui.Selectable("Add to favorites"))
-                    Configuration.Instance.AddFavorite(song.Id);
-            }
-            else
-            {
-                if (ImGui.Selectable("Remove from favorites"))
-                    Configuration.Instance.RemoveFavorite(song.Id);
+                foreach (var p in Configuration.Instance.Playlists)
+                {
+                    if (ImGui.MenuItem(p.Value.Name))
+                    {
+                        p.Value.Songs.Add(song.Id);
+                        Configuration.Instance.Save();
+                    }
+                }
+                
+                ImGui.Separator();
+                
+                if (ImGui.MenuItem("New playlist..."))
+                {
+                    PluginLog.Debug("Opening new playlist popup...");
+                    _newPlaylistSong = song.Id;
+                }
+
+                ImGui.EndMenu();
             }
 
             ImGui.EndPopup();
@@ -534,14 +751,32 @@ public class MainWindow : Window, IDisposable
         ImGui.BeginTooltip();
         ImGui.PushTextWrapPos(450 * ImGuiHelpers.GlobalScale);
         ImGui.TextColored(new Vector4(0, 1, 0, 1), "Song Info");
-        ImGui.TextWrapped($"Title: {bgm.Name}");
-        ImGui.TextWrapped(string.IsNullOrEmpty(bgm.Locations) ? "Location: Unknown" : $"Location: {bgm.Locations}");
+        ImGui.TextColored(ImGuiColors.DalamudGrey, "Title: ");
+        ImGui.SameLine();
+        ImGui.TextWrapped(bgm.Name);
+        ImGui.TextColored(ImGuiColors.DalamudGrey, "Location: ");
+        ImGui.SameLine();
+        ImGui.TextWrapped(string.IsNullOrEmpty(bgm.Locations) ? "Unknown" : bgm.Locations);
         if (!string.IsNullOrEmpty(bgm.AdditionalInfo))
-            ImGui.TextWrapped($"Info: {bgm.AdditionalInfo}");
+        {
+            ImGui.TextColored(ImGuiColors.DalamudGrey, "Info: ");
+            ImGui.SameLine();
+            ImGui.TextWrapped(bgm.AdditionalInfo);
+        }
+        ImGui.TextColored(ImGuiColors.DalamudGrey, "Duration: ");
+        ImGui.SameLine();
+        ImGui.TextWrapped($"{bgm.Duration:mm\\:ss}");
         ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
         if (!bgm.FileExists)
             ImGui.TextWrapped("This song is unavailable; the track is not present in the current game files.");
         ImGui.PopStyleColor();
+        if (Configuration.Instance.ShowFilePaths)
+        {
+            ImGui.TextColored(ImGuiColors.DalamudGrey, "File Path: ");
+            ImGui.SameLine();
+            ImGui.TextWrapped(bgm.FilePath);
+        }
+        
         ImGui.PopTextWrapPos();
         ImGui.EndTooltip();
     }

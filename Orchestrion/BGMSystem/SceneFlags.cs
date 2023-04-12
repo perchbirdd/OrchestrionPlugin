@@ -1,4 +1,4 @@
-﻿namespace Orchestrion.Game.BGMSystem;
+﻿namespace Orchestrion.BGMSystem;
 
 [Flags]
 public enum SceneFlags : byte

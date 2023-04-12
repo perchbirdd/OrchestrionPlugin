@@ -2,7 +2,9 @@
 using System.Linq;
 using Dalamud.Logging;
 using Dalamud.Plugin.Ipc;
+using Orchestrion.Audio;
 using Orchestrion.Game;
+using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
 namespace Orchestrion.Ipc;
@@ -140,10 +142,10 @@ public class OrchestrionIpcManager : IDisposable
         {
             BGMManager.PlayRandomSong();
         }
-        else if (guid == _wotsitRandomFavoriteGuid)
-        {
-            BGMManager.PlayRandomSong(restrictToFavorites: true);
-        }
+        // else if (guid == _wotsitRandomFavoriteGuid)
+        // {
+        //     BGMManager.PlayRandomSong(restrictToFavorites: true);
+        // }
         else if (guid == _wotsitStopGuid)
         {
             BGMManager.Stop();

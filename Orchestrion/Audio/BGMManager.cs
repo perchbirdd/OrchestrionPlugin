@@ -1,10 +1,12 @@
 ﻿using Dalamud.Game;
 using Dalamud.Logging;
+using Orchestrion.BGMSystem;
 using Orchestrion.Game.BGMSystem;
 using Orchestrion.Ipc;
+using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
-namespace Orchestrion.Game;
+namespace Orchestrion.Audio;
 
 public static class BGMManager
 {
@@ -33,6 +35,7 @@ public static class BGMManager
 
     public static void Dispose()
     {
+        DalamudApi.Framework.Update -= Update;
         Stop();
         _bgmController.Dispose();
     }
@@ -136,9 +139,9 @@ public static class BGMManager
         _bgmController.SetSong(0);
     }
     
-    public static void PlayRandomSong(bool restrictToFavorites = false)
+    public static void PlayRandomSong(string playlistName = "")
     {
-        if (SongList.Instance.TryGetRandomSong(restrictToFavorites, out var randomFavoriteSong))
+        if (SongList.Instance.TryGetRandomSong(playlistName, out var randomFavoriteSong))
             Play(randomFavoriteSong);
         else
             DalamudApi.ChatGui.PrintError("No possible songs found.");

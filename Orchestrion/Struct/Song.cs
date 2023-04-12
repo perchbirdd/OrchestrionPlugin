@@ -8,6 +8,7 @@ public struct Song
 	public string AdditionalInfo;
 	public bool DisableRestart;
 	public byte SpecialMode;
+	public string FilePath;
 	public bool FileExists;
 	public TimeSpan Duration;
 }
