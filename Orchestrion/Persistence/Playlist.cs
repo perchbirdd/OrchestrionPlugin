@@ -25,8 +25,15 @@ public class Playlist
 		Songs = songs;
 	}
 
-	public void GetNextSong()
+	public void AddSong(int songId)
 	{
-		
+		Songs.Add(songId);
+		Configuration.Instance.Save();
+	}
+	
+	public void RemoveSong(int index)
+	{
+		Songs.RemoveAt(index);
+		Configuration.Instance.Save();
 	}
 }

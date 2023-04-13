@@ -10,7 +10,6 @@
                 Include="orchestrion.dll;
                         orchestrion.pdb;
                         xiv_bgm.csv;
-                        favoriteIcon.png;
                         orchestrion.json"/>
     </Target>    
 </Project>

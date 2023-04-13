@@ -2,23 +2,23 @@
 using Dalamud.Game.Text;
 using Dalamud.Plugin;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using CheapLoc;
 using Dalamud.Game;
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
+using Dalamud.Interface.GameFonts;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using Orchestrion.Audio;
 using Orchestrion.BGMSystem;
-using Orchestrion.Game;
 using Orchestrion.Persistence;
 using Orchestrion.Windows;
+using Orchestrion.Windows.MainWindow;
 
 namespace Orchestrion;
 
@@ -29,11 +29,12 @@ public class OrchestrionPlugin : IDalamudPlugin
     private const string CommandName = "/porch";
     private const string NativeNowPlayingPrefix = "♪ ";
     
-    public static ImFontPtr SymbolsFont { get; private set; }
+    public static ImFontPtr LargeFont { get; private set; }
     
     public string Name => ConstName;
 
     private readonly WindowSystem _windowSystem;
+    private readonly MiniPlayerWindow _miniPlayerWindow;
     private readonly MainWindow _mainWindow;
     private readonly SettingsWindow _settingsWindow;
     
@@ -60,11 +61,13 @@ public class OrchestrionPlugin : IDalamudPlugin
         BGMManager.OnSongChanged += OnSongChanged;
         
         _windowSystem = new WindowSystem();
-        _mainWindow = new MainWindow(this);
+        _miniPlayerWindow = new MiniPlayerWindow();
+        _mainWindow = new MainWindow(this, _miniPlayerWindow);
         _settingsWindow = new SettingsWindow();
         
         _windowSystem.AddWindow(_mainWindow);
         _windowSystem.AddWindow(_settingsWindow);
+        _windowSystem.AddWindow(_miniPlayerWindow);
 
         DalamudApi.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -76,39 +79,18 @@ public class OrchestrionPlugin : IDalamudPlugin
         
         DalamudApi.Framework.Update += OrchestrionUpdate;
         DalamudApi.ClientState.Logout += ClientStateOnLogout;
+
+        DalamudApi.PluginInterface.UiBuilder.BuildFonts += BuildFonts;
+        DalamudApi.PluginInterface.UiBuilder.RebuildFonts();
         
-        // DalamudApi.PluginInterface.UiBuilder.BuildFonts += BuildFonts;
-        
-        // PluginLog.Debug($"Calling RebuildFonts SymbolsFont: {SymbolsFont == default}");
-        // DalamudApi.PluginInterface.UiBuilder.RebuildFonts();
-        // PluginLog.Debug($"Called RebuildFonts SymbolsFont: {SymbolsFont == default}");
+        Loc.SetupWithFallbacks();
     }
-    
-    // private unsafe void BuildFonts()
-    // {
-    //     PluginLog.Debug($"Building fonts {SymbolsFont}");
-    //     var builder = new ImFontGlyphRangesBuilderPtr(ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder());
-    //     for(int i = 0xE000; i < 0xF8FF; i++)
-    //     {
-    //         builder.AddChar((ushort)i);
-    //     }
-    //     builder.BuildRanges(out var ranges);
-    //     var config = new ImFontConfigPtr(ImGuiNative.ImFontConfig_ImFontConfig())
-    //     {
-    //         FontDataOwnedByAtlas = false,
-    //     };
-    //     SymbolsFont = ImGui.GetIO().Fonts.AddFontFromFileTTF(Path.Combine(DalamudApi.PluginInterface.AssemblyLocation.DirectoryName, "symbols.ttf"), ImGuiHelpers.GlobalScale * 32, config, ranges.Data);
-    //     builder.Destroy();
-    //     config.Destroy();
-    //     // var data = File.ReadAllBytes();
-    //     // fixed (byte* ptr = data)
-    //     // {
-    //     //     SymbolsFont = ImGui.GetIO().Fonts.AddFontFromMemoryTTF((nint)ptr, data.Length, ImGuiHelpers.GlobalScale * 12);
-    //     // }
-    //     // SymbolsFont = ImGui.GetIO().Fonts.AddFontFromMemoryTTF()
-    //     PluginLog.Debug($"Built fonts {SymbolsFont}");
-    // }
-    
+
+    private void BuildFonts()
+    {
+        LargeFont = DalamudApi.PluginInterface.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamily.Axis, 24 * ImGuiHelpers.GlobalScale)).ImFont;
+    }
+
     public void Dispose()
     {
         _mainWindow.Dispose();

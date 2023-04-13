@@ -11,6 +11,7 @@ public static class PlaylistManager
 	public static bool IsPlaying { get; private set; }
 	public static Playlist CurrentPlaylist => Configuration.Instance.Playlists.GetValueOrDefault(_currentPlaylist, null);
 	public static int CurrentSongId => CurrentPlaylist?.Songs[_currentSongIndex] ?? 0;
+	public static int CurrentSongIndex => _currentSongIndex;
 	public static Song CurrentSong => SongList.Instance.GetSong(CurrentPlaylist?.Songs[_currentSongIndex] ?? 0);
 	public static TimeSpan ElapsedDuration => TimeSpan.FromMilliseconds(ElapsedMs);
 	public static TimeSpan Duration => CurrentSong.Duration;
@@ -35,15 +36,11 @@ public static class PlaylistManager
 
 	private static void Update(Framework ignore)
 	{
-		try
-		{
-			if (_currentPlaylist == string.Empty || CurrentPlaylist == null) return;
-			if (ElapsedDuration <= Duration) return;
-			PluginLog.Debug($"{ElapsedDuration} > {Duration}");
+		if (_currentPlaylist == string.Empty || CurrentPlaylist == null) return;
+		if (ElapsedDuration <= Duration) return;
+		PluginLog.Debug($"{ElapsedDuration} > {Duration}");
 
-			Next();
-		}
-		catch (Exception) { }
+		Next();
 	}
 	
 	public static void Play(string playlistName)
@@ -53,6 +50,15 @@ public static class PlaylistManager
 		IsPlaying = true;
 
 		Next();
+	}
+
+	public static void Play(string playlistName, int index)
+	{
+		_currentPlaylist = playlistName;
+		_currentSongIndex = index;
+		IsPlaying = true;
+		BGMManager.Play(CurrentPlaylist.Songs[index]);
+		_currentSongStartTime = Environment.TickCount64;
 	}
 
 	public static void Next()

@@ -17,6 +17,10 @@ public class Configuration : IPluginConfiguration
     public bool ShowSongInNative { get; set; } = true;
     public bool HandleSpecialModes { get; set; } = true;
     public bool ShowFilePaths { get; set; } = true;
+    public bool PlaylistPaneOpen { get; set; } = true;
+    public bool ShowMiniPlayer { get; set; } = false;
+    public bool MiniPlayerLock { get; set; } = false;
+    public float MiniPlayerOpacity { get; set; } = 1.0f;
 
     public Dictionary<int, SongReplacementEntry> SongReplacements { get; private set; } = new();
     
@@ -38,6 +42,12 @@ public class Configuration : IPluginConfiguration
             Migrate(_instance);
             return _instance;
         }
+    }
+
+    public void DeletePlaylist(string playlistName)
+    {
+        Playlists.Remove(playlistName);
+        Save();
     }
 
     private static void Migrate(Configuration c)

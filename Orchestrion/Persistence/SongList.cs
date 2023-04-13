@@ -10,7 +10,7 @@ namespace Orchestrion.Persistence;
 
 public class SongList
 {
-    private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc/gviz/tq?tqx=out:csv&sheet=main";
+    private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc/gviz/tq?tqx=out:csv&sheet=main2";
     private const string SheetFileName = "xiv_bgm.csv";
 
     private readonly Dictionary<int, Song> _songs;

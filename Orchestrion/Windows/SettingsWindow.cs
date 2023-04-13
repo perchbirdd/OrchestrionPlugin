@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface;
+﻿using CheapLoc;
+using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
@@ -10,9 +11,9 @@ namespace Orchestrion.Windows;
 
 public class SettingsWindow : Window
 {
-	public SettingsWindow() : base("Orchestrion Settings###orchsettings", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse)
+	public SettingsWindow() : base("Orchestrion Settings###orchsettings", ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse)
     {
-        SizeCondition = ImGuiCond.Always;
+        SizeCondition = ImGuiCond.Once;
     }
 
     public override void PreDraw()
@@ -75,5 +76,30 @@ public class SettingsWindow : Window
                               " related to the Orchestrion Plugin.");
             ImGui.PopStyleColor();
         }
-	}
+
+        ImGui.PushFont(OrchestrionPlugin.LargeFont);
+        ImGui.Text(Loc.Localize("MiniPlayerSettings", "Mini Player Settings"));
+        ImGui.PopFont();
+        
+        var showMiniPlayer = Configuration.Instance.ShowMiniPlayer;
+        if (ImGui.Checkbox("Show mini player", ref showMiniPlayer))
+        {
+            Configuration.Instance.ShowMiniPlayer = showMiniPlayer;
+            Configuration.Instance.Save();
+        }
+
+        var miniPlayerLock = Configuration.Instance.MiniPlayerLock;
+        if (ImGui.Checkbox("Lock mini player", ref miniPlayerLock))
+        {
+            Configuration.Instance.MiniPlayerLock = miniPlayerLock;
+            Configuration.Instance.Save();
+        }
+        
+        var miniPlayerOpacity = Configuration.Instance.MiniPlayerOpacity;
+        if (ImGui.SliderFloat("Mini player opacity", ref miniPlayerOpacity, 0.01f, 1.0f))
+        {
+            Configuration.Instance.MiniPlayerOpacity = miniPlayerOpacity;
+            Configuration.Instance.Save();
+        }
+    }
 }
