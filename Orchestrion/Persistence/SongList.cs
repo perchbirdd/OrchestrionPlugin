@@ -112,9 +112,29 @@ public class SongList
         return _songs.TryGetValue(id, out var song) ? song : default;
     }
 
+    public Song GetSongByIndex(int index)
+    {
+        return _songs.Values.ElementAt(index);
+    }
+
     public bool TryGetSong(int id, out Song song)
     {
         return _songs.TryGetValue(id, out song);
+    }
+    
+    public bool TryGetSongByIndex(int id, out Song song)
+    {
+        song = default;
+        try
+        {
+            song = _songs.Values.ElementAt(id);
+            return true;
+        }
+        catch (Exception e)
+        {
+            
+        }
+        return false;
     }
 
     public string GetSongTitle(int id)

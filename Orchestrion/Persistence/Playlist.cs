@@ -31,6 +31,12 @@ public class Playlist
 		Configuration.Instance.Save();
 	}
 	
+	public void AddSongs(IEnumerable<int> songIds)
+	{
+		Songs.AddRange(songIds);
+		Configuration.Instance.Save();
+	}
+	
 	public void RemoveSong(int index)
 	{
 		Songs.RemoveAt(index);

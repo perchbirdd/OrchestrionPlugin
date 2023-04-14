@@ -61,10 +61,10 @@ public class OrchestrionPlugin : IDalamudPlugin
         BGMManager.OnSongChanged += OnSongChanged;
         
         _windowSystem = new WindowSystem();
-        _miniPlayerWindow = new MiniPlayerWindow();
-        _mainWindow = new MainWindow(this, _miniPlayerWindow);
+        _mainWindow = new MainWindow(this);
         _settingsWindow = new SettingsWindow();
-        
+        _miniPlayerWindow = new MiniPlayerWindow();
+
         _windowSystem.AddWindow(_mainWindow);
         _windowSystem.AddWindow(_settingsWindow);
         _windowSystem.AddWindow(_miniPlayerWindow);

@@ -22,16 +22,14 @@ public partial class MainWindow : Window, IDisposable
     private const string BaseName = "Orchestrion###Orchestrion";
 
     private readonly OrchestrionPlugin _orch;
-    private readonly MiniPlayerWindow _miniPlayer;
 
     private string _searchText = string.Empty;
     private int _selectedSong;
     private bool _bgmTooltipLock;
 
-    public MainWindow(OrchestrionPlugin orch, MiniPlayerWindow miniPlayer) : base(BaseName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+    public MainWindow(OrchestrionPlugin orch) : base(BaseName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         _orch = orch;
-        _miniPlayer = miniPlayer;
         
         BGMManager.OnSongChanged += UpdateTitle;
         ResetReplacement();
