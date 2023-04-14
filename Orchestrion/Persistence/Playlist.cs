@@ -24,6 +24,18 @@ public class Playlist
 	{
 		Songs = songs;
 	}
+	
+	public void NextRepeatMode()
+	{
+		RepeatMode = (RepeatMode) ((int)(RepeatMode + 1) % 3);
+		Configuration.Instance.Save();
+	}
+	
+	public void NextShuffleMode()
+	{
+		ShuffleMode = (ShuffleMode) ((int)(ShuffleMode + 1) % 2);
+		Configuration.Instance.Save();
+	}
 
 	public void AddSong(int songId)
 	{

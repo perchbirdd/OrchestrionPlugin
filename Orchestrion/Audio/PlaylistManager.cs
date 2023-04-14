@@ -37,6 +37,7 @@ public static class PlaylistManager
 	private static void Update(Framework ignore)
 	{
 		if (_currentPlaylist == string.Empty || CurrentPlaylist == null) return;
+
 		if (ElapsedDuration <= Duration) return;
 		PluginLog.Debug($"{ElapsedDuration} > {Duration}");
 
@@ -66,11 +67,12 @@ public static class PlaylistManager
 		if (_currentPlaylist == string.Empty || CurrentPlaylist == null) return;
 		
 		var nextSong = GetNextSong();
+		PluginLog.Debug($"[PlaylistManager] [Next] NextSong: {nextSong} _currentSongIndex {_currentSongIndex}");
 		if (nextSong == 0)
 			Stop();
 		else
 		{
-			PluginLog.Debug($"[PlaylistManager] [Play] Playing {nextSong}");
+			PluginLog.Debug($"[PlaylistManager] [Play] Playing {nextSong} _currentSongIndex {_currentSongIndex}");
 			BGMManager.Play(nextSong);
 			_currentSongStartTime = Environment.TickCount64;
 		}
@@ -96,7 +98,7 @@ public static class PlaylistManager
 		switch (CurrentPlaylist?.RepeatMode)
 		{
 			case RepeatMode.One:
-				return CurrentPlaylist.Songs[++_currentSongIndex];
+				return CurrentPlaylist.Songs[_currentSongIndex];
 			case RepeatMode.All when CurrentPlaylist.ShuffleMode == ShuffleMode.Off:
 				_currentSongIndex = ++_currentSongIndex % CurrentPlaylist.Songs.Count;
 				return CurrentPlaylist.Songs[_currentSongIndex];
@@ -104,6 +106,8 @@ public static class PlaylistManager
 				_currentSongIndex = Random.Shared.Next(CurrentPlaylist.Songs.Count);
 				return CurrentPlaylist.Songs[_currentSongIndex];
 			case RepeatMode.Once when _playlistTrackPlayCount < CurrentPlaylist.Songs.Count:
+				if (_currentSongIndex + 1 >= CurrentPlaylist.Songs.Count)
+					return 0;
 				return CurrentPlaylist.Songs[++_currentSongIndex];
 			case RepeatMode.Once when _playlistTrackPlayCount >= CurrentPlaylist.Songs.Count:
 				return 0;

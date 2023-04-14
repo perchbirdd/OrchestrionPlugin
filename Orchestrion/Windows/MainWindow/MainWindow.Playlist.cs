@@ -7,6 +7,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using ImGuiNET;
 using Orchestrion.Audio;
+using Orchestrion.Components;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
@@ -28,6 +29,7 @@ public partial class MainWindow
 	private float _basePlaylistPaneSize = 150f;
 	private float _deltaPlaylistPaneSize = 0f;
 	private float _playlistPaneConfigSize = 150f;
+	private float _startDragY = 0f;
 	
 	private float PlaylistPaneSize {
 		get
@@ -39,130 +41,12 @@ public partial class MainWindow
 
 	private void DrawPlaylistsTab()
 	{
-		DrawPlayingPane();
+		if (!Configuration.Instance.ShowMiniPlayer)
+			Player.Draw();
 		DrawPlaylistSongs();
 		DrawPlaylistPane();
 	}
-
-	private void DrawPlayingPane()
-	{
-		if (Configuration.Instance.ShowMiniPlayer) return;
-		
-		var elapsed = TimeSpan.Zero;
-		var total = TimeSpan.Zero;
-
-		if (PlaylistManager.IsPlaying)
-		{
-			elapsed = PlaylistManager.ElapsedDuration;
-			total = PlaylistManager.Duration;
-		}
-		
-		var currentTimeStr = $"{elapsed:mm\\:ss}";
-		var totalTimeStr = $"{total:mm\\:ss}";
-		var songNameStr = PlaylistManager.IsPlaying ? PlaylistManager.CurrentSong.Name : "None";
-		var playlistNameStr = PlaylistManager.IsPlaying ? PlaylistManager.CurrentPlaylist.Name : "N/A";
-		var playlistTextStr = "From: " + playlistNameStr;
-		var popoutIcon = FontAwesomeIcon.ArrowUpRightFromSquare;
-		var popoutSize = Util.GetIconSize(popoutIcon);
-
-		var avail = ImGui.GetContentRegionAvail().X;
-		var totalTimeSize = ImGui.CalcTextSize(totalTimeStr);
-		var songNameWidth = ImGui.CalcTextSize(songNameStr).X;
-		var playlistNameWidth = ImGui.CalcTextSize(playlistTextStr).X;
-
-		// These are drawn in middle so calc X position
-		var songNameX = (avail - songNameWidth) / 2;
-		var playlistTextX = (avail - playlistNameWidth) / 2;
-
-		// Draw song first
-		ImGui.SetCursorPosX(songNameX);
-		ImGui.Text(songNameStr);
-		var fromY = ImGui.GetCursorPosY();
-		
-		// Draw popout button
-		ImGui.SameLine();
-		ImGui.SetCursorPosX(avail - popoutSize.X - ImGui.GetStyle().FramePadding.X * 2);
-		if (ImGuiComponents.IconButton(popoutIcon))
-		{
-			Configuration.Instance.ShowMiniPlayer = true;
-			Configuration.Instance.Save();
-			return;
-		}
-		
-		if (ImGui.IsItemHovered())
-			ImGui.SetTooltip(Loc.Localize("PopOutMiniPlayer", "Pop out to mini-player window"));
-
-		// Draw playlist
-		ImGui.SetCursorPosY(fromY);
-		ImGui.SetCursorPosX(playlistTextX);
-		ImGui.Text(playlistTextStr);
-
-		// Draw progress bar
-		ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ImGuiColors.DalamudWhite);
-		var frac = elapsed.TotalMilliseconds / total.TotalMilliseconds;
-		if (elapsed == TimeSpan.Zero && total == TimeSpan.Zero)
-			frac = 0;
-		ImGui.ProgressBar((float)frac, new Vector2(-1, 8), string.Empty);
-		ImGui.PopStyleColor();
-
-		// Draw times
-		var belowBarY = ImGui.GetCursorPosY();
-
-		// Draw buttons
-		ImGui.PushFont(UiBuilder.IconFont);
-		var middleButton = PlaylistManager.IsPlaying ? FontAwesomeIcon.Stop : FontAwesomeIcon.Play;
-		var backSize = ImGui.CalcTextSize(FontAwesomeIcon.StepBackward.ToIconString());
-		var middleItemSize = ImGui.CalcTextSize(middleButton.ToIconString());
-		var forwardSize = ImGui.CalcTextSize(FontAwesomeIcon.StepForward.ToIconString());
-		ImGui.PopFont();
-
-		var buttonPaddingWidth = ImGui.GetStyle().FramePadding.X;
-		var buttonSpacingWidth = ImGui.GetStyle().ItemSpacing.X;
-
-		// We get two sides of one button and one side of another on each side = 3
-		var spacingWidth = buttonPaddingWidth * 3 + buttonSpacingWidth;
-		var buttonWidth = backSize.X + middleItemSize.X + forwardSize.X + (spacingWidth * 2);
-		var buttonsStartX = (avail - buttonWidth) / 2;
-
-		// Place on same line as times
-		ImGui.SetCursorPosY(belowBarY);
-		ImGui.SetCursorPosX(buttonsStartX);
-
-		ImGui.BeginDisabled(!PlaylistManager.IsPlaying);
-		if (ImGuiComponents.IconButton($"##orch_prev", FontAwesomeIcon.Backward))
-		{
-			PlaylistManager.Next();
-		}
-		ImGui.SameLine();
-		if (PlaylistManager.IsPlaying)
-		{
-			if (ImGuiComponents.IconButton($"##orch_stop", FontAwesomeIcon.Stop))
-				PlaylistManager.Stop();
-		}
-		else if (ImGuiComponents.IconButton($"##orch_play", FontAwesomeIcon.Play))
-		{
-			
-		}
-		ImGui.SameLine();
-		if (ImGuiComponents.IconButton($"##orch_next", FontAwesomeIcon.Forward))
-		{
-			PlaylistManager.Next();
-		}
-		ImGui.EndDisabled();
-
-		// Draw times
-		// Align vertically in the middle of the buttons
-		ImGui.SetCursorPosY(belowBarY + ImGui.GetStyle().FramePadding.Y);
-		ImGui.Text(currentTimeStr);
-		ImGui.SameLine();
-		ImGui.SetCursorPosX(avail - totalTimeSize.X);
-		ImGui.Text(totalTimeStr);
-
-		ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 5);
-
-		ImGui.Separator();
-	}
-
+	
 	private void DrawPlaylistSongs()
 	{
 		ImGui.PushFont(OrchestrionPlugin.LargeFont);
@@ -176,8 +60,9 @@ public partial class MainWindow
 		ImGui.BeginChild("##playlist_internal", ImGuiHelpers.ScaledVector2(-1f, -1 * PlaylistPaneSize));
 		if (_selectedPlaylist != null)
 		{
-			if (ImGui.BeginTable($"playlisttable{_selectedPlaylist.Name}", 4, ImGuiTableFlags.SizingFixedFit))
+			if (ImGui.BeginTable($"playlisttable{_selectedPlaylist.Name}", 5, ImGuiTableFlags.SizingFixedFit))
 			{
+				ImGui.TableSetupColumn("playing", ImGuiTableColumnFlags.WidthFixed);
 				ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
 				ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
 
@@ -357,8 +242,6 @@ public partial class MainWindow
 		}
 	}
 
-	private float _startDragY = 0f;
-	
 	private void DrawPlaylistPaneButton()
 	{
 		ImGui.Separator();
@@ -421,6 +304,18 @@ public partial class MainWindow
 	// Uses 2 columns, 3 if timePlayed is specified
 	private void DrawSongListItem(Song song, Playlist playlist, int songIndex)
 	{
+		if (PlaylistManager.IsPlaying && PlaylistManager.CurrentPlaylist == playlist && PlaylistManager.CurrentSongIndex == songIndex)
+		{
+			ImGui.PushFont(UiBuilder.IconFont);
+			ImGui.Text(FontAwesomeIcon.Play.ToIconString());
+			ImGui.PopFont();
+		}
+		else
+		{
+			var size = Util.GetIconSize(FontAwesomeIcon.Play);
+			ImGui.Dummy(size);
+		}
+		ImGui.TableNextColumn();
 		ImGui.Text(song.Id.ToString());
 		ImGui.TableNextColumn();
 
