@@ -19,6 +19,8 @@ public static class PlaylistManager
 	private static string _currentPlaylist = string.Empty;
 	private static int _currentSongIndex;
 	private static int _playlistTrackPlayCount;
+	private static readonly List<int> _playbackHistory = new();
+	private static int _indexInHistory = -1;
 	private static long _currentSongStartTime;
 	private static long CurrentSongEndTime => IsPlaying ? 0 : _currentSongStartTime + (int) CurrentSong.Duration.TotalMilliseconds;
 	private static long ElapsedMs => Environment.TickCount64 - _currentSongStartTime;
@@ -46,34 +48,47 @@ public static class PlaylistManager
 	
 	public static void Play(string playlistName)
 	{
-		_currentPlaylist = playlistName;
-		_currentSongIndex = -1;
-		IsPlaying = true;
-
+		Set(playlistName, -1, isPlaying: true);
 		Next();
 	}
 
 	public static void Play(string playlistName, int index)
 	{
-		_currentPlaylist = playlistName;
-		_currentSongIndex = index;
-		IsPlaying = true;
+		Set(playlistName, index, isPlaying: true);
 		BGMManager.Play(CurrentPlaylist.Songs[index]);
 		_currentSongStartTime = Environment.TickCount64;
+	}
+
+	private static void Set(string playlistName, int index, bool isPlaying)
+	{
+		_currentPlaylist = playlistName;
+		_currentSongIndex = index;
+		_playlistTrackPlayCount = 0;
+		_playbackHistory.Clear();
+		_indexInHistory = -1;
+		IsPlaying = isPlaying;
+	}
+
+	public static void Previous()
+	{
+		if (_currentPlaylist == string.Empty || CurrentPlaylist == null) return;
+		BeginTrack(GetPreviousSong());
 	}
 
 	public static void Next()
 	{
 		if (_currentPlaylist == string.Empty || CurrentPlaylist == null) return;
-		
-		var nextSong = GetNextSong();
-		PluginLog.Debug($"[PlaylistManager] [Next] NextSong: {nextSong} _currentSongIndex {_currentSongIndex}");
-		if (nextSong == 0)
+		BeginTrack(GetNextSong());
+	}
+
+	private static void BeginTrack(int id)
+	{
+		PluginLog.Debug($"[PlaylistManager] [BeginTrack] id: {id} _currentSongIndex {_currentSongIndex}");
+		if (id == 0)
 			Stop();
 		else
 		{
-			PluginLog.Debug($"[PlaylistManager] [Play] Playing {nextSong} _currentSongIndex {_currentSongIndex}");
-			BGMManager.Play(nextSong);
+			BGMManager.Play(id);
 			_currentSongStartTime = Environment.TickCount64;
 		}
 	}
@@ -81,6 +96,7 @@ public static class PlaylistManager
 	public static void Stop()
 	{
 		BGMManager.Stop();
+		Set("", -1, isPlaying: false);
 		IsPlaying = false;
 		_currentPlaylist = "";
 		_currentSongIndex = -1;
@@ -93,8 +109,19 @@ public static class PlaylistManager
 		if (!IsPlaying) return 0;
 
 		_playlistTrackPlayCount++;
-
+		
+		if (_playbackHistory.Count > 0 && _indexInHistory != _playbackHistory.Count - 1)
+			return CurrentPlaylist.Songs[_playbackHistory[++_indexInHistory]];
+		
 		PluginLog.Debug($"[PlaylistManager] [GetNextSong] CurrentPlaylist.RepeatMode: {CurrentPlaylist?.RepeatMode} CurrentPlaylist.ShuffleMode: {CurrentPlaylist?.ShuffleMode}");
+		var nextSong = GenerateNextSongId();
+		_playbackHistory.Add(_currentSongIndex);
+		_indexInHistory++;
+		return nextSong;
+	}
+
+	private static int GenerateNextSongId()
+	{
 		switch (CurrentPlaylist?.RepeatMode)
 		{
 			case RepeatMode.One:
@@ -118,6 +145,9 @@ public static class PlaylistManager
 
 	private static int GetPreviousSong()
 	{
-		return 0;
+		if (_indexInHistory == 0 || _playbackHistory.Count == 0)
+			return 0;
+		_currentSongIndex = _playbackHistory[--_indexInHistory];
+		return CurrentPlaylist.Songs[_currentSongIndex];
 	}
 }

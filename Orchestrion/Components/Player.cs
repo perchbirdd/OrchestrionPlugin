@@ -121,7 +121,7 @@ public static class Player
 		ImGui.SameLine();
 		if (ImGuiComponents.IconButton($"##orch_prev", FontAwesomeIcon.Backward))
 		{
-			PlaylistManager.Next();
+			PlaylistManager.Previous();
 		}
 		ImGui.SameLine();
 		if (PlaylistManager.IsPlaying)

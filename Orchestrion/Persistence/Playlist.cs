@@ -4,6 +4,7 @@ namespace Orchestrion.Persistence;
 
 public class Playlist
 {
+	// public string InternalName { get; set; }
 	public string Name { get; set; }
 	public List<int> Songs { get; set; }
 	public RepeatMode RepeatMode { get; set; }

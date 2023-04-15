@@ -128,14 +128,19 @@ public partial class MainWindow
 
 				ImGui.TableNextColumn();
 				ImGui.PushFont(UiBuilder.IconFont);
+				var fakePaddingA = new Vector2(6, 0);
+				var fakePaddingB = new Vector2(fakePaddingA.X - ImGui.GetStyle().ItemSpacing.X, 0);
+				
 				if (PlaylistManager.CurrentPlaylist?.Name == pName)
 				{
+					ImGui.Dummy(fakePaddingB);
+					ImGui.SameLine();
 					ImGui.Text(FontAwesomeIcon.Play.ToIconString());	
 				}
 				else
 				{
 					var size = ImGui.CalcTextSize(FontAwesomeIcon.Play.ToIconString());
-					ImGui.Dummy(size);
+					ImGui.Dummy(size + fakePaddingA);
 				}
 				ImGui.PopFont();
 				
