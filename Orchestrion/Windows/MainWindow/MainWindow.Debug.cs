@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using CheapLoc;
+using ImGuiNET;
 using Orchestrion.Audio;
 using Orchestrion.BGMSystem;
 
@@ -22,5 +23,9 @@ public partial class MainWindow
 		// ImGui.Text($"OldSecondScene: {BGMManager.OldSecondScene}");
 		// ImGui.Text($"OldSecondSongId: {BGMManager.OldSecondSongId}");
 		ImGui.Text($"Audible: {BGMManager.CurrentAudibleSong}");
+		if (ImGui.Button("export loc"))
+		{
+			Loc.ExportLocalizable(true);
+		}
 	}
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
+using CheapLoc;
 using ImGuiNET;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
@@ -27,27 +28,29 @@ public partial class MainWindow
             SongList.Instance.TryGetSong(replacement.TargetSongId, out var target);
 
             var targetText = $"{replacement.TargetSongId} - {target.Name}";
-            var replText = replacement.ReplacementId == SongReplacementEntry.NoChangeId ? NoChange : $"{replacement.ReplacementId} - {SongList.Instance.GetSong(replacement.ReplacementId).Name}";
+            var replText = replacement.ReplacementId == SongReplacementEntry.NoChangeId ? _noChange : $"{replacement.ReplacementId} - {SongList.Instance.GetSong(replacement.ReplacementId).Name}";
             
             ImGui.TextWrapped($"{targetText}");
             if (ImGui.IsItemHovered())
                 DrawBgmTooltip(target);
 
-            ImGui.Text($"will be replaced with");
+            ImGui.Text(Loc.Localize("ReplaceWith", "will be replaced with"));
             ImGui.TextWrapped($"{replText}");
             if (ImGui.IsItemHovered() && replacement.ReplacementId != SongReplacementEntry.NoChangeId)
                 DrawBgmTooltip(SongList.Instance.GetSong(replacement.ReplacementId));
 
             // Buttons in bottom right of area
-            RightAlignButtons(ImGui.GetCursorPosY(), new[] {"Edit", "Delete"});
-            if (ImGui.Button($"Edit##{replacement.TargetSongId}"))
+            var editText = Loc.Localize("Edit", "Edit");
+            var deleteText = Loc.Localize("Delete", "Delete");
+            RightAlignButtons(ImGui.GetCursorPosY(), new[] {editText, deleteText});
+            if (ImGui.Button($"{editText}##{replacement.TargetSongId}"))
             {
                 _removalList.Add(replacement.TargetSongId);
                 _tmpReplacement.TargetSongId = replacement.TargetSongId;
                 _tmpReplacement.ReplacementId = replacement.ReplacementId;
             }
             ImGui.SameLine();
-            if (ImGui.Button($"Delete##{replacement.TargetSongId}"))
+            if (ImGui.Button($"{deleteText}##{replacement.TargetSongId}"))
                 _removalList.Add(replacement.TargetSongId);
 
             ImGui.Separator();
@@ -69,14 +72,14 @@ public partial class MainWindow
         var targetText = $"{SongList.Instance.GetSong(_tmpReplacement.TargetSongId).Id} - {SongList.Instance.GetSong(_tmpReplacement.TargetSongId).Name}";
         string replacementText;
         if (_tmpReplacement.ReplacementId == SongReplacementEntry.NoChangeId)
-            replacementText = NoChange;
+            replacementText = _noChange;
         else
             replacementText = $"{SongList.Instance.GetSong(_tmpReplacement.ReplacementId).Id} - {SongList.Instance.GetSong(_tmpReplacement.ReplacementId).Name}";
 
         // This fixes the ultra-wide combo boxes, I guess
         var width = ImGui.GetWindowWidth() * 0.60f;
 
-        if (ImGui.BeginCombo("Target Song", targetText))
+        if (ImGui.BeginCombo(Loc.Localize("TargetSong", "Target Song"), targetText))
         {
             foreach (var song in SongList.Instance.GetSongs().Values)
             {
@@ -96,9 +99,9 @@ public partial class MainWindow
 
         ImGui.Spacing();
 
-        if (ImGui.BeginCombo("Replacement Song", replacementText))
+        if (ImGui.BeginCombo(Loc.Localize("ReplacementSong", "Replacement Song"), replacementText))
         {
-            if (ImGui.Selectable(NoChange))
+            if (ImGui.Selectable(_noChange))
                 _tmpReplacement.ReplacementId = SongReplacementEntry.NoChangeId;
 
             foreach (var song in SongList.Instance.GetSongs().Values)
@@ -119,8 +122,9 @@ public partial class MainWindow
         ImGui.Spacing();
         ImGui.Spacing();
 
-        RightAlignButton(ImGui.GetCursorPosY(), "Add as song replacement");
-        if (ImGui.Button("Add as song replacement"))
+        var text = Loc.Localize("AddReplacement", "Add as song replacement");
+        RightAlignButton(ImGui.GetCursorPosY(), text);
+        if (ImGui.Button(text))
         {
             Configuration.Instance.SongReplacements.Add(_tmpReplacement.TargetSongId, _tmpReplacement);
             Configuration.Instance.Save();

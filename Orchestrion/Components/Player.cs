@@ -24,9 +24,10 @@ public static class Player
 		
 		var currentTimeStr = $"{elapsed:mm\\:ss}";
 		var totalTimeStr = $"{total:mm\\:ss}";
-		var songNameStr = PlaylistManager.IsPlaying ? PlaylistManager.CurrentSong.Name : "None";
-		var playlistNameStr = PlaylistManager.IsPlaying ? PlaylistManager.CurrentPlaylist.Name : "N/A";
-		var playlistTextStr = "From: " + playlistNameStr;
+		var songNameStr = PlaylistManager.IsPlaying ? PlaylistManager.CurrentSong.Name : Loc.Localize("None", "None");
+		var playlistNameStr = PlaylistManager.IsPlaying ? PlaylistManager.CurrentPlaylist.Name : Loc.Localize("None", "None");
+		var playlistTextFmt = Loc.Localize("FromPlaylist", "From: {0}");
+		var playlistTextStr = string.Format(playlistTextFmt, playlistNameStr);
 
 		var avail = ImGui.GetContentRegionAvail().X;
 		var totalTimeSize = ImGui.CalcTextSize(totalTimeStr);

@@ -38,7 +38,7 @@ public class OrchestrionPlugin : IDalamudPlugin
     private readonly MainWindow _mainWindow;
     private readonly SettingsWindow _settingsWindow;
     
-    private readonly TextPayload _nowPlayingPayload = new("Orchestrion: Now playing ");
+    private readonly TextPayload _nowPlayingPayload = new("Orchestrion: ");
     private readonly TextPayload _periodPayload = new(".");
     private readonly TextPayload _emptyPayload = new("");
     private readonly TextPayload _leftBracketPayload = new("[");
@@ -51,11 +51,12 @@ public class OrchestrionPlugin : IDalamudPlugin
     public OrchestrionPlugin([RequiredVersion("1.0")] DalamudPluginInterface pluginInterface)
     {
         DalamudApi.Initialize(pluginInterface);
+        Loc.SetupWithFallbacks();
 
-        // if (Configuration.Instance.ShowSongInNative)
-        // {
-        //     _dtrEntry = DalamudApi.DtrBar.Get(ConstName);
-        // }
+        if (Configuration.Instance.ShowSongInNative)
+        {
+            _dtrEntry = DalamudApi.DtrBar.Get(ConstName);
+        }
 
         BGMAddressResolver.Init();
         BGMManager.OnSongChanged += OnSongChanged;
@@ -71,7 +72,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 
         DalamudApi.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Displays the Orchestrion window, to view, change, or stop in-game BGM.",
+            HelpMessage = Loc.Localize("HelpMessage", "Displays the Orchestrion window, to view, change, or stop in-game BGM."),
         });
         
         DalamudApi.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
@@ -82,8 +83,6 @@ public class OrchestrionPlugin : IDalamudPlugin
 
         DalamudApi.PluginInterface.UiBuilder.BuildFonts += BuildFonts;
         DalamudApi.PluginInterface.UiBuilder.RebuildFonts();
-        
-        Loc.SetupWithFallbacks();
     }
 
     private void BuildFonts()
@@ -96,7 +95,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         _mainWindow.Dispose();
         DalamudApi.Framework.Update -= OrchestrionUpdate;
         DalamudApi.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
-        // DalamudApi.PluginInterface.UiBuilder.BuildFonts -= BuildFonts;
+        DalamudApi.PluginInterface.UiBuilder.BuildFonts -= BuildFonts;
         DalamudApi.CommandManager.RemoveHandler(CommandName);
         _dtrEntry?.Dispose();
         PlaylistManager.Dispose();
@@ -123,7 +122,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 
     private void OnSongChanged(int oldSong, int newSong, bool playedByOrch)
     {
-        // UpdateDtr(newSong, playedByOrch: playedByOrch);
+        UpdateDtr(newSong, playedByOrch: playedByOrch);
         UpdateChat(newSong, playedByOrch: playedByOrch);
     }
 
@@ -228,6 +227,7 @@ public class OrchestrionPlugin : IDalamudPlugin
         _songEchoPayload = new List<Payload>
         {
             _nowPlayingPayload,
+            new TextPayload(Loc.Localize("NowPlaying", "now playing ")),
             playedByOrch ? _leftBracketPayload : _emptyPayload,
             EmphasisItalicPayload.ItalicsOn,
             new TextPayload(songName),

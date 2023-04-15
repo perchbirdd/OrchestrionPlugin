@@ -163,17 +163,17 @@ public partial class MainWindow
 				{
 					_selectedPlaylist = playlist;
 
-					if (ImGui.MenuItem("Play"))
+					if (ImGui.MenuItem(Loc.Localize("Play", "Play")))
 					{
 						PlaylistManager.Play(pName);
 					}
-					if (ImGui.MenuItem("Repeat"))
+					if (ImGui.MenuItem(Loc.Localize("Repeat", "Repeat")))
 					{
 						playlist.RepeatMode = RepeatMode.All;
 						Configuration.Instance.Save();
 						PlaylistManager.Play(pName);
 					}
-					if (ImGui.MenuItem("Shuffle"))
+					if (ImGui.MenuItem(Loc.Localize("Shuffle", "Shuffle")))
 					{
 						playlist.ShuffleMode = ShuffleMode.On;
 						Configuration.Instance.Save();
@@ -212,11 +212,11 @@ public partial class MainWindow
 				{
 					if (_playlistDeletionPhase == 1 && _playlistToDelete == pName)
 					{
-						ImGui.SetTooltip("Click again to confirm deletion");
+						ImGui.SetTooltip(Loc.Localize("ClickAgainDelete", "Click again to confirm deletion"));
 					}
 					else
 					{
-						ImGui.SetTooltip("Delete");
+						ImGui.SetTooltip(Loc.Localize("Delete", "Delete"));
 					}
 				}
 
@@ -227,7 +227,7 @@ public partial class MainWindow
 			ImGui.EndTable();
 		}
 		
-		if (ImGui.Button("New playlist...", ImGuiHelpers.ScaledVector2(-1f, 0f)))
+		if (ImGui.Button(Loc.Localize("NewPlaylistEllipsis", "New playlist..."), ImGuiHelpers.ScaledVector2(-1f, 0f)))
 			_newPlaylistModal = true;
 
 		// I don't know why the bottom is cut off, so I'm just going to do this and pretend it's not.
@@ -277,7 +277,7 @@ public partial class MainWindow
 		// }
 		
 		var icon = Configuration.Instance.PlaylistPaneOpen ? FontAwesomeIcon.ArrowDown : FontAwesomeIcon.ArrowUp;
-		var text = "Playlists";
+		var text = Loc.Localize("Playlists", "Playlists");
 
 		var iconSize = Util.GetIconSize(icon);
 		var textSize = ImGui.CalcTextSize(text);
