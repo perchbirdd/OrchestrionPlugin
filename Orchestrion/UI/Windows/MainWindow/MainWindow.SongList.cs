@@ -2,7 +2,7 @@
 using ImGuiNET;
 using Orchestrion.Persistence;
 
-namespace Orchestrion.Windows.MainWindow;
+namespace Orchestrion.UI.Windows.MainWindow;
 
 public partial class MainWindow
 {

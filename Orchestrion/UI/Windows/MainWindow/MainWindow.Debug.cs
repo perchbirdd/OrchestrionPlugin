@@ -3,7 +3,7 @@ using ImGuiNET;
 using Orchestrion.Audio;
 using Orchestrion.BGMSystem;
 
-namespace Orchestrion.Windows.MainWindow;
+namespace Orchestrion.UI.Windows.MainWindow;
 
 public partial class MainWindow
 {

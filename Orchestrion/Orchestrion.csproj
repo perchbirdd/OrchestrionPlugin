@@ -73,4 +73,7 @@
       <TargetPath>xiv_bgm.csv</TargetPath>
     </ContentWithTargetPath>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="UI\" />
+  </ItemGroup>
 </Project>

@@ -7,11 +7,11 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using ImGuiNET;
 using Orchestrion.Audio;
-using Orchestrion.Components;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
+using Orchestrion.UI.Components;
 
-namespace Orchestrion.Windows.MainWindow;
+namespace Orchestrion.UI.Windows.MainWindow;
 
 public partial class MainWindow
 {

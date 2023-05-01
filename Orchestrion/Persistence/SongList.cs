@@ -69,7 +69,7 @@ public class SongList
 
             // Any track without an official name is "???"
             // While Null BGM tracks are also pretty invalid
-            if (string.IsNullOrEmpty(name) || name == "Null BGM") continue;
+            if (string.IsNullOrEmpty(name) || name == "Null BGM" || name == "test") continue;
 
             var location = elements[2].Substring(1).Replace("\"\"", "\"");
             var additionalInfo = elements[3].Substring(1).Replace("\"\"", "\"");

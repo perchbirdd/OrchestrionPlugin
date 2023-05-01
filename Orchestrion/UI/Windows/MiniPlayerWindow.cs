@@ -1,10 +1,10 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
-using Orchestrion.Components;
 using Orchestrion.Persistence;
+using Orchestrion.UI.Components;
 
-namespace Orchestrion.Windows;
+namespace Orchestrion.UI.Windows;
 
 public class MiniPlayerWindow : Window
 {

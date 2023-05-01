@@ -17,8 +17,8 @@ using ImGuiNET;
 using Orchestrion.Audio;
 using Orchestrion.BGMSystem;
 using Orchestrion.Persistence;
-using Orchestrion.Windows;
-using Orchestrion.Windows.MainWindow;
+using Orchestrion.UI.Windows;
+using MainWindow = Orchestrion.UI.Windows.MainWindow.MainWindow;
 
 namespace Orchestrion;
 

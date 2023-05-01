@@ -5,7 +5,7 @@ using ImGuiNET;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
-namespace Orchestrion.Windows.MainWindow;
+namespace Orchestrion.UI.Windows.MainWindow;
 
 public partial class MainWindow
 {
@@ -28,7 +28,7 @@ public partial class MainWindow
             SongList.Instance.TryGetSong(replacement.TargetSongId, out var target);
 
             var targetText = $"{replacement.TargetSongId} - {target.Name}";
-            var replText = replacement.ReplacementId == SongReplacementEntry.NoChangeId ? _noChange : $"{replacement.ReplacementId} - {SongList.Instance.GetSong(replacement.ReplacementId).Name}";
+            var replText = replacement.ReplacementId == SongReplacementEntry.NoChangeId ? MainWindow._noChange : $"{replacement.ReplacementId} - {SongList.Instance.GetSong(replacement.ReplacementId).Name}";
             
             ImGui.TextWrapped($"{targetText}");
             if (ImGui.IsItemHovered())
@@ -42,7 +42,7 @@ public partial class MainWindow
             // Buttons in bottom right of area
             var editText = Loc.Localize("Edit", "Edit");
             var deleteText = Loc.Localize("Delete", "Delete");
-            RightAlignButtons(ImGui.GetCursorPosY(), new[] {editText, deleteText});
+            MainWindow.RightAlignButtons(ImGui.GetCursorPosY(), new[] {editText, deleteText});
             if (ImGui.Button($"{editText}##{replacement.TargetSongId}"))
             {
                 _removalList.Add(replacement.TargetSongId);
@@ -72,7 +72,7 @@ public partial class MainWindow
         var targetText = $"{SongList.Instance.GetSong(_tmpReplacement.TargetSongId).Id} - {SongList.Instance.GetSong(_tmpReplacement.TargetSongId).Name}";
         string replacementText;
         if (_tmpReplacement.ReplacementId == SongReplacementEntry.NoChangeId)
-            replacementText = _noChange;
+            replacementText = MainWindow._noChange;
         else
             replacementText = $"{SongList.Instance.GetSong(_tmpReplacement.ReplacementId).Id} - {SongList.Instance.GetSong(_tmpReplacement.ReplacementId).Name}";
 
@@ -101,7 +101,7 @@ public partial class MainWindow
 
         if (ImGui.BeginCombo(Loc.Localize("ReplacementSong", "Replacement Song"), replacementText))
         {
-            if (ImGui.Selectable(_noChange))
+            if (ImGui.Selectable(MainWindow._noChange))
                 _tmpReplacement.ReplacementId = SongReplacementEntry.NoChangeId;
 
             foreach (var song in SongList.Instance.GetSongs().Values)
@@ -123,7 +123,7 @@ public partial class MainWindow
         ImGui.Spacing();
 
         var text = Loc.Localize("AddReplacement", "Add as song replacement");
-        RightAlignButton(ImGui.GetCursorPosY(), text);
+        MainWindow.RightAlignButton(ImGui.GetCursorPosY(), text);
         if (ImGui.Button(text))
         {
             Configuration.Instance.SongReplacements.Add(_tmpReplacement.TargetSongId, _tmpReplacement);

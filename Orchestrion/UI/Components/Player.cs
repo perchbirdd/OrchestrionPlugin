@@ -7,7 +7,7 @@ using ImGuiNET;
 using Orchestrion.Audio;
 using Orchestrion.Persistence;
 
-namespace Orchestrion.Components;
+namespace Orchestrion.UI.Components;
 
 public static class Player
 {

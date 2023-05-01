@@ -5,11 +5,11 @@ using ImGuiNET;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
-namespace Orchestrion.Windows.MainWindow;
+namespace Orchestrion.UI.Windows.MainWindow;
 
 public partial class MainWindow
 {
-	private readonly List<SongHistoryEntry> _songHistory = new();
+	private readonly List<RenderableSongEntry> _songHistory = new();
 	private int _selectedHistoryEntry;
 
 	private void DrawSongHistory()
@@ -51,7 +51,7 @@ public partial class MainWindow
 		if (id == 1 || !SongList.Instance.TryGetSong(id, out _))
 			return;
 
-		var newEntry = new SongHistoryEntry
+		var newEntry = new RenderableSongEntry
 		{
 			Id = id,
 			TimePlayed = DateTime.Now

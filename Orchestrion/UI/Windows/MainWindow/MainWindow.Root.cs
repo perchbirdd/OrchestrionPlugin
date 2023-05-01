@@ -13,7 +13,7 @@ using Orchestrion.Audio;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
-namespace Orchestrion.Windows.MainWindow;
+namespace Orchestrion.UI.Windows.MainWindow;
 
 public partial class MainWindow : Window, IDisposable
 {

@@ -6,7 +6,7 @@ using ImGuiNET;
 using Orchestrion.BGMSystem;
 using Orchestrion.Persistence;
 
-namespace Orchestrion.Windows;
+namespace Orchestrion.UI.Windows;
 
 public class SettingsWindow : Window
 {
