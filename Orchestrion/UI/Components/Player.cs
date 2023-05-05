@@ -161,5 +161,12 @@ public static class Player
 		ImGui.SameLine();
 		ImGui.SetCursorPosX(avail - totalTimeSize.X);
 		ImGui.Text(totalTimeStr);
+
+		if (!Configuration.Instance.ShowMiniPlayer)
+		{
+			ImGui.Dummy(new Vector2(5, 5));
+			ImGui.Separator();
+		}
+			
 	}
 }
