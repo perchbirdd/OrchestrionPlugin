@@ -4,42 +4,24 @@ using Dalamud.Logging;
 using ImGuiNET;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
+using Orchestrion.UI.Components;
 
 namespace Orchestrion.UI.Windows.MainWindow;
 
 public partial class MainWindow
 {
+	private readonly RenderableSongList _historySongList;
+	
+	// In order to modify the song history, we keep a reference to the history list
 	private readonly List<RenderableSongEntry> _songHistory = new();
-	private int _selectedHistoryEntry;
+	private int _selectedHistoryEntry = 0;
 
 	private void DrawSongHistory()
 	{
 		// to keep the tab bar always visible and not have it get scrolled out
 		ImGui.BeginChild("##_songList_internal", new Vector2(-1f, -60f));
-        
-		if (ImGui.BeginTable("_songList table", 4, ImGuiTableFlags.SizingFixedFit))
-		{
-			ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
-			ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
-			ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed);
-            
-			// going from the end of the list
-			for (int i = _songHistory.Count - 1; i >= 0; i--)
-			{
-				var songHistoryEntry = _songHistory[i];
-				var song = SongList.Instance.GetSong(songHistoryEntry.Id);
 
-				if (!SearchMatches(song))
-					continue;
-
-				ImGui.TableNextRow();
-				ImGui.TableNextColumn();
-
-				DrawSongListItem(song, i, songHistoryEntry.TimePlayed);
-			}
-
-			ImGui.EndTable();
-		}
+		_historySongList.Draw();
 
 		ImGui.EndChild();
 		DrawFooter(true);

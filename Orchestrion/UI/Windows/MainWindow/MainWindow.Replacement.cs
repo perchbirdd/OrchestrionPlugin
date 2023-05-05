@@ -4,6 +4,7 @@ using CheapLoc;
 using ImGuiNET;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
+using Orchestrion.UI.Components;
 
 namespace Orchestrion.UI.Windows.MainWindow;
 
@@ -32,12 +33,12 @@ public partial class MainWindow
             
             ImGui.TextWrapped($"{targetText}");
             if (ImGui.IsItemHovered())
-                DrawBgmTooltip(target);
+                BgmTooltip.DrawBgmTooltip(target);
 
             ImGui.Text(Loc.Localize("ReplaceWith", "will be replaced with"));
             ImGui.TextWrapped($"{replText}");
             if (ImGui.IsItemHovered() && replacement.ReplacementId != SongReplacementEntry.NoChangeId)
-                DrawBgmTooltip(SongList.Instance.GetSong(replacement.ReplacementId));
+                BgmTooltip.DrawBgmTooltip(SongList.Instance.GetSong(replacement.ReplacementId));
 
             // Buttons in bottom right of area
             var editText = Loc.Localize("Edit", "Edit");
@@ -91,7 +92,7 @@ public partial class MainWindow
                 if (ImGui.Selectable(tmpText, isSelected, ImGuiSelectableFlags.None, new Vector2(width, tmpTextSize.Y)))
                     _tmpReplacement.TargetSongId = song.Id;
                 if (ImGui.IsItemHovered())
-                    DrawBgmTooltip(song);
+                    BgmTooltip.DrawBgmTooltip(song);
             }
 
             ImGui.EndCombo();
@@ -113,7 +114,7 @@ public partial class MainWindow
                 if (ImGui.Selectable(tmpText, isSelected, ImGuiSelectableFlags.None, new Vector2(width, tmpTextSize.Y)))
                     _tmpReplacement.ReplacementId = song.Id;
                 if (ImGui.IsItemHovered())
-                    DrawBgmTooltip(song);
+                    BgmTooltip.DrawBgmTooltip(song);
             }
 
             ImGui.EndCombo();

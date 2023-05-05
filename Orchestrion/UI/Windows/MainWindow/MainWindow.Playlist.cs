@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using CheapLoc;
@@ -60,34 +61,7 @@ public partial class MainWindow
 		ImGui.BeginChild("##playlist_internal", ImGuiHelpers.ScaledVector2(-1f, -1 * PlaylistPaneSize));
 		if (_selectedPlaylist != null)
 		{
-			if (ImGui.BeginTable($"playlisttable{_selectedPlaylist.Name}", 5, ImGuiTableFlags.SizingFixedFit))
-			{
-				ImGui.TableSetupColumn("playing", ImGuiTableColumnFlags.WidthFixed);
-				ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
-				ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
-
-				var i = 0;
-				foreach (var s in _selectedPlaylist.Songs)
-				{
-					if (!SongList.Instance.TryGetSong(s, out var song)) continue;
-					if (!SearchMatches(song)) continue;
-
-					ImGui.TableNextRow();
-					ImGui.TableNextColumn();
-
-					DrawSongListItem(song, _selectedPlaylist, i);
-					i++;
-				}
-
-				ImGui.EndTable();
-
-				if (_toDelete != -1)
-				{
-					_selectedPlaylist.RemoveSong(_toDelete);
-					_toDelete = -1;
-				}
-
-			}
+			_playlistSongList.Draw();
 		}
 		else
 		{
@@ -151,7 +125,7 @@ public partial class MainWindow
 					    ImGuiHelpers.ScaledVector2(0f, drawHeight)
 				    ))
 				{
-					_selectedPlaylist = playlist;
+					SetSelectedPlaylist(playlist);
 					
 					if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && playlist.Songs.Count > 0)
 					{
@@ -161,7 +135,7 @@ public partial class MainWindow
 
 				if (ImGui.BeginPopupContextItem($"{pName}context"))
 				{
-					_selectedPlaylist = playlist;
+					SetSelectedPlaylist(playlist);
 
 					if (ImGui.MenuItem(Loc.Localize("Play", "Play")))
 					{
@@ -239,12 +213,21 @@ public partial class MainWindow
 			if (PlaylistManager.CurrentPlaylist?.Name == _playlistToDelete)
 				PlaylistManager.Stop();
 			if (_selectedPlaylist?.Name == _playlistToDelete)
-				_selectedPlaylist = null;
+				SetSelectedPlaylist(null);
 
 			Configuration.Instance.DeletePlaylist(_playlistToDelete);
 			_playlistToDelete = null;
 			_playlistDeletionPhase = 0;
 		}
+	}
+
+	private void SetSelectedPlaylist(Playlist playlist)
+	{
+		_selectedPlaylist = playlist;
+		if (_selectedPlaylist != null)
+			_playlistSongList.SetListSource(playlist.Songs.Select(s => new RenderableSongEntry(s)).ToList());
+		else
+			_playlistSongList.SetListSource(new List<RenderableSongEntry>());
 	}
 
 	private void DrawPlaylistPaneButton()
@@ -306,98 +289,97 @@ public partial class MainWindow
 		ImGui.PopFont();
 	}
 
-	// Uses 2 columns, 3 if timePlayed is specified
-	private void DrawSongListItem(Song song, Playlist playlist, int songIndex)
-	{
-		if (PlaylistManager.IsPlaying && PlaylistManager.CurrentPlaylist == playlist && PlaylistManager.CurrentSongIndex == songIndex)
-		{
-			ImGui.PushFont(UiBuilder.IconFont);
-			ImGui.Text(FontAwesomeIcon.Play.ToIconString());
-			ImGui.PopFont();
-		}
-		else
-		{
-			var size = Util.GetIconSize(FontAwesomeIcon.Play);
-			ImGui.Dummy(size);
-		}
-		ImGui.TableNextColumn();
-		ImGui.Text(song.Id.ToString());
-		ImGui.TableNextColumn();
-
-		var selected = _selectedPlaylist == playlist && _selectedPlaylistIndex == songIndex;
-
-		if (ImGui.Selectable($"{song.Name}##{song.Id}", selected, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.SpanAllColumns))
-		{
-			_selectedPlaylist = playlist;
-			_selectedPlaylistIndex = songIndex;
-
-			if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
-				PlaylistManager.Play(playlist.Name, songIndex);
-		}
-
-		if (ImGui.IsItemHovered())
-			DrawBgmTooltip(song);
-
-		if (ImGui.BeginPopupContextItem())
-		{
-			_selectedPlaylist = playlist;
-			_selectedPlaylistIndex = songIndex;
-
-			DrawCopyContentSubmenu(song);
-			ImGui.Separator();
-			DrawPlaylistAddSubmenu(song);
-
-			if (ImGui.MenuItem("Delete"))
-				_toDelete = songIndex;
-
-			ImGui.EndPopup();
-		}
-
-		ImGui.TableNextColumn();
-	}
-
-	private void DrawNewPlaylistModal()
-	{
-		if (_newPlaylistModal)
-			ImGui.OpenPopup("Create New Playlist");
-
-		var a = true;
-		if (ImGui.BeginPopupModal($"Create New Playlist", ref a, ImGuiWindowFlags.AlwaysAutoResize))
-		{
-			ImGui.Text("Enter a name for your playlist:");
-			if (ImGui.IsWindowAppearing())
-				ImGui.SetKeyboardFocusHere();
-			var yes = ImGui.InputText("##newplaylistname", ref _newPlaylistName, 64, ImGuiInputTextFlags.EnterReturnsTrue);
-			var invalid = string.IsNullOrWhiteSpace(_newPlaylistName)
-			              || string.IsNullOrEmpty(_newPlaylistName)
-			              || Configuration.Instance.Playlists.ContainsKey(_newPlaylistName);
-			ImGui.BeginDisabled(invalid);
-			yes |= ImGui.Button("Create");
-
-			if (yes)
-			{
-				var songs = new List<int>();
-				if (_newPlaylistSong != 0)
-					songs.Add(_newPlaylistSong);
-				Configuration.Instance.Playlists.Add(_newPlaylistName!, new Playlist(_newPlaylistName, songs));
-				Configuration.Instance.Save();
-				_newPlaylistName = "";
-				_newPlaylistSong = 0;
-				_newPlaylistModal = false;
-				ImGui.CloseCurrentPopup();
-			}
-			ImGui.EndDisabled();
-			ImGui.SameLine();
-			if (ImGui.Button("Cancel"))
-			{
-				_newPlaylistName = "";
-				_newPlaylistSong = 0;
-				_newPlaylistModal = false;
-				ImGui.CloseCurrentPopup();
-			}
-			ImGui.EndPopup();
-		}
-	}
+	// private void DrawSongListItem(Song song, Playlist playlist, int songIndex)
+	// {
+	// 	if (PlaylistManager.IsPlaying && PlaylistManager.CurrentPlaylist == playlist && PlaylistManager.CurrentSongIndex == songIndex)
+	// 	{
+	// 		ImGui.PushFont(UiBuilder.IconFont);
+	// 		ImGui.Text(FontAwesomeIcon.Play.ToIconString());
+	// 		ImGui.PopFont();
+	// 	}
+	// 	else
+	// 	{
+	// 		var size = Util.GetIconSize(FontAwesomeIcon.Play);
+	// 		ImGui.Dummy(size);
+	// 	}
+	// 	ImGui.TableNextColumn();
+	// 	ImGui.Text(song.Id.ToString());
+	// 	ImGui.TableNextColumn();
+	//
+	// 	var selected = _selectedPlaylist == playlist && _selectedPlaylistIndex == songIndex;
+	//
+	// 	if (ImGui.Selectable($"{song.Name}##{song.Id}", selected, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.SpanAllColumns))
+	// 	{
+	// 		_selectedPlaylist = playlist;
+	// 		_selectedPlaylistIndex = songIndex;
+	//
+	// 		if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+	// 			PlaylistManager.Play(playlist.Name, songIndex);
+	// 	}
+	//
+	// 	if (ImGui.IsItemHovered())
+	// 		BgmTooltip.DrawBgmTooltip(song);
+	//
+	// 	if (ImGui.BeginPopupContextItem())
+	// 	{
+	// 		_selectedPlaylist = playlist;
+	// 		_selectedPlaylistIndex = songIndex;
+	//
+	// 		// DrawCopyContentSubmenu(song);
+	// 		ImGui.Separator();
+	// 		// DrawPlaylistAddSubmenu(song);
+	//
+	// 		if (ImGui.MenuItem("Delete"))
+	// 			_toDelete = songIndex;
+	//
+	// 		ImGui.EndPopup();
+	// 	}
+	//
+	// 	ImGui.TableNextColumn();
+	// }
+	//
+	// private void DrawNewPlaylistModal()
+	// {
+	// 	if (_newPlaylistModal)
+	// 		ImGui.OpenPopup("Create New Playlist");
+	//
+	// 	var a = true;
+	// 	if (ImGui.BeginPopupModal($"Create New Playlist", ref a, ImGuiWindowFlags.AlwaysAutoResize))
+	// 	{
+	// 		ImGui.Text("Enter a name for your playlist:");
+	// 		if (ImGui.IsWindowAppearing())
+	// 			ImGui.SetKeyboardFocusHere();
+	// 		var yes = ImGui.InputText("##newplaylistname", ref _newPlaylistName, 64, ImGuiInputTextFlags.EnterReturnsTrue);
+	// 		var invalid = string.IsNullOrWhiteSpace(_newPlaylistName)
+	// 		              || string.IsNullOrEmpty(_newPlaylistName)
+	// 		              || Configuration.Instance.Playlists.ContainsKey(_newPlaylistName);
+	// 		ImGui.BeginDisabled(invalid);
+	// 		yes |= ImGui.Button("Create");
+	//
+	// 		if (yes)
+	// 		{
+	// 			var songs = new List<int>();
+	// 			if (_newPlaylistSong != 0)
+	// 				songs.Add(_newPlaylistSong);
+	// 			Configuration.Instance.Playlists.Add(_newPlaylistName!, new Playlist(_newPlaylistName, songs));
+	// 			Configuration.Instance.Save();
+	// 			_newPlaylistName = "";
+	// 			_newPlaylistSong = 0;
+	// 			_newPlaylistModal = false;
+	// 			ImGui.CloseCurrentPopup();
+	// 		}
+	// 		ImGui.EndDisabled();
+	// 		ImGui.SameLine();
+	// 		if (ImGui.Button("Cancel"))
+	// 		{
+	// 			_newPlaylistName = "";
+	// 			_newPlaylistSong = 0;
+	// 			_newPlaylistModal = false;
+	// 			ImGui.CloseCurrentPopup();
+	// 		}
+	// 		ImGui.EndPopup();
+	// 	}
+	// }
 
 	private void ResetDeletion(Task task)
 	{

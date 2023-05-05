@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Orchestrion.Persistence;
 
@@ -9,6 +10,9 @@ public class Playlist
 	public List<int> Songs { get; set; }
 	public RepeatMode RepeatMode { get; set; }
 	public ShuffleMode ShuffleMode { get; set; }
+	
+	[JsonIgnore]
+	public bool PendingDelete { get; set; }
 	
 	public Playlist() { }
 	

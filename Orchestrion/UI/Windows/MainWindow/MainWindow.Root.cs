@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Text;
 using CheapLoc;
@@ -12,6 +13,7 @@ using ImGuiNET;
 using Orchestrion.Audio;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
+using Orchestrion.UI.Components;
 
 namespace Orchestrion.UI.Windows.MainWindow;
 
@@ -23,14 +25,44 @@ public partial class MainWindow : Window, IDisposable
 	private const string BaseName = "Orchestrion###Orchestrion";
 
 	private readonly OrchestrionPlugin _orch;
-
+	private readonly RenderableSongList _mainSongList;
+	private readonly RenderableSongList _playlistSongList;
+	
 	private string _searchText = string.Empty;
 	private int _selectedSong;
-	private bool _bgmTooltipLock;
 
 	public MainWindow(OrchestrionPlugin orch) : base(BaseName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
 	{
 		_orch = orch;
+
+		_historySongList = new RenderableSongList(
+			_songHistory,
+			new SongListRenderStrategy
+			{
+				RenderBackwards = () => true,
+				IsPlaying = (entries, i) =>
+				{
+					// return false;
+					var tmp = entries.ToArray();
+					if (tmp.Length <= 0) return false;
+					var id = tmp[i].Id;
+					return i == tmp.Length - 1 && BGMManager.CurrentAudibleSong == id;
+					// return BGMManager.CurrentAudibleSong == id;
+				},
+			});
+		_mainSongList = new RenderableSongList(
+			SongList.Instance.GetSongs().Select(s => new RenderableSongEntry(s.Key)).ToList(),
+			new SongListRenderStrategy());
+		_playlistSongList = new RenderableSongList(
+			new List<RenderableSongEntry>(),
+			new SongListRenderStrategy
+			{
+				IsPlaying = (entries, i) =>
+					PlaylistManager.IsPlaying &&
+					PlaylistManager.CurrentSongIndex == i &&
+					BGMManager.CurrentAudibleSong == entries.ElementAtOrDefault(i).Id,
+				PlaySong = (entry, index) => PlaylistManager.Play(_selectedPlaylist?.Name, index),
+			});
 
 		BGMManager.OnSongChanged += UpdateTitle;
 		ResetReplacement();
@@ -79,6 +111,7 @@ public partial class MainWindow : Window, IDisposable
 
 	public override void PreDraw()
 	{
+		BgmTooltip.ClearLock();
 		ImGui.PushStyleColor(ImGuiCol.ResizeGrip, 0);
 		ImGui.PushStyleColor(ImGuiCol.ResizeGripActive, 0);
 		ImGui.PushStyleColor(ImGuiCol.ResizeGripHovered, 0);
@@ -91,11 +124,13 @@ public partial class MainWindow : Window, IDisposable
 
 	public override void Draw()
 	{
-		_bgmTooltipLock = false;
 		ImGui.AlignTextToFramePadding();
 		ImGui.Text(Loc.Localize("SearchColon", "Search:"));
 		ImGui.SameLine();
-		ImGui.InputText("##searchbox", ref _searchText, 32);
+		if (ImGui.InputText("##searchbox", ref _searchText, 32))
+		{
+			_historySongList.SetSearch(_searchText);
+		}
 
 		ImGui.SameLine();
 		ImGui.SetCursorPosX(ImGui.GetWindowSize().X - (35 * ImGuiHelpers.GlobalScale));
@@ -116,7 +151,7 @@ public partial class MainWindow : Window, IDisposable
 			ImGui.EndTabBar();
 		}
 
-		DrawNewPlaylistModal();
+		// DrawNewPlaylistModal();
 	}
 
 	private void DrawTab(string name, Action render)
@@ -294,8 +329,6 @@ public partial class MainWindow : Window, IDisposable
 	private void DrawBgmTooltip(Song bgm)
 	{
 		if (bgm.Id == 0) return;
-		if (_bgmTooltipLock) return;
-		_bgmTooltipLock = true;
 
 		ImGui.BeginTooltip();
 		ImGui.PushTextWrapPos(450 * ImGuiHelpers.GlobalScale);
