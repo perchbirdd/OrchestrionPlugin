@@ -27,18 +27,20 @@ public partial class MainWindow
 	private string _playlistToDelete;
 	private int _playlistDeletionPhase;
 
-	private float _basePlaylistPaneSize = 150f;
-	private float _deltaPlaylistPaneSize = 0f;
-	private float _playlistPaneConfigSize = 150f;
-	private float _startDragY = 0f;
+	private float PlaylistPaneSize => Configuration.Instance.PlaylistPaneOpen ? 150f : 25f; 
 	
-	private float PlaylistPaneSize {
-		get
-		{
-			var b = _deltaPlaylistPaneSize != 0f ? _deltaPlaylistPaneSize + _basePlaylistPaneSize : _playlistPaneConfigSize;
-			return Configuration.Instance.PlaylistPaneOpen ? b : 25f;
-		}
-	}
+	// private float _basePlaylistPaneSize = 150f;
+	// private float _deltaPlaylistPaneSize = 0f;
+	// private float _playlistPaneConfigSize = 150f;
+	// private float _startDragY = 0f;
+	
+	// private float PlaylistPaneSize {
+	// 	get
+	// 	{
+	// 		var b = _deltaPlaylistPaneSize != 0f ? _deltaPlaylistPaneSize + _basePlaylistPaneSize : _playlistPaneConfigSize;
+	// 		return Configuration.Instance.PlaylistPaneOpen ? b : 25f;
+	// 	}
+	// }
 
 	private void DrawPlaylistsTab()
 	{
@@ -61,6 +63,8 @@ public partial class MainWindow
 		ImGui.BeginChild("##playlist_internal", ImGuiHelpers.ScaledVector2(-1f, -1 * PlaylistPaneSize));
 		if (_selectedPlaylist != null)
 		{
+			if (!_playlistSongList.Compare(_selectedPlaylist.Songs))
+				RefreshPlaylist(_selectedPlaylist);
 			_playlistSongList.Draw();
 		}
 		else
@@ -125,7 +129,7 @@ public partial class MainWindow
 					    ImGuiHelpers.ScaledVector2(0f, drawHeight)
 				    ))
 				{
-					SetSelectedPlaylist(playlist);
+					RefreshPlaylist(playlist);
 					
 					if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && playlist.Songs.Count > 0)
 					{
@@ -135,7 +139,7 @@ public partial class MainWindow
 
 				if (ImGui.BeginPopupContextItem($"{pName}context"))
 				{
-					SetSelectedPlaylist(playlist);
+					RefreshPlaylist(playlist);
 
 					if (ImGui.MenuItem(Loc.Localize("Play", "Play")))
 					{
@@ -213,7 +217,7 @@ public partial class MainWindow
 			if (PlaylistManager.CurrentPlaylist?.Name == _playlistToDelete)
 				PlaylistManager.Stop();
 			if (_selectedPlaylist?.Name == _playlistToDelete)
-				SetSelectedPlaylist(null);
+				RefreshPlaylist(null);
 
 			Configuration.Instance.DeletePlaylist(_playlistToDelete);
 			_playlistToDelete = null;
@@ -221,7 +225,7 @@ public partial class MainWindow
 		}
 	}
 
-	private void SetSelectedPlaylist(Playlist playlist)
+	private void RefreshPlaylist(Playlist playlist)
 	{
 		_selectedPlaylist = playlist;
 		if (_selectedPlaylist != null)

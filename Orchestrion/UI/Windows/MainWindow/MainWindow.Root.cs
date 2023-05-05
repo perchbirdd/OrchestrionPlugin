@@ -19,6 +19,15 @@ namespace Orchestrion.UI.Windows.MainWindow;
 
 public partial class MainWindow : Window, IDisposable
 {
+	private enum TabType
+	{
+		AllSongs,
+		Playlist,
+		History,
+		Replacements,
+		Debug,
+	}
+	
 	private static readonly string _noChange = Loc.Localize("NoChange", "Do not change BGM");
 	private static readonly string _secAgo = Loc.Localize("SecondsAgo", "{0}s ago");
 	private static readonly string _minAgo = Loc.Localize("MinutesAgo", "{0}m ago");
@@ -29,12 +38,16 @@ public partial class MainWindow : Window, IDisposable
 	private readonly RenderableSongList _playlistSongList;
 	
 	private string _searchText = string.Empty;
-	private int _selectedSong;
+	private TabType _currentTab = TabType.AllSongs;
 
 	public MainWindow(OrchestrionPlugin orch) : base(BaseName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
 	{
 		_orch = orch;
 
+		_mainSongList = new RenderableSongList(
+			SongList.Instance.GetSongs().Select(s => new RenderableSongEntry(s.Key)).ToList(),
+			new SongListRenderStrategy());
+		
 		_historySongList = new RenderableSongList(
 			_songHistory,
 			new SongListRenderStrategy
@@ -50,9 +63,8 @@ public partial class MainWindow : Window, IDisposable
 					// return BGMManager.CurrentAudibleSong == id;
 				},
 			});
-		_mainSongList = new RenderableSongList(
-			SongList.Instance.GetSongs().Select(s => new RenderableSongEntry(s.Key)).ToList(),
-			new SongListRenderStrategy());
+		
+		// Playlist renderer heavily relies on the strategy and is kind of hacky. whoops
 		_playlistSongList = new RenderableSongList(
 			new List<RenderableSongEntry>(),
 			new SongListRenderStrategy
@@ -62,9 +74,11 @@ public partial class MainWindow : Window, IDisposable
 					PlaylistManager.CurrentSongIndex == i &&
 					BGMManager.CurrentAudibleSong == entries.ElementAtOrDefault(i).Id,
 				PlaySong = (entry, index) => PlaylistManager.Play(_selectedPlaylist?.Name, index),
+				SourceMutable = () => true,
+				RemoveSong = index => _selectedPlaylist?.RemoveSong(index),
 			});
 
-		BGMManager.OnSongChanged += UpdateTitle;
+		BGMManager.OnSongChanged += SongChanged;
 		ResetReplacement();
 
 		SizeConstraints = new WindowSizeConstraints
@@ -74,7 +88,7 @@ public partial class MainWindow : Window, IDisposable
 		};
 	}
 
-	private void UpdateTitle(int oldSong, int currentSong, bool playedByOrchestrion)
+	private void SongChanged(int oldSong, int currentSong, bool playedByOrchestrion)
 	{
 		var currentChanged = oldSong != currentSong;
 		if (!currentChanged) return;
@@ -129,7 +143,9 @@ public partial class MainWindow : Window, IDisposable
 		ImGui.SameLine();
 		if (ImGui.InputText("##searchbox", ref _searchText, 32))
 		{
+			_mainSongList.SetSearch(_searchText);
 			_historySongList.SetSearch(_searchText);
+			_playlistSongList.SetSearch(_searchText);
 		}
 
 		ImGui.SameLine();
@@ -141,43 +157,31 @@ public partial class MainWindow : Window, IDisposable
 
 		if (ImGui.BeginTabBar("##orchtabs"))
 		{
-			DrawTab(Loc.Localize("AllSongs", "All Songs"), DrawSongList);
-			DrawTab(Loc.Localize("Playlists", "Playlists"), DrawPlaylistsTab);
-			DrawTab(Loc.Localize("History", "History"), DrawSongHistory);
-			DrawTab(Loc.Localize("Replacements", "Replacements"), DrawReplacements);
+			DrawTab(Loc.Localize("AllSongs", "All Songs"), DrawSongListTab, TabType.AllSongs);
+			DrawTab(Loc.Localize("Playlists", "Playlists"), DrawPlaylistsTab, TabType.Playlist);
+			DrawTab(Loc.Localize("History", "History"), DrawSongHistoryTab, TabType.History);
+			DrawTab(Loc.Localize("Replacements", "Replacements"), DrawReplacementsTab, TabType.Replacements);
 #if DEBUG
-			DrawTab("Debug", DrawDebug);
+			DrawTab("Debug", DrawDebugTab, TabType.Debug);
 #endif
 			ImGui.EndTabBar();
 		}
-
-		// DrawNewPlaylistModal();
 	}
 
-	private void DrawTab(string name, Action render)
+	private void DrawTab(string name, Action render, TabType type)
 	{
 		if (ImGui.BeginTabItem(name))
 		{
 			render();
 			ImGui.EndTabItem();
+			_currentTab = type;
 		}
 	}
 
-	private void DrawFooter(bool isHistory = false)
+	private void DrawFooter()
 	{
-		var songId = _selectedSong;
-
-		if (isHistory && _songHistory.Count > _selectedHistoryEntry)
-			songId = _songHistory[_selectedHistoryEntry].Id;
-		else if (isHistory)
-			songId = 0;
-
-		if (SongList.Instance.TryGetSong(songId, out var song))
-		{
-			// ImGui.TextWrapped(song.Locations);
-			// ImGui.TextWrapped(song.AdditionalInfo);
-		}
-
+		var song = GetSelectedSongForTab();
+		
 		var width = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().WindowPadding.X;
 		var stopText = Loc.Localize("Stop", "Stop");
 		var playText = Loc.Localize("Play", "Play");
@@ -194,10 +198,20 @@ public partial class MainWindow : Window, IDisposable
 
 		ImGui.BeginDisabled(!song.FileExists);
 		if (ImGui.Button(playText, new Vector2(width / 2, buttonHeight)))
-			BGMManager.Play(_selectedSong);
+			BGMManager.Play(song.Id);
 		ImGui.EndDisabled();
 		if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-			DrawBgmTooltip(song);
+			BgmTooltip.DrawBgmTooltip(song);
+	}
+	
+	private Song GetSelectedSongForTab()
+	{
+		return _currentTab switch
+		{
+			TabType.AllSongs => _mainSongList.GetFirstSelectedSong(),
+			TabType.History => _historySongList.GetFirstSelectedSong(),
+			_ => default,
+		};
 	}
 
 	private bool SearchMatches(Song song)
@@ -209,159 +223,6 @@ public partial class MainWindow : Window, IDisposable
 		                        || song.Id.ToString().Contains(_searchText));
 		var searchEmpty = _searchText.Length == 0;
 		return matchesSearch || searchEmpty;
-	}
-
-	private void DrawSongListItem(Song song, int historyIndex = 0, DateTime timePlayed = default)
-	{
-		var isHistory = timePlayed != default;
-
-		ImGui.Text(song.Id.ToString());
-		ImGui.TableNextColumn();
-
-		bool selected;
-
-		if (isHistory)
-			selected = _selectedHistoryEntry == historyIndex;
-		else
-			selected = _selectedSong == song.Id;
-
-		if (ImGui.Selectable($"{song.Name}##{song.Id}{timePlayed}", selected, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.SpanAllColumns))
-		{
-			_selectedSong = song.Id;
-			if (isHistory) _selectedHistoryEntry = historyIndex;
-			if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
-				BGMManager.Play(_selectedSong);
-		}
-
-		if (ImGui.IsItemHovered())
-			DrawBgmTooltip(song);
-
-		if (ImGui.BeginPopupContextItem())
-		{
-			_selectedSong = song.Id;
-			if (isHistory) _selectedHistoryEntry = historyIndex;
-
-			DrawCopyContentSubmenu(song);
-			ImGui.Separator();
-			DrawPlaylistAddSubmenu(song);
-
-			ImGui.EndPopup();
-		}
-
-		ImGui.TableNextColumn();
-		if (!isHistory) return;
-
-		var deltaTime = DateTime.Now - timePlayed;
-		var unit = deltaTime.TotalMinutes >= 1 ? (int)deltaTime.TotalMinutes : (int)deltaTime.TotalSeconds;
-		var label = deltaTime.TotalMinutes >= 1 ? _minAgo : _secAgo;
-		ImGui.Text(string.Format(label, unit));
-	}
-
-	private void DrawPlaylistAddSubmenu(Song song)
-	{
-		if (ImGui.BeginMenu(Loc.Localize("AddTo", "Add to...")))
-		{
-			foreach (var p in Configuration.Instance.Playlists.Values)
-				if (ImGui.MenuItem(p.Name))
-					p.AddSong(song.Id);
-
-			ImGui.Separator();
-
-			if (ImGui.MenuItem(Loc.Localize("NewPlaylistEllipsis", "New playlist...")))
-			{
-				PluginLog.Debug("Opening new playlist popup...");
-				_newPlaylistSong = song.Id;
-				_newPlaylistModal = true;
-			}
-
-			ImGui.EndMenu();
-		}
-	}
-
-	private void DrawCopyContentSubmenu(Song song)
-	{
-		var songId = Loc.Localize("SongId", "Song ID");
-		var songName = Loc.Localize("SongName", "Song Name");
-		var songLocation = Loc.Localize("SongLocation", "Song Location");
-		var songAdditionalInfo = Loc.Localize("SongAdditionalInfo", "Song Additional Info");
-		var duration = Loc.Localize("Duration", "Duration");
-		var songFilePath = Loc.Localize("SongFilePath", "Song File Path");
-		var all = Loc.Localize("All", "All");
-
-		if (ImGui.BeginMenu(Loc.Localize("Copy", "Copy")))
-		{
-			if (ImGui.MenuItem(songId))
-				ImGui.SetClipboardText(song.Id.ToString());
-			if (ImGui.MenuItem(songName))
-				ImGui.SetClipboardText(song.Name);
-			if (ImGui.MenuItem(songLocation))
-				ImGui.SetClipboardText(song.Locations);
-			if (ImGui.MenuItem(songAdditionalInfo))
-				ImGui.SetClipboardText(song.AdditionalInfo);
-			if (ImGui.MenuItem(duration))
-				ImGui.SetClipboardText($"{song.Duration:mm\\:ss}");
-			if (ImGui.MenuItem(songFilePath))
-				ImGui.SetClipboardText(song.FilePath);
-			ImGui.Separator();
-			if (ImGui.MenuItem(all))
-			{
-				var text = $"{songId}: {song.Id}\n" +
-				           $"{songName}: {song.Name}\n" +
-				           $"{songLocation}: {song.Locations}\n" +
-				           $"{songAdditionalInfo}: {song.AdditionalInfo}\n" +
-				           $"{duration}: {song.Duration:mm\\:ss}\n" +
-				           $"{songFilePath}: {song.FilePath}";
-				ImGui.SetClipboardText(text);
-			}
-			ImGui.EndMenu();
-		}
-	}
-
-	private static string BuildCopyString(HashSet<int> songs, Func<Song, string> field)
-	{
-		var sb = new StringBuilder();
-		foreach (var song in songs)
-			sb.Append($"{field.Invoke(SongList.Instance.GetSong(song))}, ");
-		var text = sb.ToString();
-		return text[^2..];
-	}
-
-	private void DrawBgmTooltip(Song bgm)
-	{
-		if (bgm.Id == 0) return;
-
-		ImGui.BeginTooltip();
-		ImGui.PushTextWrapPos(450 * ImGuiHelpers.GlobalScale);
-		ImGui.TextColored(new Vector4(0, 1, 0, 1), Loc.Localize("SongInfo", "Song Info"));
-		ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.Localize("TitleColon", "Title: "));
-
-		ImGui.SameLine();
-		ImGui.TextWrapped(bgm.Name);
-		ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.Localize("LocationColon", "Location: "));
-		ImGui.SameLine();
-		ImGui.TextWrapped(string.IsNullOrEmpty(bgm.Locations) ? Loc.Localize("Unknown", "Unknown") : bgm.Locations);
-		if (!string.IsNullOrEmpty(bgm.AdditionalInfo))
-		{
-			ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.Localize("InfoColon", "Info: "));
-			ImGui.SameLine();
-			ImGui.TextWrapped(bgm.AdditionalInfo);
-		}
-		ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.Localize("DurationColon", "Duration: "));
-		ImGui.SameLine();
-		ImGui.TextWrapped($"{bgm.Duration:mm\\:ss}");
-		ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
-		if (!bgm.FileExists)
-			ImGui.TextWrapped(Loc.Localize("SongNotFound", "This song is unavailable; the track is not present in the current game files."));
-		ImGui.PopStyleColor();
-		if (Configuration.Instance.ShowFilePaths)
-		{
-			ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.Localize("FilePathColon", "File Path: "));
-			ImGui.SameLine();
-			ImGui.TextWrapped(bgm.FilePath);
-		}
-
-		ImGui.PopTextWrapPos();
-		ImGui.EndTooltip();
 	}
 
 	private static void RightAlignButton(float y, string text)
@@ -393,11 +254,5 @@ public partial class MainWindow : Window, IDisposable
 
 		ImGui.SetCursorPosX(cursor);
 		ImGui.SetCursorPosY(y);
-	}
-
-	private ImGuiScene.TextureWrap LoadUIImage(string imageFile)
-	{
-		var path = Path.Combine(Path.GetDirectoryName(DalamudApi.PluginInterface.AssemblyLocation.FullName)!, imageFile);
-		return DalamudApi.PluginInterface.UiBuilder.LoadImage(path);
 	}
 }

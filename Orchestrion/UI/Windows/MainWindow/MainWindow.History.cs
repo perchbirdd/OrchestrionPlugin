@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Logging;
 using ImGuiNET;
@@ -14,31 +14,21 @@ public partial class MainWindow
 	
 	// In order to modify the song history, we keep a reference to the history list
 	private readonly List<RenderableSongEntry> _songHistory = new();
-	private int _selectedHistoryEntry = 0;
 
-	private void DrawSongHistory()
+	private void DrawSongHistoryTab()
 	{
 		// to keep the tab bar always visible and not have it get scrolled out
 		ImGui.BeginChild("##_songList_internal", new Vector2(-1f, -60f));
-
 		_historySongList.Draw();
-
 		ImGui.EndChild();
-		DrawFooter(true);
+		DrawFooter();
 	}
 	
 	private void AddSongToHistory(int id)
 	{
 		// Don't add silence
-		if (id == 1 || !SongList.Instance.TryGetSong(id, out _))
-			return;
-
-		var newEntry = new RenderableSongEntry
-		{
-			Id = id,
-			TimePlayed = DateTime.Now
-		};
-
+		if (id == 1 || !SongList.Instance.TryGetSong(id, out _)) return;
+		var newEntry = new RenderableSongEntry(id, DateTime.Now);
 		var currentIndex = _songHistory.Count - 1;
 
 		// Check if we have history, if yes, then check if ID is the same as previous, if not, add to history

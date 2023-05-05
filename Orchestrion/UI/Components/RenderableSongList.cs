@@ -5,7 +5,6 @@ using CheapLoc;
 using Dalamud.Interface;
 using Dalamud.Logging;
 using ImGuiNET;
-using Orchestrion.Audio;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
 using Orchestrion.UI.Windows;
@@ -42,6 +41,24 @@ public class RenderableSongList
 		_searchText = searchText;
 	}
 	
+	public HashSet<int> GetSelectedIndices()
+	{
+		return _selected;
+	}
+
+	public List<Song> GetSelectedSongs()
+	{
+		return _selected.Select(index => _listSource[index]).Select(entry => SongList.Instance.GetSong(entry.Id)).ToList();
+	}
+
+	public Song GetFirstSelectedSong()
+	{
+		if (_listSource.Count == 0 || _selected.Count == 0) return default;
+		var first = _selected.ElementAt(0);
+		if (first < 0 || first >= _listSource.Count) return default;
+		return SongList.Instance.GetSong(_listSource[first].Id);
+	}
+	
 	private bool SearchMatches(int songId)
 	{
 		if (!SongList.Instance.TryGetSong(songId, out var song)) return false;
@@ -65,7 +82,7 @@ public class RenderableSongList
 				ImGui.TableSetupColumn("title", ImGuiTableColumnFlags.WidthStretch);
 				ImGui.TableSetupColumn("time", ImGuiTableColumnFlags.WidthFixed);
 
-				var operation = new Action<RenderableSongEntry, int>((entry, index) =>
+				var render = new Action<RenderableSongEntry, int>((entry, index) =>
 				{
 					if (!SearchMatches(entry.Id)) return;
 
@@ -77,15 +94,31 @@ public class RenderableSongList
 
 				if (_renderStrategy.RenderBackwards())
 				{
-					for (int i = _listSource.Count() - 1; i >= 0; i--)
-						operation(_listSource.ElementAt(i), i);
+					for (int i = _listSource.Count - 1; i >= 0; i--)
+						render(_listSource[i], i);
 				} else {
 					var i = 0;
 					foreach (var entry in _listSource)
-						operation(entry, i++);
+						render(entry, i++);
 				}
-
+				
 				ImGui.EndTable();
+			}
+		}
+		
+		if (_forRemoval.Count > 0)
+		{
+			lock (_listSource)
+			{
+				var toRemove = _forRemoval.ToList();
+				toRemove.Sort();
+				toRemove.Reverse();
+				foreach (var index in toRemove)
+				{
+					_renderStrategy.RemoveSong(index);
+					_selected.Remove(index);
+				}
+				_forRemoval.Clear();	
 			}
 		}
 
@@ -128,11 +161,14 @@ public class RenderableSongList
 
 		if (ImGui.BeginPopupContextItem())
 		{
-			HandleSelect(index, selected);
+			if (_selected.Count is 0 or 1)
+				HandleSelect(index, selected);
 
 			DrawCopyContentSubmenu(song);
 			ImGui.Separator();
-			DrawPlaylistAddSubmenu(song);
+			if (DrawRemoveSubmenu())
+				ImGui.Separator();
+			DrawPlaylistAddSubmenu();
 
 			ImGui.EndPopup();
 		}
@@ -179,20 +215,20 @@ public class RenderableSongList
 		}
 	}
 
-	private void DrawPlaylistAddSubmenu(Song song)
+	private void DrawPlaylistAddSubmenu()
 	{
 		if (ImGui.BeginMenu(Loc.Localize("AddTo", "Add to...")))
 		{
+			var newPlaylistSongs = _selected.Select(index => _listSource.ElementAt(index)).Select(entry => entry.Id).ToList();
 			foreach (var p in Configuration.Instance.Playlists.Values)
 				if (ImGui.MenuItem(p.Name))
-					p.AddSong(song.Id);
+					p.AddSongs(newPlaylistSongs);
 
 			ImGui.Separator();
 
 			if (ImGui.MenuItem(Loc.Localize("NewPlaylistEllipsis", "New playlist...")))
 			{
 				PluginLog.Debug("Opening new playlist popup...");
-				var newPlaylistSongs = _selected.Select(index => _listSource.ElementAt(index)).Select(entry => entry.Id).ToList();
 				_newPlaylistModal.Show(newPlaylistSongs);
 			}
 
@@ -237,6 +273,32 @@ public class RenderableSongList
 			}
 			ImGui.EndMenu();
 		}
+	}
+
+	private bool DrawRemoveSubmenu()
+	{
+		if (!_renderStrategy.SourceMutable()) return false;
+		if (_selected.Count <= 0) return false;
+
+		var label = Loc.Localize("RemoveSelected", "Remove {0} song(s)");
+		label = string.Format(label, _selected.Count);
+
+		if (!ImGui.MenuItem(label)) return false;
+		
+		_forRemoval.Clear();
+		foreach (var i in _selected)
+		{
+			_forRemoval.Add(i);
+		}
+		return true;
+	}
+
+	public bool Compare(List<int> songs)
+	{
+		if (_listSource.Count != songs.Count) return false;
+		for (var i = 0; i < _listSource.Count; i++)
+			if (_listSource[i].Id != songs[i]) return false;
+		return true;
 	}
 
 	private static string BuildCopyString(HashSet<int> songs, Func<Song, string> field)

@@ -7,7 +7,7 @@ namespace Orchestrion.UI.Windows.MainWindow;
 
 public partial class MainWindow
 {
-	private void DrawDebug()
+	private void DrawDebugTab()
 	{
 		var addr = BGMAddressResolver.BGMSceneManager;
 		if (addr == IntPtr.Zero) return;

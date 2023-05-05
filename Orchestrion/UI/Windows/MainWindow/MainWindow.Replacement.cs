@@ -13,7 +13,7 @@ public partial class MainWindow
     private SongReplacementEntry _tmpReplacement;
     private readonly List<int> _removalList = new();
     
-	private void DrawReplacements()
+	private void DrawReplacementsTab()
     {
         ImGui.BeginChild("##replacementlist");
         DrawCurrentReplacement();
@@ -43,7 +43,7 @@ public partial class MainWindow
             // Buttons in bottom right of area
             var editText = Loc.Localize("Edit", "Edit");
             var deleteText = Loc.Localize("Delete", "Delete");
-            MainWindow.RightAlignButtons(ImGui.GetCursorPosY(), new[] {editText, deleteText});
+            RightAlignButtons(ImGui.GetCursorPosY(), new[] {editText, deleteText});
             if (ImGui.Button($"{editText}##{replacement.TargetSongId}"))
             {
                 _removalList.Add(replacement.TargetSongId);
