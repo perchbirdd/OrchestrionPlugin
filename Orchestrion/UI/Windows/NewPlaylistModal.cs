@@ -10,6 +10,9 @@ public class NewPlaylistModal
 	private List<int> _newPlaylistSongs = new();
 	private bool _isOpen;
 
+	private NewPlaylistModal() { }
+	public static NewPlaylistModal Instance { get; } = new();
+
 	public void Show(List<int> songs)
 	{
 		_newPlaylistSongs = songs;

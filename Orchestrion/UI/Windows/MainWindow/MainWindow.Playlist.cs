@@ -17,16 +17,7 @@ namespace Orchestrion.UI.Windows.MainWindow;
 public partial class MainWindow
 {
 	private Playlist _selectedPlaylist;
-	private int _selectedPlaylistIndex = -1;
-
-	private string _newPlaylistName = "";
-	private bool _newPlaylistModal;
-	private int _newPlaylistSong;
-
-	private int _toDelete = -1;
-	private string _playlistToDelete;
-	private int _playlistDeletionPhase;
-
+	private string _playlistToDelete = string.Empty;
 	private float PlaylistPaneSize => Configuration.Instance.PlaylistPaneOpen ? 150f : 25f; 
 	
 	// private float _basePlaylistPaneSize = 150f;
@@ -163,7 +154,8 @@ public partial class MainWindow
 				ImGui.TableNextColumn();
 
 				var colorsPushed = 0;
-				if (_playlistDeletionPhase == 1 && _playlistToDelete == pName)
+				
+				if (playlist.PendingDelete)
 				{
 					ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
 					ImGui.PushStyleColor(ImGuiCol.ButtonHovered, ImGuiColors.DalamudRed);
@@ -173,22 +165,17 @@ public partial class MainWindow
 				ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f);
 				if (ImGuiComponents.IconButton($"##{pName}_del", trash))
 				{
-					Task.Delay(2000).ContinueWith(ResetDeletion);
-					if (_playlistDeletionPhase == 0 || _playlistToDelete != pName)
-					{
+					Task.Delay(4000).ContinueWith(_ => ResetDeletion(playlist));
+					if (!playlist.PendingDelete)
+						playlist.PendingDelete = true;
+					else
 						_playlistToDelete = pName;
-						_playlistDeletionPhase = 1;
-					}
-					else if (_playlistDeletionPhase == 1)
-					{
-						_playlistDeletionPhase = 2;
-					}
 				}
 				ImGui.PopStyleVar();
 
 				if (ImGui.IsItemHovered())
 				{
-					if (_playlistDeletionPhase == 1 && _playlistToDelete == pName)
+					if (playlist.PendingDelete)
 					{
 						ImGui.SetTooltip(Loc.Localize("ClickAgainDelete", "Click again to confirm deletion"));
 					}
@@ -206,13 +193,13 @@ public partial class MainWindow
 		}
 		
 		if (ImGui.Button(Loc.Localize("NewPlaylistEllipsis", "New playlist..."), ImGuiHelpers.ScaledVector2(-1f, 0f)))
-			_newPlaylistModal = true;
+			NewPlaylistModal.Instance.Show(new List<int>());
 
-		// I don't know why the bottom is cut off, so I'm just going to do this and pretend it's not.
+		// TODO: I don't know why the bottom is cut off, so I'm just going to do this and pretend it's not.
 		ImGui.Dummy(ImGuiHelpers.ScaledVector2(-1f, 26f));
 		ImGui.EndChild();
 
-		if (_playlistToDelete != null && _playlistDeletionPhase == 2)
+		if (_playlistToDelete != string.Empty && Configuration.Instance.Playlists[_playlistToDelete].PendingDelete)
 		{
 			if (PlaylistManager.CurrentPlaylist?.Name == _playlistToDelete)
 				PlaylistManager.Stop();
@@ -220,8 +207,7 @@ public partial class MainWindow
 				RefreshPlaylist(null);
 
 			Configuration.Instance.DeletePlaylist(_playlistToDelete);
-			_playlistToDelete = null;
-			_playlistDeletionPhase = 0;
+			_playlistToDelete = string.Empty;
 		}
 	}
 
@@ -385,9 +371,9 @@ public partial class MainWindow
 	// 	}
 	// }
 
-	private void ResetDeletion(Task task)
+	private void ResetDeletion(Playlist playlist)
 	{
-		_playlistToDelete = null;
-		_playlistDeletionPhase = 0;
+		_playlistToDelete = string.Empty;
+		playlist.PendingDelete = false;
 	}
 }

@@ -166,6 +166,8 @@ public partial class MainWindow : Window, IDisposable
 #endif
 			ImGui.EndTabBar();
 		}
+		
+		NewPlaylistModal.Instance.Draw();
 	}
 
 	private void DrawTab(string name, Action render, TabType type)

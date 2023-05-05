@@ -19,9 +19,7 @@ public class RenderableSongList
 	private readonly HashSet<int> _forRemoval = new();
 	private readonly HashSet<int> _selected = new();
 	private string _searchText = string.Empty;
-	
-	private readonly NewPlaylistModal _newPlaylistModal = new();
-	
+
 	public RenderableSongList(List<RenderableSongEntry> listSource, SongListRenderStrategy strategy)
 	{
 		_listSource = listSource;
@@ -121,8 +119,6 @@ public class RenderableSongList
 				_forRemoval.Clear();	
 			}
 		}
-
-		_newPlaylistModal.Draw();
 	}
 	
 	private void DrawSongListItem(RenderableSongEntry entry, int index)
@@ -229,7 +225,7 @@ public class RenderableSongList
 			if (ImGui.MenuItem(Loc.Localize("NewPlaylistEllipsis", "New playlist...")))
 			{
 				PluginLog.Debug("Opening new playlist popup...");
-				_newPlaylistModal.Show(newPlaylistSongs);
+				NewPlaylistModal.Instance.Show(newPlaylistSongs);
 			}
 
 			ImGui.EndMenu();
