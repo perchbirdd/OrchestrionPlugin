@@ -157,12 +157,12 @@ public partial class MainWindow : Window, IDisposable
 
 		if (ImGui.BeginTabBar("##orchtabs"))
 		{
-			DrawTab(Loc.Localize("AllSongs", "All Songs"), DrawSongListTab, TabType.AllSongs);
-			DrawTab(Loc.Localize("Playlists", "Playlists"), DrawPlaylistsTab, TabType.Playlist);
-			DrawTab(Loc.Localize("History", "History"), DrawSongHistoryTab, TabType.History);
-			DrawTab(Loc.Localize("Replacements", "Replacements"), DrawReplacementsTab, TabType.Replacements);
+			DrawTab(Loc.Localize("AllSongs", "All Songs"), "orch_AllSongs", DrawSongListTab, TabType.AllSongs);
+			DrawTab(Loc.Localize("Playlists", "Playlists"), "orch_Playlists", DrawPlaylistsTab, TabType.Playlist);
+			DrawTab(Loc.Localize("History", "History"), "orch_History", DrawSongHistoryTab, TabType.History);
+			DrawTab(Loc.Localize("Replacements", "Replacements"), "orch_Replacements", DrawReplacementsTab, TabType.Replacements);
 #if DEBUG
-			DrawTab("Debug", DrawDebugTab, TabType.Debug);
+			DrawTab("Debug", "orch_Debug", DrawDebugTab, TabType.Debug);
 #endif
 			ImGui.EndTabBar();
 		}
@@ -170,9 +170,9 @@ public partial class MainWindow : Window, IDisposable
 		NewPlaylistModal.Instance.Draw();
 	}
 
-	private void DrawTab(string name, Action render, TabType type)
+	private void DrawTab(string name, string id, Action render, TabType type)
 	{
-		if (ImGui.BeginTabItem(name))
+		if (ImGui.BeginTabItem($"{name}###{id}"))
 		{
 			render();
 			ImGui.EndTabItem();

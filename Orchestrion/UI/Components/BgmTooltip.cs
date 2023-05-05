@@ -31,11 +31,15 @@ public static class BgmTooltip
 		if (Configuration.Instance.ShowAltLangTitles)
 		{
 			var code = Util.AltLang();
-			var label = Loc.Localize("TitleColon", "Title: ");
-			label = $"[{code}] {label}";
-			ImGui.TextColored(ImGuiColors.DalamudGrey, label);
-			ImGui.SameLine();
-			ImGui.TextWrapped(bgm.Strings[code].Name);
+			var altLangTitle = bgm.Strings[code].Name;
+			if (bgm.Name != altLangTitle)
+			{
+				var label = Loc.Localize("TitleColon", "Title: ");
+				label = $"[{code}] {label}";
+				ImGui.TextColored(ImGuiColors.DalamudGrey, label);
+				ImGui.SameLine();
+				ImGui.TextWrapped(altLangTitle);
+			}
 		}
 
 		if (!string.IsNullOrEmpty(bgm.AlternateName))
@@ -47,11 +51,15 @@ public static class BgmTooltip
 			if (Configuration.Instance.ShowAltLangTitles)
 			{
 				var code = Util.AltLang();
-				var label = Loc.Localize("AlternateTitleColon", "Alternate Title: ");
-				label = $"[{code}] {label}";
-				ImGui.TextColored(ImGuiColors.DalamudGrey, label);
-				ImGui.SameLine();
-				ImGui.TextWrapped(bgm.Strings[code].AlternateName);
+				var altLangAltTitle = bgm.Strings[code].AlternateName;
+				if (bgm.AlternateName != altLangAltTitle)
+				{
+					var label = Loc.Localize("AlternateTitleColon", "Alternate Title: ");
+					label = $"[{code}] {label}";
+					ImGui.TextColored(ImGuiColors.DalamudGrey, label);
+					ImGui.SameLine();
+					ImGui.TextWrapped(altLangAltTitle);
+				}
 			}
 		}
 		
@@ -64,11 +72,15 @@ public static class BgmTooltip
 			if (Configuration.Instance.ShowAltLangTitles)
 			{
 				var code = Util.AltLang();
-				var label = Loc.Localize("SpecialModeTitleColon", "Special Mode Title: ");
-				label = $"[{code}] {label}";
-				ImGui.TextColored(ImGuiColors.DalamudGrey, label);
-				ImGui.SameLine();
-				ImGui.TextWrapped(bgm.Strings[code].SpecialModeName);
+				var altLangSpecialModeName = bgm.Strings[code].SpecialModeName;
+				if (bgm.SpecialModeName != altLangSpecialModeName)
+				{
+					var label = Loc.Localize("SpecialModeTitleColon", "Special Mode Title: ");
+					label = $"[{code}] {label}";
+					ImGui.TextColored(ImGuiColors.DalamudGrey, label);
+					ImGui.SameLine();
+					ImGui.TextWrapped(altLangSpecialModeName);
+				}
 			}
 		}
 		

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Numerics;
+using Dalamud.Interface;
 using Dalamud.Logging;
 using ImGuiNET;
 using Orchestrion.Persistence;
@@ -18,7 +19,7 @@ public partial class MainWindow
 	private void DrawSongHistoryTab()
 	{
 		// to keep the tab bar always visible and not have it get scrolled out
-		ImGui.BeginChild("##_songList_internal", new Vector2(-1f, -60f));
+		ImGui.BeginChild("##_songList_internal", ImGuiHelpers.ScaledVector2(-1f, -25f));
 		_historySongList.Draw();
 		ImGui.EndChild();
 		DrawFooter();

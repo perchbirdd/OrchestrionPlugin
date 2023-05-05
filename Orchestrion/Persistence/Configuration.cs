@@ -22,7 +22,8 @@ public class Configuration : IPluginConfiguration
     public bool MiniPlayerLock { get; set; } = false;
     public float MiniPlayerOpacity { get; set; } = 1.0f;
     public bool ShowAltLangTitles { get; set; } = false;
-    public bool UseClientLangInServerInfo { get; set; } = false;
+    public bool UseClientLangInServerInfo { get; set; } = true;
+    public bool UseClientLangInChat { get; set; } = true;
 
     public Dictionary<int, SongReplacementEntry> SongReplacements { get; private set; } = new();
     

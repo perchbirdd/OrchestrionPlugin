@@ -1,0 +1,242 @@
+{
+  "HelpMessage": {
+    "message": "Affiche la fenêtre Orchestrion pour visualiser, modifier ou arrêter la musique en jeu.",
+    "description": "OrchestrionPlugin..ctor"
+  },
+  "NowPlaying": {
+    "message": "lecture en cours ",
+    "description": "OrchestrionPlugin.UpdateChat"
+  },
+  "ShowSongTitleBar": {
+    "message": "Afficher la musique actuellement jouée dans la barre de titre du lecteur",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowNowPlayingChat": {
+    "message": "Afficher le message \"Lecture en cours\" dans le chat du jeu lors d'un changement de musique",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowSongServerInfo": {
+    "message": "Afficher le titre de la musique jouée dans la partie \"infos du serveur\" de l'ATH",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowSongIdServerInfo": {
+    "message": "Afficher l'ID de la musique dans la partie \"infos du serveur\" de l'ATH",
+    "description": "SettingsWindow.Draw"
+  },
+  "HandleSpecialModes": {
+    "message": "Gérer les modes spéciaux \"en combat\" et \"musique à dos de monture\"",
+    "description": "SettingsWindow.Draw"
+  },
+  "AudioStreamingDisabledWarning": {
+    "message": "Le streaming audio est désactivé. Ceci peut être causé par Sound Filter ou un plugin tiers. Il est possible que la configuration ici ne fonctionne pas comme prévu et il est également possible d'avoir des problèmes audio comme des craquements, des pops, ou pistes qui se s'arment pas correctement. Ces problèmes ne viennent pas du plugin Orchestrion.",
+    "description": "SettingsWindow.Draw"
+  },
+  "MiniPlayerSettings": {
+    "message": "Configuration du Mini Lecteur",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowMiniPlayer": {
+    "message": "Afficher le mini lecteur",
+    "description": "SettingsWindow.Draw"
+  },
+  "LockMiniPlayer": {
+    "message": "Verrouiller le mini lecteur",
+    "description": "SettingsWindow.Draw"
+  },
+  "MiniPlayerOpacity": {
+    "message": "Transparence du mini lecteur",
+    "description": "SettingsWindow.Draw"
+  },
+  "NoPlaylistSelected": {
+    "message": "Aucune Playlist sélectionnée",
+    "description": "MainWindow.DrawPlaylistSongs"
+  },
+  "SelectAPlaylist": {
+    "message": "Sélectionnez une playlist.",
+    "description": "MainWindow.DrawPlaylistSongs"
+  },
+  "Play": {
+    "message": "Jouer",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "Repeat": {
+    "message": "Répéter",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "Shuffle": {
+    "message": "Aléatoire",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "ClickAgainDelete": {
+    "message": "Cliquez une nouvelle fois pour confirmer la suppression",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "Delete": {
+    "message": "Supprimer",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "NewPlaylistEllipsis": {
+    "message": "Nouvelle playlist...",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "Playlists": {
+    "message": "Playlists",
+    "description": "MainWindow.DrawPlaylistPaneButton"
+  },
+  "ReplaceWith": {
+    "message": "sera remplacé par",
+    "description": "MainWindow.DrawReplacementList"
+  },
+  "Edit": {
+    "message": "Modifier",
+    "description": "MainWindow.DrawReplacementList"
+  },
+  "TargetSong": {
+    "message": "Musique ciblée",
+    "description": "MainWindow.DrawCurrentReplacement"
+  },
+  "ReplacementSong": {
+    "message": "Musique remplaçante",
+    "description": "MainWindow.DrawCurrentReplacement"
+  },
+  "AddReplacement": {
+    "message": "Ajouter une musique de remplacement",
+    "description": "MainWindow.DrawCurrentReplacement"
+  },
+  "SearchColon": {
+    "message": "Recherche:",
+    "description": "MainWindow.Draw"
+  },
+  "AllSongs": {
+    "message": "Toutes les musiques",
+    "description": "MainWindow.Draw"
+  },
+  "History": {
+    "message": "Historique",
+    "description": "MainWindow.Draw"
+  },
+  "Replacements": {
+    "message": "Remplacements",
+    "description": "MainWindow.Draw"
+  },
+  "Stop": {
+    "message": "Arrêt",
+    "description": "MainWindow.DrawFooter"
+  },
+  "AddTo": {
+    "message": "Ajouter à...",
+    "description": "MainWindow.DrawPlaylistAddSubmenu"
+  },
+  "SongId": {
+    "message": "ID de la Musique",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongName": {
+    "message": "Nom de la Musique",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongLocation": {
+    "message": "Lieu de la Musique",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongAdditionalInfo": {
+    "message": "Infos supplémentaires sur la musique",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "Duration": {
+    "message": "Durée",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongFilePath": {
+    "message": "Chemin du Fichier de la Musique",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "All": {
+    "message": "Tout",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "Copy": {
+    "message": "Copier",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongInfo": {
+    "message": "Infos de la Musique",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "TitleColon": {
+    "message": "Titre: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "LocationColon": {
+    "message": "Lieu: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "Unknown": {
+    "message": "Inconnu",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "InfoColon": {
+    "message": "Infos: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "DurationColon": {
+    "message": "Durée: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "SongNotFound": {
+    "message": "Cette musique est indisponible; la piste est actuellement inexistante dans les fichiers du jeu.",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "FilePathColon": {
+    "message": "Chemin du fichier: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "NoChange": {
+    "message": "Ne change pas la musique",
+    "description": "MainWindow..cctor"
+  },
+  "SecondsAgo": {
+    "message": "Il y a {0}s",
+    "description": "MainWindow..cctor"
+  },
+  "MinutesAgo": {
+    "message": "Il y a {0}m",
+    "description": "MainWindow..cctor"
+  },
+  "None": {
+    "message": "Aucune",
+    "description": "Player.Draw"
+  },
+  "FromPlaylist": {
+    "message": "De: {0}",
+    "description": "Player.Draw"
+  },
+  "PopOutMiniPlayer": {
+    "message": "Sépare le mini lecteur de la fenêtre Orchestrion",
+    "description": "Player.Draw"
+  },
+  "PopInMiniPlayer": {
+    "message": "Ré-attache le mini lecteur dans la fenêtre Orchestrion",
+    "description": "Player.Draw"
+  },
+  "RepeatOne": {
+    "message": "Répétition individuelle: Répète uniquement la musique actuelle",
+    "description": "Player.Draw"
+  },
+  "RepeatAll": {
+    "message": "Répétition globale: Répète la playlist actuelle",
+    "description": "Player.Draw"
+  },
+  "RepeatOnce": {
+    "message": "Répétition unique: Joue la playlist actuelle qu'une seule fois",
+    "description": "Player.Draw"
+  },
+  "ShuffleOff": {
+    "message": "Aléatoire Désactivé: Joue les musiques dans l'ordre",
+    "description": "Player.Draw"
+  },
+  "ShuffleOn": {
+    "message": "Aléatoire Activé: Joue les musiques aléatoirement",
+    "description": "Player.Draw"
+  }
+}

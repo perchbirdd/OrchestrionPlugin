@@ -90,9 +90,16 @@ public class SettingsWindow : Window
         }
         
         var useClientLangInServerInfo = Configuration.Instance.UseClientLangInServerInfo;
-        if (ImGui.Checkbox(Loc.Localize("UseClientLangInServerInfo", "Use client language for song titles in the \"server info\" UI element in-game"), ref useClientLangInServerInfo))
+        if (ImGui.Checkbox(Loc.Localize("UseClientLangInServerInfo", "Use client language, not Dalamud language, for song titles in the \"server info\" UI element in-game"), ref useClientLangInServerInfo))
         {
             Configuration.Instance.UseClientLangInServerInfo = useClientLangInServerInfo;
+            Configuration.Instance.Save();
+        }
+        
+        var useClientLangInChat = Configuration.Instance.UseClientLangInChat;
+        if (ImGui.Checkbox(Loc.Localize("UseClientLangInChat", "Use client language, not Dalamud language, for song titles in Orchestrion chat messages in-game"), ref useClientLangInChat))
+        {
+            Configuration.Instance.UseClientLangInChat = useClientLangInChat;
             Configuration.Instance.Save();
         }
 

@@ -8,8 +8,30 @@ public class Playlist
 	public string Name { get; set; }
 	public string DisplayName { get; set; }
 	public List<int> Songs { get; set; }
-	public RepeatMode RepeatMode { get; set; }
-	public ShuffleMode ShuffleMode { get; set; }
+
+	private RepeatMode _repeatMode;
+	
+	[JsonIgnore]
+	public RepeatMode RepeatMode {
+		get => _repeatMode;
+		set
+		{
+			_repeatMode = value;
+			Configuration.Instance.Save();
+		}
+	}
+
+	private ShuffleMode _shuffleMode;
+	
+	[JsonIgnore]
+	public ShuffleMode ShuffleMode { 
+		get => _shuffleMode;
+		set
+		{
+			_shuffleMode = value;
+			Configuration.Instance.Save();
+		}
+	}
 	
 	[JsonIgnore]
 	public bool PendingDelete { get; set; }
@@ -33,13 +55,11 @@ public class Playlist
 	public void NextRepeatMode()
 	{
 		RepeatMode = (RepeatMode) ((int)(RepeatMode + 1) % 3);
-		Configuration.Instance.Save();
 	}
 	
 	public void NextShuffleMode()
 	{
 		ShuffleMode = (ShuffleMode) ((int)(ShuffleMode + 1) % 2);
-		Configuration.Instance.Save();
 	}
 
 	public void AddSong(int songId)

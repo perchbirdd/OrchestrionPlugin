@@ -21,47 +21,47 @@ public class SongList
     private SongList()
     {
         _songs = new Dictionary<int, Song>();
-        var sheetPath = Path.Join(DalamudApi.PluginInterface.AssemblyLocation.DirectoryName, SheetFileName);
-
-        var existingText = "";
-
-        try
-        {
-            existingText = File.ReadAllText(sheetPath);
-        }
-        catch (Exception)
-        {
-            // ignore
-        }
         
         try
         {
             PluginLog.Log("[SongList] Checking for updated bgm sheets");
             
-            LoadMetadataSheet();
-            LoadLangSheet("en");
-            LoadLangSheet("ja");
-            LoadLangSheet("fr");
-            LoadLangSheet("de");
-
-            // if (newText != existingText)
-            // {
-            //     File.WriteAllText(sheetPath, newText);
-            //     PluginLog.Log("[SongList] Updated bgm sheet to new version");
-            // }
+            LoadMetadataSheet(GetRemoteSheet("metadata"));
+            LoadLangSheet(GetRemoteSheet("en"), "en");
+            LoadLangSheet(GetRemoteSheet("ja"), "ja");
+            LoadLangSheet(GetRemoteSheet("de"), "de");
+            LoadLangSheet(GetRemoteSheet("fr"), "fr");
         }
         catch (Exception e)
         {
             PluginLog.Error(e, "[SongList] Orchestrion failed to update bgm sheet; using previous version");
-            // LoadSheet(existingText);
+            LoadMetadataSheet(GetLocalSheet("metadata"));
+            LoadLangSheet(GetLocalSheet("en"), "en");
+            LoadLangSheet(GetLocalSheet("ja"), "ja");
+            LoadLangSheet(GetLocalSheet("de"), "de");
+            LoadLangSheet(GetLocalSheet("fr"), "fr");
         }
     }
 
-    private void LoadMetadataSheet()
+    private string GetRemoteSheet(string code)
+    {
+        return _client.GetStringAsync(string.Format(SheetPath, code)).Result;
+    }
+
+    private string GetLocalSheet(string code)
+    {
+        return File.ReadAllText(Path.Combine(DalamudApi.PluginInterface.AssemblyLocation.DirectoryName!, string.Format(SheetFileName, code)));
+    }
+
+    private void SaveLocalSheet(string text, string code)
+    {
+        File.WriteAllText(Path.Combine(DalamudApi.PluginInterface.AssemblyLocation.DirectoryName!, string.Format(SheetFileName, code)), text);
+    }
+
+    private void LoadMetadataSheet(string sheetText)
     {
         _songs.Clear();
         var bgms = DalamudApi.DataManager.Excel.GetSheet<BGM>()!.ToDictionary(k => k.RowId, v => v);
-        var sheetText = _client.GetStringAsync(string.Format(SheetPath, "metadata")).Result;
         var sheetLines = sheetText.Split('\n'); // gdocs provides \n
         for (int i = 1; i < sheetLines.Length; i++)
         {
@@ -86,11 +86,11 @@ public class SongList
 
             _songs[id] = song;
         }
+        SaveLocalSheet(sheetText, "metadata");
     }
 
-    private void LoadLangSheet(string code)
+    private void LoadLangSheet(string sheetText, string code)
     {
-        var sheetText = _client.GetStringAsync(string.Format(SheetPath, code)).Result;
         var sheetLines = sheetText.Split('\n'); // gdocs provides \n
         for (int i = 1; i < sheetLines.Length; i++)
         {
@@ -118,49 +118,8 @@ public class SongList
                 AdditionalInfo = addtlInfo,
             };
         }
+        SaveLocalSheet(sheetText, code);
     }
-
-    // private void LoadSheet(string metadataText, string enText, string jaText, string frText, string deText)
-    // {
-    //     _songs.Clear();
-    //     var bgms = DalamudApi.DataManager.Excel.GetSheet<BGM>()!.ToDictionary(k => k.RowId, v => v);
-    //     var sheetLines = sheetText.Split('\n'); // gdocs provides \n
-    //     for (int i = 1; i < sheetLines.Length; i++)
-    //     {
-    //         // The formatting is odd here because gdocs adds quotes around columns and doubles each single quote
-    //         var elements = sheetLines[i].Split(new[] { "\"," }, StringSplitOptions.None);
-    //         var id = int.Parse(elements[0].Substring(1));
-    //         var name = elements[1].Substring(1).Replace("\"\"", "\"");
-    //
-    //         // Any track without an official name is "???"
-    //         // While Null BGM tracks are also pretty invalid
-    //         if (string.IsNullOrEmpty(name) || name == "Null BGM" || name == "test") continue;
-    //
-    //         var location = elements[2].Substring(1).Replace("\"\"", "\"");
-    //         var additionalInfo = elements[3].Substring(1).Replace("\"\"", "\"");
-    //
-    //         var durationStr = elements[4].Substring(1, elements[4].Length - 2).Replace("\"\"", "\"");
-    //         var parsed = double.TryParse(durationStr, out var durationDbl);
-    //         var duration = parsed ? TimeSpan.FromSeconds(durationDbl) : TimeSpan.Zero;
-    //         if (!parsed) PluginLog.Debug($"failed parse {id} {name}: {durationStr}");
-    //
-    //         bgms.TryGetValue((uint)id, out var bgm);
-    //         var song = new Song
-    //         {
-    //             Id = id,
-    //             Name = name,
-    //             Locations = location,
-    //             AdditionalInfo = additionalInfo,
-    //             FilePath = bgm?.File ?? "",
-    //             SpecialMode = bgm?.SpecialMode ?? 0,
-    //             DisableRestart = bgm?.DisableRestart ?? false,
-    //             FileExists = bgm != null && DalamudApi.DataManager.FileExists(bgm.File),
-    //             Duration = duration,
-    //         };
-    //
-    //         _songs[id] = song;
-    //     }
-    // }
 
     public bool IsDisableRestart(int id)
     {
@@ -177,29 +136,9 @@ public class SongList
         return _songs.TryGetValue(id, out var song) ? song : default;
     }
 
-    public Song GetSongByIndex(int index)
-    {
-        return _songs.Values.ElementAt(index);
-    }
-
     public bool TryGetSong(int id, out Song song)
     {
         return _songs.TryGetValue(id, out song);
-    }
-    
-    public bool TryGetSongByIndex(int id, out Song song)
-    {
-        song = default;
-        try
-        {
-            song = _songs.Values.ElementAt(id);
-            return true;
-        }
-        catch (Exception e)
-        {
-            
-        }
-        return false;
     }
 
     public string GetSongTitle(int id)
@@ -215,11 +154,14 @@ public class SongList
     public bool TryGetSongByName(string name, out int songId)
     {
         songId = 0;
-        foreach (var song in _songs)
+        foreach (var song in _songs.Values)
         {
-            if (string.Equals(song.Value.Name, name, StringComparison.InvariantCultureIgnoreCase))
+            if (string.Equals(song.Strings["en"].Name, name, StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(song.Strings["en"].AlternateName, name, StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(song.Strings["ja"].Name, name, StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(song.Strings["ja"].AlternateName, name, StringComparison.InvariantCultureIgnoreCase))
             {
-                songId = song.Key;
+                songId = song.Id;
                 return true;
             }
         }
@@ -242,17 +184,13 @@ public class SongList
         ICollection<int> source = !isAllSongs ? playlist.Songs : _songs.Keys;
         if (source.Count == 0) return false;
 
-        var found = false;
-        while (!found)
+        while (true)
         {
             var index = Random.Shared.Next(source.Count);
-
             var id = source.ElementAt(index);
             if (!_songs.ContainsKey(id)) continue;
-
-            found = true;
+            songId = id;
+            return true;
         }
-
-        return found;
     }
 }

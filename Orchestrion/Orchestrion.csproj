@@ -76,4 +76,8 @@
   <ItemGroup>
     <Folder Include="UI\" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="Loc\fr.json" />
+    <EmbeddedResource Include="Loc\fr.json" />
+  </ItemGroup>
 </Project>

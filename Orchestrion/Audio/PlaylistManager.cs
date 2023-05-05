@@ -17,6 +17,7 @@ public static class PlaylistManager
 	public static TimeSpan Duration => CurrentSong.Duration;
 
 	private static string _currentPlaylist = string.Empty;
+	private static int _playlistStartTrackCount;
 	private static int _currentSongIndex;
 	private static int _playlistTrackPlayCount;
 	private static readonly List<int> _playbackHistory = new();
@@ -39,6 +40,8 @@ public static class PlaylistManager
 	private static void Update(Framework ignore)
 	{
 		if (_currentPlaylist == string.Empty || CurrentPlaylist == null) return;
+		if (_playlistStartTrackCount != CurrentPlaylist.Songs.Count)
+			ResetHistory();
 
 		if (ElapsedDuration <= Duration) return;
 		PluginLog.Debug($"{ElapsedDuration} > {Duration}");
@@ -62,11 +65,19 @@ public static class PlaylistManager
 	private static void Set(string playlistName, int index, bool isPlaying)
 	{
 		_currentPlaylist = playlistName;
+		_playlistStartTrackCount = CurrentPlaylist?.Songs.Count ?? 0;
 		_currentSongIndex = index;
 		_playlistTrackPlayCount = 0;
 		_playbackHistory.Clear();
 		_indexInHistory = -1;
 		IsPlaying = isPlaying;
+	}
+
+	private static void ResetHistory()
+	{
+		_playlistStartTrackCount = CurrentPlaylist?.Songs.Count ?? 0;
+		_playbackHistory.Clear();
+		_indexInHistory = -1;
 	}
 
 	public static void Previous()
@@ -125,6 +136,7 @@ public static class PlaylistManager
 		switch (CurrentPlaylist?.RepeatMode)
 		{
 			case RepeatMode.One:
+				if (_currentSongIndex == -1) _currentSongIndex += 1;
 				return CurrentPlaylist.Songs[_currentSongIndex];
 			case RepeatMode.All when CurrentPlaylist.ShuffleMode == ShuffleMode.Off:
 				_currentSongIndex = ++_currentSongIndex % CurrentPlaylist.Songs.Count;
@@ -145,7 +157,7 @@ public static class PlaylistManager
 
 	private static int GetPreviousSong()
 	{
-		if (_indexInHistory == 0 || _playbackHistory.Count == 0)
+		if (_indexInHistory <= 0 || _playbackHistory.Count == 0)
 			return 0;
 		_currentSongIndex = _playbackHistory[--_indexInHistory];
 		return CurrentPlaylist.Songs[_currentSongIndex];
