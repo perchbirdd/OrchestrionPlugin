@@ -167,6 +167,5 @@ public static class Player
 			ImGui.Dummy(new Vector2(5, 5));
 			ImGui.Separator();
 		}
-			
 	}
 }

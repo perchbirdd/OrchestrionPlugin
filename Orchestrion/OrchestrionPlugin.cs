@@ -83,6 +83,8 @@ public class OrchestrionPlugin : IDalamudPlugin
 
         DalamudApi.PluginInterface.UiBuilder.BuildFonts += BuildFonts;
         DalamudApi.PluginInterface.UiBuilder.RebuildFonts();
+
+        // DalamudApi.PluginInterface.LanguageChanged += LanguageChanged;
     }
 
     private void BuildFonts()
@@ -192,7 +194,7 @@ public class OrchestrionPlugin : IDalamudPlugin
                 DalamudApi.ChatGui.Print("/porch play [songId] - Play the specified song");
                 DalamudApi.ChatGui.Print("/porch play [song name] - Play the specified song");
                 DalamudApi.ChatGui.Print("/porch random - Play a random song");
-                DalamudApi.ChatGui.Print("/porch random favorites - Play a random song from favorites");
+                DalamudApi.ChatGui.Print("/porch random [playlist] - Play a random song from the specified playlist (does not begin the playlist)");
                 DalamudApi.ChatGui.Print("/porch stop - Stop the current playing song or replacement song");
                 break;
         }
@@ -202,7 +204,12 @@ public class OrchestrionPlugin : IDalamudPlugin
     {
         if (!Configuration.Instance.ShowSongInNative) return;
 
-        var songName = SongList.Instance.GetSongTitle(songId);
+        var song = SongList.Instance.GetSong(songId);
+
+        var songName = Configuration.Instance.UseClientLangInServerInfo
+            ? song.Strings[Util.ClientLangCode()].Name
+            : song.Name;
+        
         var suffix = "";
         if (Configuration.Instance.ShowIdInNative)
         {

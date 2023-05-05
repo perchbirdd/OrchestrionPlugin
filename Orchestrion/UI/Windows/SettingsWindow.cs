@@ -12,9 +12,9 @@ public class SettingsWindow : Window
 {
 	public SettingsWindow() : base("Orchestrion Settings###orchsettings", ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse)
     {
-        SizeCondition = ImGuiCond.Once;
+        SizeCondition = ImGuiCond.FirstUseEver;
     }
-
+    
     public override void PreDraw()
     {
         var stream = BGMAddressResolver.StreamingEnabled;
@@ -24,8 +24,10 @@ public class SettingsWindow : Window
     
     public override void Draw()
 	{
-        var stream = BGMAddressResolver.StreamingEnabled;
-        ImGui.SetNextItemOpen(true, ImGuiCond.Always);
+        ImGui.PushFont(OrchestrionPlugin.LargeFont);
+        ImGui.Text(Loc.Localize("GeneralSettings", "General Settings"));
+        ImGui.PopFont();
+        
         var showSongInTitlebar = Configuration.Instance.ShowSongInTitleBar;
         if (ImGui.Checkbox(Loc.Localize("ShowSongTitleBar", "Show current song in player title bar"), ref showSongInTitlebar))
         {
@@ -66,14 +68,32 @@ public class SettingsWindow : Window
             Configuration.Instance.HandleSpecialModes = handleSpecial;
             Configuration.Instance.Save();
         }
-
-        if (!stream)
+        
+        if (!BGMAddressResolver.StreamingEnabled)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
             ImGui.TextWrapped(Loc.Localize("AudioStreamingDisabledWarning" , "Audio streaming is disabled. This may be due to Sound Filter or a third-party plugin. The above setting may not work as " +
                               "expected and you may encounter other audio issues such as popping or tracks not swapping channels. This is not" +
                               " related to the Orchestrion Plugin."));
             ImGui.PopStyleColor();
+        }
+        
+        ImGui.PushFont(OrchestrionPlugin.LargeFont);
+        ImGui.Text(Loc.Localize("LocSettings", "Localization Settings"));
+        ImGui.PopFont();
+
+        var showAltLangTitles = Configuration.Instance.ShowAltLangTitles;
+        if (ImGui.Checkbox(Loc.Localize("ShowAltLangTitles", "Show alternate language song titles in tooltips"), ref showAltLangTitles))
+        {
+            Configuration.Instance.ShowAltLangTitles = showAltLangTitles;
+            Configuration.Instance.Save();
+        }
+        
+        var useClientLangInServerInfo = Configuration.Instance.UseClientLangInServerInfo;
+        if (ImGui.Checkbox(Loc.Localize("UseClientLangInServerInfo", "Use client language for song titles in the \"server info\" UI element in-game"), ref useClientLangInServerInfo))
+        {
+            Configuration.Instance.UseClientLangInServerInfo = useClientLangInServerInfo;
+            Configuration.Instance.Save();
         }
 
         ImGui.PushFont(OrchestrionPlugin.LargeFont);

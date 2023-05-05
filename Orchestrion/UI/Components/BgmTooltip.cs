@@ -23,10 +23,55 @@ public static class BgmTooltip
 		ImGui.BeginTooltip();
 		ImGui.PushTextWrapPos(450 * ImGuiHelpers.GlobalScale);
 		ImGui.TextColored(new Vector4(0, 1, 0, 1), Loc.Localize("SongInfo", "Song Info"));
+		
 		ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.Localize("TitleColon", "Title: "));
-
 		ImGui.SameLine();
 		ImGui.TextWrapped(bgm.Name);
+		
+		if (Configuration.Instance.ShowAltLangTitles)
+		{
+			var code = Util.AltLang();
+			var label = Loc.Localize("TitleColon", "Title: ");
+			label = $"[{code}] {label}";
+			ImGui.TextColored(ImGuiColors.DalamudGrey, label);
+			ImGui.SameLine();
+			ImGui.TextWrapped(bgm.Strings[code].Name);
+		}
+
+		if (!string.IsNullOrEmpty(bgm.AlternateName))
+		{
+			ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.Localize("AlternateTitleColon", "Alternate Title: "));
+			ImGui.SameLine();
+			ImGui.TextWrapped(bgm.AlternateName);
+
+			if (Configuration.Instance.ShowAltLangTitles)
+			{
+				var code = Util.AltLang();
+				var label = Loc.Localize("AlternateTitleColon", "Alternate Title: ");
+				label = $"[{code}] {label}";
+				ImGui.TextColored(ImGuiColors.DalamudGrey, label);
+				ImGui.SameLine();
+				ImGui.TextWrapped(bgm.Strings[code].AlternateName);
+			}
+		}
+		
+		if (!string.IsNullOrEmpty(bgm.SpecialModeName))
+		{
+			ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.Localize("SpecialModeTitleColon", "Special Mode Title: "));
+			ImGui.SameLine();
+			ImGui.TextWrapped(bgm.SpecialModeName);
+			
+			if (Configuration.Instance.ShowAltLangTitles)
+			{
+				var code = Util.AltLang();
+				var label = Loc.Localize("SpecialModeTitleColon", "Special Mode Title: ");
+				label = $"[{code}] {label}";
+				ImGui.TextColored(ImGuiColors.DalamudGrey, label);
+				ImGui.SameLine();
+				ImGui.TextWrapped(bgm.Strings[code].SpecialModeName);
+			}
+		}
+		
 		ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.Localize("LocationColon", "Location: "));
 		ImGui.SameLine();
 		ImGui.TextWrapped(string.IsNullOrEmpty(bgm.Locations) ? Loc.Localize("Unknown", "Unknown") : bgm.Locations);

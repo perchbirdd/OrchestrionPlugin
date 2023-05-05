@@ -10,19 +10,18 @@ namespace Orchestrion.Persistence;
 
 public class SongList
 {
-    private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc/gviz/tq?tqx=out:csv&sheet=main2";
-    private const string SheetFileName = "xiv_bgm.csv";
-
+    private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1qAkxPiXWF-EUHbIXdNcO-Ilo2AwLnqvdpW9tjKPitPY/gviz/tq?tqx=out:csv&sheet={0}";
+    private const string SheetFileName = "xiv_bgm_{0}.csv";
     private readonly Dictionary<int, Song> _songs;
+    private readonly HttpClient _client = new();
 
     private static SongList _instance;
     public static SongList Instance => _instance ??= new SongList();
-    
+
     private SongList()
     {
         _songs = new Dictionary<int, Song>();
         var sheetPath = Path.Join(DalamudApi.PluginInterface.AssemblyLocation.DirectoryName, SheetFileName);
-        _songs = new Dictionary<int, Song>();
 
         var existingText = "";
 
@@ -34,58 +33,50 @@ public class SongList
         {
             // ignore
         }
-
-        using var client = new HttpClient();
+        
         try
         {
-            PluginLog.Log("[SongList] Checking for updated bgm sheet");
-            var newText = client.GetStringAsync(SheetPath).Result;
-            LoadSheet(newText);
+            PluginLog.Log("[SongList] Checking for updated bgm sheets");
+            
+            LoadMetadataSheet();
+            LoadLangSheet("en");
+            LoadLangSheet("ja");
+            LoadLangSheet("fr");
+            LoadLangSheet("de");
 
-            if (newText != existingText)
-            {
-                File.WriteAllText(sheetPath, newText);
-                PluginLog.Log("[SongList] Updated bgm sheet to new version");
-            }
+            // if (newText != existingText)
+            // {
+            //     File.WriteAllText(sheetPath, newText);
+            //     PluginLog.Log("[SongList] Updated bgm sheet to new version");
+            // }
         }
         catch (Exception e)
         {
             PluginLog.Error(e, "[SongList] Orchestrion failed to update bgm sheet; using previous version");
-            LoadSheet(existingText);
+            // LoadSheet(existingText);
         }
     }
 
-    private void LoadSheet(string sheetText)
+    private void LoadMetadataSheet()
     {
         _songs.Clear();
         var bgms = DalamudApi.DataManager.Excel.GetSheet<BGM>()!.ToDictionary(k => k.RowId, v => v);
+        var sheetText = _client.GetStringAsync(string.Format(SheetPath, "metadata")).Result;
         var sheetLines = sheetText.Split('\n'); // gdocs provides \n
         for (int i = 1; i < sheetLines.Length; i++)
         {
             // The formatting is odd here because gdocs adds quotes around columns and doubles each single quote
             var elements = sheetLines[i].Split(new[] { "\"," }, StringSplitOptions.None);
             var id = int.Parse(elements[0].Substring(1));
-            var name = elements[1].Substring(1).Replace("\"\"", "\"");
-
-            // Any track without an official name is "???"
-            // While Null BGM tracks are also pretty invalid
-            if (string.IsNullOrEmpty(name) || name == "Null BGM" || name == "test") continue;
-
-            var location = elements[2].Substring(1).Replace("\"\"", "\"");
-            var additionalInfo = elements[3].Substring(1).Replace("\"\"", "\"");
-
-            var durationStr = elements[4].Substring(1, elements[4].Length - 2).Replace("\"\"", "\"");
+            var durationStr = elements[1].Substring(1, elements[1].Length - 2).Replace("\"\"", "\"");
             var parsed = double.TryParse(durationStr, out var durationDbl);
             var duration = parsed ? TimeSpan.FromSeconds(durationDbl) : TimeSpan.Zero;
-            if (!parsed) PluginLog.Debug($"failed parse {id} {name}: {durationStr}");
+            if (!parsed) PluginLog.Debug($"failed parse {id}: {durationStr}");
 
             bgms.TryGetValue((uint)id, out var bgm);
             var song = new Song
             {
                 Id = id,
-                Name = name,
-                Locations = location,
-                AdditionalInfo = additionalInfo,
                 FilePath = bgm?.File ?? "",
                 SpecialMode = bgm?.SpecialMode ?? 0,
                 DisableRestart = bgm?.DisableRestart ?? false,
@@ -96,6 +87,80 @@ public class SongList
             _songs[id] = song;
         }
     }
+
+    private void LoadLangSheet(string code)
+    {
+        var sheetText = _client.GetStringAsync(string.Format(SheetPath, code)).Result;
+        var sheetLines = sheetText.Split('\n'); // gdocs provides \n
+        for (int i = 1; i < sheetLines.Length; i++)
+        {
+            // The formatting is odd here because gdocs adds quotes around columns and doubles each single quote
+            var elements = sheetLines[i].Split(new[] { "\"," }, StringSplitOptions.None);
+            var id = int.Parse(elements[0].Substring(1));
+            var name = elements[1].Substring(1);
+            var altName = elements[2].Substring(1);
+            var specialName = elements[3].Substring(1);
+            var locations = elements[4].Substring(1);
+            var addtlInfo = elements[5].Substring(1, elements[5].Length - 2).Replace("\"\"", "\"");
+
+            if (!_songs.TryGetValue(id, out var song))
+                continue;
+
+            if (string.IsNullOrEmpty(name) || name == "Null BGM" || name == "test")
+                _songs.Remove(id);
+            
+            song.Strings[code] = new SongStrings
+            {
+                Name = name,
+                AlternateName = altName,
+                SpecialModeName = specialName,
+                Locations = locations,
+                AdditionalInfo = addtlInfo,
+            };
+        }
+    }
+
+    // private void LoadSheet(string metadataText, string enText, string jaText, string frText, string deText)
+    // {
+    //     _songs.Clear();
+    //     var bgms = DalamudApi.DataManager.Excel.GetSheet<BGM>()!.ToDictionary(k => k.RowId, v => v);
+    //     var sheetLines = sheetText.Split('\n'); // gdocs provides \n
+    //     for (int i = 1; i < sheetLines.Length; i++)
+    //     {
+    //         // The formatting is odd here because gdocs adds quotes around columns and doubles each single quote
+    //         var elements = sheetLines[i].Split(new[] { "\"," }, StringSplitOptions.None);
+    //         var id = int.Parse(elements[0].Substring(1));
+    //         var name = elements[1].Substring(1).Replace("\"\"", "\"");
+    //
+    //         // Any track without an official name is "???"
+    //         // While Null BGM tracks are also pretty invalid
+    //         if (string.IsNullOrEmpty(name) || name == "Null BGM" || name == "test") continue;
+    //
+    //         var location = elements[2].Substring(1).Replace("\"\"", "\"");
+    //         var additionalInfo = elements[3].Substring(1).Replace("\"\"", "\"");
+    //
+    //         var durationStr = elements[4].Substring(1, elements[4].Length - 2).Replace("\"\"", "\"");
+    //         var parsed = double.TryParse(durationStr, out var durationDbl);
+    //         var duration = parsed ? TimeSpan.FromSeconds(durationDbl) : TimeSpan.Zero;
+    //         if (!parsed) PluginLog.Debug($"failed parse {id} {name}: {durationStr}");
+    //
+    //         bgms.TryGetValue((uint)id, out var bgm);
+    //         var song = new Song
+    //         {
+    //             Id = id,
+    //             Name = name,
+    //             Locations = location,
+    //             AdditionalInfo = additionalInfo,
+    //             FilePath = bgm?.File ?? "",
+    //             SpecialMode = bgm?.SpecialMode ?? 0,
+    //             DisableRestart = bgm?.DisableRestart ?? false,
+    //             FileExists = bgm != null && DalamudApi.DataManager.FileExists(bgm.File),
+    //             Duration = duration,
+    //         };
+    //
+    //         _songs[id] = song;
+    //     }
+    // }
 
     public bool IsDisableRestart(int id)
     {

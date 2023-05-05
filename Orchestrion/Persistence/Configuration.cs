@@ -21,6 +21,8 @@ public class Configuration : IPluginConfiguration
     public bool ShowMiniPlayer { get; set; } = false;
     public bool MiniPlayerLock { get; set; } = false;
     public float MiniPlayerOpacity { get; set; } = 1.0f;
+    public bool ShowAltLangTitles { get; set; } = false;
+    public bool UseClientLangInServerInfo { get; set; } = false;
 
     public Dictionary<int, SongReplacementEntry> SongReplacements { get; private set; } = new();
     
@@ -29,7 +31,10 @@ public class Configuration : IPluginConfiguration
     
     public Dictionary<string, Playlist> Playlists { get; set; } = new();
 
-    private Configuration() { }
+    private Configuration()
+    {
+        
+    }
 
     [JsonIgnore]
     private static Configuration _instance;
