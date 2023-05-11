@@ -215,18 +215,7 @@ public partial class MainWindow : Window, IDisposable
 			_ => default,
 		};
 	}
-
-	private bool SearchMatches(Song song)
-	{
-		var matchesSearch = _searchText.Length != 0
-		                    && (song.Name.ToLower().Contains(_searchText.ToLower())
-		                        || song.Locations.ToLower().Contains(_searchText.ToLower())
-		                        || song.AdditionalInfo.ToLower().Contains(_searchText.ToLower())
-		                        || song.Id.ToString().Contains(_searchText));
-		var searchEmpty = _searchText.Length == 0;
-		return matchesSearch || searchEmpty;
-	}
-
+	
 	private static void RightAlignButton(float y, string text)
 	{
 		var style = ImGui.GetStyle();

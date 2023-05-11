@@ -73,7 +73,7 @@ public partial class MainWindow
         var targetText = $"{SongList.Instance.GetSong(_tmpReplacement.TargetSongId).Id} - {SongList.Instance.GetSong(_tmpReplacement.TargetSongId).Name}";
         string replacementText;
         if (_tmpReplacement.ReplacementId == SongReplacementEntry.NoChangeId)
-            replacementText = MainWindow._noChange;
+            replacementText = _noChange;
         else
             replacementText = $"{SongList.Instance.GetSong(_tmpReplacement.ReplacementId).Id} - {SongList.Instance.GetSong(_tmpReplacement.ReplacementId).Name}";
 
@@ -84,7 +84,7 @@ public partial class MainWindow
         {
             foreach (var song in SongList.Instance.GetSongs().Values)
             {
-                if (!SearchMatches(song)) continue;
+                if (!Util.SearchMatches(_searchText, song)) continue;
                 if (Configuration.Instance.SongReplacements.ContainsKey(song.Id)) continue;
                 var tmpText = $"{song.Id} - {song.Name}";
                 var tmpTextSize = ImGui.CalcTextSize(tmpText);
@@ -107,7 +107,7 @@ public partial class MainWindow
 
             foreach (var song in SongList.Instance.GetSongs().Values)
             {
-                if (!SearchMatches(song)) continue;
+                if (!Util.SearchMatches(_searchText, song)) continue;
                 var tmpText = $"{song.Id} - {song.Name}";
                 var tmpTextSize = ImGui.CalcTextSize(tmpText);
                 var isSelected = _tmpReplacement.ReplacementId == song.Id;

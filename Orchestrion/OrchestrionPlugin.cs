@@ -156,6 +156,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 		switch (argLen)
 		{
 			case 1:
+				PluginLog.Verbose("case 1");
 				switch (mainArg)
 				{
 					case "":
@@ -197,6 +198,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 				}
 				break;
 			case 2:
+				PluginLog.Verbose("case 2");
 				var arg2 = argSplit[1].ToLowerInvariant();
 				switch (mainArg)
 				{
@@ -208,6 +210,10 @@ public class OrchestrionPlugin : IDalamudPlugin
 							BGMManager.Play(songId);
 						else
 							DalamudApi.ChatGui.PrintError(BuildChatMessage(string.Format(Loc.Localize("SongIdNotFound", "Song ID {0} not found."), songId)));
+						break;
+					case "play" when !int.TryParse(argSplit[1], out var songId):
+						PluginLog.Verbose("play by song name");
+						HandlePlayBySongName(argSplit);
 						break;
 					case "shuffle":
 						if (!Enum.TryParse<ShuffleMode>(arg2, true, out var shuffleMode))
@@ -241,6 +247,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 				}
 				break;
 			case >= 3 when argSplit[1].ToLowerInvariant() == "playlist":
+				PluginLog.Verbose("case >= 3 when argSplit[1].ToLowerInvariant() == playlist");
 				var playlistName = argSplit.Skip(2).Aggregate((x, y) => $"{x} {y}");
 				var playlistExists = Configuration.Instance.Playlists.TryGetValue(playlistName, out var playlist);
 				if (!playlistExists)
@@ -267,25 +274,30 @@ public class OrchestrionPlugin : IDalamudPlugin
 				}
 				break;
 			case >= 2 when argSplit[0].ToLowerInvariant() == "play" && !int.TryParse(argSplit[1], out _):
-				var songName = argSplit.Skip(1).Aggregate((x, y) => $"{x} {y}");
-				if (SongList.Instance.TryGetSongByName(songName, out var songIdFromName))
-				{
-					BGMManager.Play(songIdFromName);
-				}
-				else
-				{
-					DalamudApi.ChatGui.PrintError(
-						BuildChatMessageFormatted(
-							Loc.Localize("SongNameNotFound", "Song <i>{0}</i> not found."),
-							songName,
-							false)
-					);
-				}
+				PluginLog.Verbose("case >= 2 when argSplit[0].ToLowerInvariant() == play && !int.TryParse(argSplit[1], out _)");
+				HandlePlayBySongName(argSplit);
 				break;
-
 			default:
 				PrintHelp();
 				break;
+		}
+	}
+
+	private void HandlePlayBySongName(string[] argSplit)
+	{
+		var songName = argSplit.Skip(1).Aggregate((x, y) => $"{x} {y}");
+		if (SongList.Instance.TryGetSongByName(songName, out var songIdFromName))
+		{
+			BGMManager.Play(songIdFromName);
+		}
+		else
+		{
+			DalamudApi.ChatGui.PrintError(
+				BuildChatMessageFormatted(
+					Loc.Localize("SongNameNotFound", "Song <i>{0}</i> not found."),
+					songName,
+					false)
+			);
 		}
 	}
 

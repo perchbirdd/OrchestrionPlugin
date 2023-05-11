@@ -57,18 +57,6 @@ public class RenderableSongList
 		return SongList.Instance.GetSong(_listSource[first].Id);
 	}
 	
-	private bool SearchMatches(int songId)
-	{
-		if (!SongList.Instance.TryGetSong(songId, out var song)) return false;
-		var matchesSearch = _searchText.Length != 0
-		                    && (song.Name.ToLower().Contains(_searchText.ToLower())
-		                        || song.Locations.ToLower().Contains(_searchText.ToLower())
-		                        || song.AdditionalInfo.ToLower().Contains(_searchText.ToLower())
-		                        || song.Id.ToString().Contains(_searchText));
-		var searchEmpty = _searchText.Length == 0;
-		return matchesSearch || searchEmpty;
-	}
-
 	public void Draw()
 	{
 		lock (_listSource)
@@ -82,7 +70,7 @@ public class RenderableSongList
 
 				var render = new Action<RenderableSongEntry, int>((entry, index) =>
 				{
-					if (!SearchMatches(entry.Id)) return;
+					if (!Util.SearchMatches(_searchText, entry.Id)) return;
 
 					ImGui.TableNextRow();
 					ImGui.TableNextColumn();
@@ -144,7 +132,7 @@ public class RenderableSongList
 		var selected = _selected.Contains(index);
 
 		// ImGui.SetNextItemWidth(-1);
-		if (ImGui.Selectable($"{song.Name}##{song.Id}{entry.TimePlayed}", selected, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.SpanAllColumns))
+		if (ImGui.Selectable($"{song.Name}##{index}", selected, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.SpanAllColumns))
 		{
 			HandleSelect(index, selected);
 
@@ -297,11 +285,13 @@ public class RenderableSongList
 		return true;
 	}
 
-	private static string BuildCopyString(HashSet<int> songs, Func<Song, string> field)
+	private string BuildCopyString(HashSet<int> indices, Func<Song, string> contentExtractor)
 	{
 		var sb = new StringBuilder();
-		foreach (var song in songs)
-			sb.Append($"{field.Invoke(SongList.Instance.GetSong(song))}, ");
+		foreach (var songId in indices.Select(songIndex => _listSource[songIndex].Id))
+		{
+			sb.Append($"{contentExtractor.Invoke(SongList.Instance.GetSong(songId))}, ");
+		}
 		var text = sb.ToString();
 		return text[^2..];
 	}
