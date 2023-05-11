@@ -17,9 +17,20 @@ public class SettingsWindow : Window
     
     public override void PreDraw()
     {
-        var stream = BGMAddressResolver.StreamingEnabled;
-        var height = stream ? 170 : 240;
-        Size = ImGuiHelpers.ScaledVector2(520, height);
+        Size = ImGuiHelpers.ScaledVector2(720, 520);
+    }
+
+    private static void Checkbox(string locKey, string fallback, Func<bool> get, Action<bool> set)
+    {
+        var loc = Loc.Localize(locKey, fallback);
+        var value = get();
+        if (ImGui.Checkbox($"##orch_{locKey}", ref value))
+        {
+            set(value);
+            Configuration.Instance.Save();
+        }
+        ImGui.SameLine();
+        ImGui.TextWrapped(loc);
     }
     
     public override void Draw()
@@ -28,51 +39,44 @@ public class SettingsWindow : Window
         ImGui.Text(Loc.Localize("GeneralSettings", "General Settings"));
         ImGui.PopFont();
         
-        var showSongInTitlebar = Configuration.Instance.ShowSongInTitleBar;
-        if (ImGui.Checkbox(Loc.Localize("ShowSongTitleBar", "Show current song in player title bar"), ref showSongInTitlebar))
-        {
-            Configuration.Instance.ShowSongInTitleBar = showSongInTitlebar;
-            Configuration.Instance.Save();
-        }
+        ImGui.PushItemWidth(500f);
+        
+        Checkbox("ShowSongTitleBar",
+            "Show current song in player title bar",
+            () => Configuration.Instance.ShowSongInTitleBar,
+            b => Configuration.Instance.ShowSongInTitleBar = b);
+        
+        Checkbox("ShowNowPlayingChat",
+            "Show \"Now playing\" messages in game chat when the current song changes", 
+            () => Configuration.Instance.ShowSongInChat,
+            b => Configuration.Instance.ShowSongInChat = b);
 
-        var showSongInChat = Configuration.Instance.ShowSongInChat;
-        if (ImGui.Checkbox(Loc.Localize("ShowNowPlayingChat", "Show \"Now playing\" messages in game chat when the current song changes"), ref showSongInChat))
-        {
-            Configuration.Instance.ShowSongInChat = showSongInChat;
-            Configuration.Instance.Save();
-        }
+        Checkbox("ShowSongServerInfo",
+            "Show current song in the \"server info\" UI element in-game",
+            () => Configuration.Instance.ShowSongInNative, 
+            b => Configuration.Instance.ShowSongInNative = b);
 
-        var showNative = Configuration.Instance.ShowSongInNative;
-        if (ImGui.Checkbox(Loc.Localize("ShowSongServerInfo", "Show current song in the \"server info\" UI element in-game"), ref showNative))
-        {
-            Configuration.Instance.ShowSongInNative = showNative;
-            Configuration.Instance.Save();
-        }
-
-        if (!showNative)
+        if (!Configuration.Instance.ShowSongInNative)
             ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
-
-        var showIdNative = Configuration.Instance.ShowIdInNative;
-        if (ImGui.Checkbox(Loc.Localize("ShowSongIdServerInfo", "Show song ID in the \"server info\" UI element in-game"), ref showIdNative) && showNative)
-        {
-            Configuration.Instance.ShowIdInNative = showIdNative;
-            Configuration.Instance.Save();
-        }
-
-        if (!showNative)
+        
+        Checkbox("ShowSongIdServerInfo", 
+            "Show song ID in the \"server info\" UI element in-game", 
+            () => Configuration.Instance.ShowIdInNative, 
+            b => Configuration.Instance.ShowIdInNative = b); 
+        
+        if (!Configuration.Instance.ShowSongInNative)
             ImGui.PopStyleVar();
-
-        var handleSpecial = Configuration.Instance.HandleSpecialModes;
-        if (ImGui.Checkbox(Loc.Localize("HandleSpecialModes", "Handle special \"in-combat\" and mount movement BGM modes"), ref handleSpecial))
-        {
-            Configuration.Instance.HandleSpecialModes = handleSpecial;
-            Configuration.Instance.Save();
-        }
+        
+        Checkbox("HandleSpecialModes", 
+            "Handle special \"in-combat\" and mount movement BGM modes", 
+            () => Configuration.Instance.HandleSpecialModes, 
+            b => Configuration.Instance.HandleSpecialModes = b);
         
         if (!BGMAddressResolver.StreamingEnabled)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
-            ImGui.TextWrapped(Loc.Localize("AudioStreamingDisabledWarning" , "Audio streaming is disabled. This may be due to Sound Filter or a third-party plugin. The above setting may not work as " +
+            ImGui.TextWrapped(Loc.Localize("AudioStreamingDisabledWarning" , 
+                "Audio streaming is disabled. This may be due to Sound Filter or a third-party plugin. The above setting may not work as " +
                               "expected and you may encounter other audio issues such as popping or tracks not swapping channels. This is not" +
                               " related to the Orchestrion Plugin."));
             ImGui.PopStyleColor();
@@ -82,50 +86,45 @@ public class SettingsWindow : Window
         ImGui.Text(Loc.Localize("LocSettings", "Localization Settings"));
         ImGui.PopFont();
 
-        var showAltLangTitles = Configuration.Instance.ShowAltLangTitles;
-        if (ImGui.Checkbox(Loc.Localize("ShowAltLangTitles", "Show alternate language song titles in tooltips"), ref showAltLangTitles))
-        {
-            Configuration.Instance.ShowAltLangTitles = showAltLangTitles;
-            Configuration.Instance.Save();
-        }
-        
-        var useClientLangInServerInfo = Configuration.Instance.UseClientLangInServerInfo;
-        if (ImGui.Checkbox(Loc.Localize("UseClientLangInServerInfo", "Use client language, not Dalamud language, for song titles in the \"server info\" UI element in-game"), ref useClientLangInServerInfo))
-        {
-            Configuration.Instance.UseClientLangInServerInfo = useClientLangInServerInfo;
-            Configuration.Instance.Save();
-        }
-        
-        var useClientLangInChat = Configuration.Instance.UseClientLangInChat;
-        if (ImGui.Checkbox(Loc.Localize("UseClientLangInChat", "Use client language, not Dalamud language, for song titles in Orchestrion chat messages in-game"), ref useClientLangInChat))
-        {
-            Configuration.Instance.UseClientLangInChat = useClientLangInChat;
-            Configuration.Instance.Save();
-        }
+        Checkbox("ShowAltLangTitles", 
+            "Show alternate language song titles in tooltips", 
+            () => Configuration.Instance.ShowAltLangTitles, 
+            b => Configuration.Instance.ShowAltLangTitles = b);
+
+        Checkbox("UseClientLangInServerInfo", 
+            "Use client language, not Dalamud language, for song titles in the \"server info\" UI element in-game", 
+            () => Configuration.Instance.UseClientLangInServerInfo, 
+            b => Configuration.Instance.UseClientLangInServerInfo = b);
+
+        Checkbox("UseClientLangInChat", 
+            "Use client language, not Dalamud language, for song titles in Orchestrion chat messages in-game", 
+            () => Configuration.Instance.UseClientLangInChat, 
+            b => Configuration.Instance.UseClientLangInChat = b);
 
         ImGui.PushFont(OrchestrionPlugin.LargeFont);
         ImGui.Text(Loc.Localize("MiniPlayerSettings", "Mini Player Settings"));
         ImGui.PopFont();
         
-        var showMiniPlayer = Configuration.Instance.ShowMiniPlayer;
-        if (ImGui.Checkbox(Loc.Localize("ShowMiniPlayer", "Show mini player"), ref showMiniPlayer))
-        {
-            Configuration.Instance.ShowMiniPlayer = showMiniPlayer;
-            Configuration.Instance.Save();
-        }
+        Checkbox("ShowMiniPlayer",
+            "Show mini player",
+            () => Configuration.Instance.ShowMiniPlayer, 
+            b => Configuration.Instance.ShowMiniPlayer = b);
 
-        var miniPlayerLock = Configuration.Instance.MiniPlayerLock;
-        if (ImGui.Checkbox(Loc.Localize("LockMiniPlayer", "Lock mini player"), ref miniPlayerLock))
-        {
-            Configuration.Instance.MiniPlayerLock = miniPlayerLock;
-            Configuration.Instance.Save();
-        }
+        Checkbox("LockMiniPlayer", 
+            "Lock mini player", 
+            () => Configuration.Instance.MiniPlayerLock, 
+            b => Configuration.Instance.MiniPlayerLock = b);
         
         var miniPlayerOpacity = Configuration.Instance.MiniPlayerOpacity;
-        if (ImGui.SliderFloat(Loc.Localize("MiniPlayerOpacity", "Mini player opacity"), ref miniPlayerOpacity, 0.01f, 1.0f))
+        ImGui.PushItemWidth(200f);
+        if (ImGui.SliderFloat($"##orch_MiniPlayerOpacity", ref miniPlayerOpacity, 0.01f, 1.0f))
         {
             Configuration.Instance.MiniPlayerOpacity = miniPlayerOpacity;
             Configuration.Instance.Save();
         }
+        ImGui.SameLine();
+        ImGui.TextWrapped(Loc.Localize("MiniPlayerOpacity", "Mini player opacity"));
+        ImGui.PopItemWidth();
+        ImGui.PopItemWidth();
     }
 }

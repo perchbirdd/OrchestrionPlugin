@@ -46,7 +46,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 	public OrchestrionPlugin([RequiredVersion("1.0")] DalamudPluginInterface pluginInterface)
 	{
 		DalamudApi.Initialize(pluginInterface);
-		Loc.SetupWithFallbacks();
+		LanguageChanged(pluginInterface.UiLanguage);
 
 		if (Configuration.Instance.ShowSongInNative)
 		{
@@ -291,7 +291,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 
 	private void PrintHelp()
 	{
-		DalamudApi.ChatGui.Print(BuildChatMessage(Loc.Localize("HelpColon", "Help: ")));
+		DalamudApi.ChatGui.Print(BuildChatMessage(Loc.Localize("HelpColon", "Help:")));
 		DalamudApi.ChatGui.Print(BuildChatMessage(Loc.Localize("GeneralCommandsColon", "General Commands:")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch help - " + Loc.Localize("HelpDisplayThisMessage", "Display this message")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch - " + Loc.Localize("HelpOpenOrchestrionWindow", "Open the Orchestrion window")));
@@ -304,8 +304,8 @@ public class OrchestrionPlugin : IDalamudPlugin
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch play playlist [playlist name] - " + Loc.Localize("HelpPlayPlaylist", "Play the specified playlist with its current settings")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch shuffle playlist [playlist name] - " + Loc.Localize("HelpPlayPlaylistShuffle", "Play the specified playlist, changing the playlist's settings to shuffle")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch repeat playlist [playlist name] - " + Loc.Localize("HelpPlayPlaylistRepeat", "Play the specified playlist, changing the playlist's settings to 'repeat all'")));
-		DalamudApi.ChatGui.Print(BuildChatMessage("/porch shuffle [on, off] - " + Loc.Localize("HelpPlaylistShuffle", "Set the current playlist to the specified shuffle mode.")));
-		DalamudApi.ChatGui.Print(BuildChatMessage("/porch repeat [all, one, once] - " + Loc.Localize("HelpPlaylistRepeat", "Set the current playlist to the specified repeat mode.")));
+		DalamudApi.ChatGui.Print(BuildChatMessage("/porch shuffle [on, off] - " + Loc.Localize("HelpPlaylistShuffle", "Set the current playlist to the specified shuffle mode")));
+		DalamudApi.ChatGui.Print(BuildChatMessage("/porch repeat [all, one, once] - " + Loc.Localize("HelpPlaylistRepeat", "Set the current playlist to the specified repeat mode")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch next - " + Loc.Localize("HelpPlaylistNext", "Play the next song in the current playlist")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch previous - " + Loc.Localize("HelpPlaylistPrevious", "Play the previous song in the current playlist")));
 	}

@@ -79,5 +79,7 @@
   <ItemGroup>
     <None Remove="Loc\fr.json" />
     <EmbeddedResource Include="Loc\fr.json" />
+    <None Remove="Loc\en.json" />
+    <EmbeddedResource Include="Loc\en.json" />
   </ItemGroup>
 </Project>
