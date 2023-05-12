@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using CheapLoc;
 using ImGuiNET;
 using Orchestrion.Persistence;
 
@@ -31,11 +32,12 @@ public class NewPlaylistModal
 	{
 		if (_isOpen)
 			ImGui.OpenPopup("Create New Playlist");
-
+		
 		var a = true;
-		if (ImGui.BeginPopupModal($"Create New Playlist", ref a, ImGuiWindowFlags.AlwaysAutoResize))
+		var loc = Loc.Localize("CreateNewPlaylist", "Create New Playlist");
+		if (ImGui.BeginPopupModal($"{loc}##Create New Playlist", ref a, ImGuiWindowFlags.AlwaysAutoResize))
 		{
-			ImGui.Text("Enter a name for your playlist:");
+			ImGui.Text(Loc.Localize("EnterPlaylistNameColon", "Enter a name for your playlist:"));
 			if (ImGui.IsWindowAppearing())
 				ImGui.SetKeyboardFocusHere();
 			var yes = ImGui.InputText("##newplaylistname", ref _newPlaylistName, 64, ImGuiInputTextFlags.EnterReturnsTrue);
@@ -43,7 +45,7 @@ public class NewPlaylistModal
 			              || string.IsNullOrEmpty(_newPlaylistName)
 			              || Configuration.Instance.Playlists.ContainsKey(_newPlaylistName);
 			ImGui.BeginDisabled(invalid);
-			yes |= ImGui.Button("Create");
+			yes |= ImGui.Button(Loc.Localize("Create", "Create"));
 
 			if (yes)
 			{
@@ -56,7 +58,7 @@ public class NewPlaylistModal
 			}
 			ImGui.EndDisabled();
 			ImGui.SameLine();
-			if (ImGui.Button("Cancel"))
+			if (ImGui.Button(Loc.Localize("Cancel", "Cancel")))
 				Close();
 			ImGui.EndPopup();
 		}

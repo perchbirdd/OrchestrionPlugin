@@ -166,10 +166,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 						PrintHelp();
 						break;
 					case "stop":
-						if (PlaylistManager.IsPlaying)
-							PlaylistManager.Stop();
-						else
-							BGMManager.Stop();
+						BGMManager.Stop();
 						break;
 					case "play":
 						DalamudApi.ChatGui.PrintError(BuildChatMessage(Loc.Localize("MustSpecifySong", "You must specify a song to play.")));
@@ -383,12 +380,12 @@ public class OrchestrionPlugin : IDalamudPlugin
 		var mid = tmp2[0];
 		var post = tmp2[1];
 
+		var midFormatAddtl = playedByOrch ? $"[{mid}]" : $"{mid}";
+		
 		return new SeStringBuilder()
 			.AddUiForeground("[Orchestrion] ", 35)
 			.AddText(pre)
-			.AddItalics(playedByOrch ? "[" : "")
-			.AddItalics(string.Format(mid, param))
-			.AddItalics(playedByOrch ? "]" : "")
+			.AddItalics(string.Format(midFormatAddtl, param))
 			.AddText(post)
 			.Build();
 	}

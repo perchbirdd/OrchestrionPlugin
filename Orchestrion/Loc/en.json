@@ -33,7 +33,7 @@
   },
   "SongNameNotFound": {
     "message": "Song <i>{0}</i> not found.",
-    "description": "OrchestrionPlugin.OnCommand"
+    "description": "OrchestrionPlugin.HandlePlayBySongName"
   },
   "HelpColon": {
     "message": "Help:",
@@ -106,6 +106,22 @@
   "NowPlayingEcho": {
     "message": "Now playing <i>{0}</i>.",
     "description": "OrchestrionPlugin.UpdateChat"
+  },
+  "CreateNewPlaylist": {
+    "message": "Create New Playlist",
+    "description": "NewPlaylistModal.Draw"
+  },
+  "EnterPlaylistNameColon": {
+    "message": "Enter a name for your playlist:",
+    "description": "NewPlaylistModal.Draw"
+  },
+  "Create": {
+    "message": "Create",
+    "description": "NewPlaylistModal.Draw"
+  },
+  "Cancel": {
+    "message": "Cancel",
+    "description": "NewPlaylistModal.Draw"
   },
   "GeneralSettings": {
     "message": "General Settings",
