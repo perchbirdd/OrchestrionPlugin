@@ -30,12 +30,14 @@ public class NewPlaylistModal
 
 	public void Draw()
 	{
+		// This is so stupid
+		var loc = Loc.Localize("CreateNewPlaylist", "Create New Playlist");
+		
 		if (_isOpen)
-			ImGui.OpenPopup("Create New Playlist");
+			ImGui.OpenPopup(loc);
 		
 		var a = true;
-		var loc = Loc.Localize("CreateNewPlaylist", "Create New Playlist");
-		if (ImGui.BeginPopupModal($"{loc}##Create New Playlist", ref a, ImGuiWindowFlags.AlwaysAutoResize))
+		if (ImGui.BeginPopupModal($"{loc}", ref a, ImGuiWindowFlags.AlwaysAutoResize))
 		{
 			ImGui.Text(Loc.Localize("EnterPlaylistNameColon", "Enter a name for your playlist:"));
 			if (ImGui.IsWindowAppearing())
