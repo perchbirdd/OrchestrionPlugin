@@ -64,7 +64,7 @@ public class Configuration : IPluginConfiguration
                 c.Version = 2;
                 c.Playlists = new Dictionary<string, Playlist>
                 {
-                    {"Favorites", new Playlist("Favorites1", c.FavoriteSongs.ToList())},
+                    {"Favorites", new Playlist("Favorites", c.FavoriteSongs.ToList())},
                 };
                 c.Save();
                 break;
