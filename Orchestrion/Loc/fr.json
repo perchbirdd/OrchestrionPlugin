@@ -33,7 +33,7 @@
   },
   "SongNameNotFound": {
     "message": "La musique <i>{0}</i> est introuvable.",
-    "description": "OrchestrionPlugin.OnCommand"
+    "description": "OrchestrionPlugin.HandlePlayBySongName"
   },
   "HelpColon": {
     "message": "Aide :",
@@ -106,6 +106,22 @@
   "NowPlayingEcho": {
     "message": "<i>{0}</i> est en cours de lecture.",
     "description": "OrchestrionPlugin.UpdateChat"
+  },
+  "CreateNewPlaylist": {
+    "message": "Créer une nouvelle playlist",
+    "description": "NewPlaylistModal.Draw"
+  },
+  "EnterPlaylistNameColon": {
+    "message": "Entrez un nom pour votre playlist :",
+    "description": "NewPlaylistModal.Draw"
+  },
+  "Create": {
+    "message": "Créer",
+    "description": "NewPlaylistModal.Draw"
+  },
+  "Cancel": {
+    "message": "Annuler",
+    "description": "NewPlaylistModal.Draw"
   },
   "GeneralSettings": {
     "message": "Paramètres généraux",
@@ -184,7 +200,7 @@
     "description": "MainWindow.DrawCurrentReplacement"
   },
   "SearchColon": {
-    "message": "Recherche:",
+    "message": "Recherche :",
     "description": "MainWindow.Draw"
   },
   "AllSongs": {
@@ -220,7 +236,7 @@
     "description": "BgmTooltip.DrawBgmTooltip"
   },
   "TitleColon": {
-    "message": "Titre: ",
+    "message": "Titre : ",
     "description": "BgmTooltip.DrawBgmTooltip"
   },
   "AlternateTitleColon": {
@@ -240,11 +256,11 @@
     "description": "BgmTooltip.DrawBgmTooltip"
   },
   "InfoColon": {
-    "message": "Infos: ",
+    "message": "Infos : ",
     "description": "BgmTooltip.DrawBgmTooltip"
   },
   "DurationColon": {
-    "message": "Durée: ",
+    "message": "Durée : ",
     "description": "BgmTooltip.DrawBgmTooltip"
   },
   "SongNotFound": {
@@ -252,7 +268,7 @@
     "description": "BgmTooltip.DrawBgmTooltip"
   },
   "FilePathColon": {
-    "message": "Chemin du fichier: ",
+    "message": "Chemin du fichier : ",
     "description": "BgmTooltip.DrawBgmTooltip"
   },
   "None": {
