@@ -37,6 +37,7 @@ public class RenderableSongList
 	public void SetSearch(string searchText)
 	{
 		_searchText = searchText;
+		_selected.Clear();
 	}
 	
 	public HashSet<int> GetSelectedIndices()
@@ -148,7 +149,7 @@ public class RenderableSongList
 			if (_selected.Count is 0 or 1)
 				HandleSelect(index, selected);
 
-			DrawCopyContentSubmenu(song);
+			DrawCopyContentSubmenu();
 			ImGui.Separator();
 			if (DrawRemoveSubmenu())
 				ImGui.Separator();
@@ -189,7 +190,8 @@ public class RenderableSongList
 				var max = Math.Max(_selected.Max(), index);
 				_selected.Clear();
 				for (var i = min; i <= max; i++)
-					_selected.Add(i);
+					if (Util.SearchMatches(_searchText, _listSource[i].Id)) // don't add invisible songs
+						_selected.Add(i);
 			}
 		}
 		else
@@ -219,42 +221,55 @@ public class RenderableSongList
 			ImGui.EndMenu();
 		}
 	}
-
-	private void DrawCopyContentSubmenu(Song song)
+	
+	private void DrawCopyContentSubmenu()
 	{
 		var songId = Loc.Localize("SongId", "Song ID");
-		var songName = Loc.Localize("SongName", "Song Name");
+		var songName = Loc.Localize("SongTitle", "Song Title");
+		var songAltName = Loc.Localize("SongAltTitle", "Song Alternate Title");
+		var songSpcModeTitle = Loc.Localize("SongSpcModeTitle", "Song Special Mode Title");
 		var songLocation = Loc.Localize("SongLocation", "Song Location");
 		var songAdditionalInfo = Loc.Localize("SongAdditionalInfo", "Song Additional Info");
 		var duration = Loc.Localize("Duration", "Duration");
 		var songFilePath = Loc.Localize("SongFilePath", "Song File Path");
 		var all = Loc.Localize("All", "All");
 
+		var copy = string.Empty;
+		
 		if (ImGui.BeginMenu(Loc.Localize("Copy", "Copy")))
 		{
 			if (ImGui.MenuItem(songId))
-				ImGui.SetClipboardText(song.Id.ToString());
+				copy = BuildCopyString(_selected, s => s.Id.ToString());
 			if (ImGui.MenuItem(songName))
-				ImGui.SetClipboardText(song.Name);
+				copy = BuildCopyString(_selected, s => s.Name);
+			if (_selected.Select(songIndex => SongList.Instance.GetSong(_listSource[songIndex].Id)).Any(s => !string.IsNullOrEmpty(s.AlternateName)) 
+			    && ImGui.MenuItem(songAltName))
+				copy = BuildCopyString(_selected, s => s.AlternateName);
+			if (_selected.Select(songIndex => SongList.Instance.GetSong(_listSource[songIndex].Id)).Any(s => !string.IsNullOrEmpty(s.SpecialModeName))
+			    && ImGui.MenuItem(songSpcModeTitle))
+				copy = BuildCopyString(_selected, s => s.SpecialModeName);
 			if (ImGui.MenuItem(songLocation))
-				ImGui.SetClipboardText(song.Locations);
+				copy = BuildCopyString(_selected, s => s.Locations);
 			if (ImGui.MenuItem(songAdditionalInfo))
-				ImGui.SetClipboardText(song.AdditionalInfo);
+				copy = BuildCopyString(_selected, s => s.AdditionalInfo);
 			if (ImGui.MenuItem(duration))
-				ImGui.SetClipboardText($"{song.Duration:mm\\:ss}");
+				copy = BuildCopyString(_selected, s => $"{s.Duration:mm\\:ss}");
 			if (ImGui.MenuItem(songFilePath))
-				ImGui.SetClipboardText(song.FilePath);
+				copy = BuildCopyString(_selected, s => s.FilePath);
 			ImGui.Separator();
 			if (ImGui.MenuItem(all))
 			{
-				var text = $"{songId}: {song.Id}\n" +
-				           $"{songName}: {song.Name}\n" +
-				           $"{songLocation}: {song.Locations}\n" +
-				           $"{songAdditionalInfo}: {song.AdditionalInfo}\n" +
-				           $"{duration}: {song.Duration:mm\\:ss}\n" +
-				           $"{songFilePath}: {song.FilePath}";
-				ImGui.SetClipboardText(text);
+				copy = BuildCopyString(_selected, s => $"{songId}: {s.Id}\n" +
+				                                       $"{songName}: {s.Name}\n" +
+				                                       (string.IsNullOrEmpty(s.AlternateName) ? "" : $"{songAltName}: {s.AlternateName}\n") +
+				                                       (string.IsNullOrEmpty(s.SpecialModeName) ? "" : $"{songSpcModeTitle}: {s.SpecialModeName}\n") +
+				                                       $"{songLocation}: {s.Locations}\n" +
+				                                       $"{songAdditionalInfo}: {s.AdditionalInfo}\n" +
+				                                       $"{duration}: {s.Duration:mm\\:ss}\n" +
+				                                       $"{songFilePath}: {s.FilePath}");
 			}
+			if (copy != string.Empty)
+				ImGui.SetClipboardText(copy);
 			ImGui.EndMenu();
 		}
 	}
@@ -290,9 +305,13 @@ public class RenderableSongList
 		var sb = new StringBuilder();
 		foreach (var songId in indices.Select(songIndex => _listSource[songIndex].Id))
 		{
-			sb.Append($"{contentExtractor.Invoke(SongList.Instance.GetSong(songId))}, ");
+			PluginLog.Debug($"[BuildCopyString] Content extractor song {songId}");
+			var extracted = contentExtractor.Invoke(SongList.Instance.GetSong(songId));
+			if (!string.IsNullOrEmpty(extracted))
+				sb.Append($"{extracted}, ");
+			PluginLog.Debug($"[BuildCopyString] Content extractor song {songId} done {sb}");
 		}
 		var text = sb.ToString();
-		return text[^2..];
+		return text[..^2];
 	}
 }

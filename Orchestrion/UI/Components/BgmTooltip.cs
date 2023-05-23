@@ -32,7 +32,7 @@ public static class BgmTooltip
 		{
 			var code = Util.AltLang();
 			var altLangTitle = bgm.Strings[code].Name;
-			if (bgm.Name != altLangTitle)
+			if (bgm.Name != altLangTitle && !string.IsNullOrEmpty(altLangTitle))
 			{
 				var label = Loc.Localize("TitleColon", "Title: ");
 				label = $"[{code}] {label}";
@@ -52,7 +52,7 @@ public static class BgmTooltip
 			{
 				var code = Util.AltLang();
 				var altLangAltTitle = bgm.Strings[code].AlternateName;
-				if (bgm.AlternateName != altLangAltTitle)
+				if (bgm.AlternateName != altLangAltTitle && !string.IsNullOrEmpty(altLangAltTitle))
 				{
 					var label = Loc.Localize("AlternateTitleColon", "Alternate Title: ");
 					label = $"[{code}] {label}";
