@@ -120,8 +120,7 @@ public static class BGMManager
         if (PlaylistManager.IsPlaying)
         {
             PluginLog.Debug("[Stop] Stopping playlist...");    
-            PlaylistManager.Stop();
-            return;
+            PlaylistManager.Reset();
         }
         
         if (PlayingSongId == 0) return;

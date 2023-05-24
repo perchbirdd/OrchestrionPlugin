@@ -108,11 +108,11 @@ public static class PlaylistManager
 	{
 		BGMManager.Stop();
 		Set("", -1, isPlaying: false);
-		IsPlaying = false;
-		_currentPlaylist = "";
-		_currentSongIndex = -1;
-		_currentSongStartTime = 0;
-		_playlistTrackPlayCount = 0;
+	}
+	
+	public static void Reset()
+	{
+		Set("", -1, isPlaying: false);
 	}
 
 	private static int GetNextSong()

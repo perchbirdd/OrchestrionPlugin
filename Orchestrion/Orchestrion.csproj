@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    <PluginVersion>1.9.1.1</PluginVersion>
+    <PluginVersion>2.0.0.0</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -68,9 +68,25 @@
     <PackageReference Include="DalamudPackager" Version="2.1.11" />
   </ItemGroup>
   <ItemGroup>
-    <ContentWithTargetPath Include="Data\xiv_bgm.csv">
+    <ContentWithTargetPath Include="Data\xiv_bgm_en.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>xiv_bgm.csv</TargetPath>
+      <TargetPath>xiv_bgm_en.csv</TargetPath>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="Data\xiv_bgm_de.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>xiv_bgm_de.csv</TargetPath>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="Data\xiv_bgm_fr.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>xiv_bgm_fr.csv</TargetPath>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="Data\xiv_bgm_ja.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>xiv_bgm_ja.csv</TargetPath>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="Data\xiv_bgm_metadata.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>xiv_bgm_metadata.csv</TargetPath>
     </ContentWithTargetPath>
   </ItemGroup>
   <ItemGroup>

@@ -9,7 +9,11 @@
                 MakeZip="true"
                 Include="orchestrion.dll;
                         orchestrion.pdb;
-                        xiv_bgm.csv;
+                        xiv_bgm_en.csv;
+                        xiv_bgm_de.csv;
+                        xiv_bgm_fr.csv;
+                        xiv_bgm_ja.csv;
+                        xiv_bgm_metadata.csv;
                         orchestrion.json"/>
     </Target>    
 </Project>

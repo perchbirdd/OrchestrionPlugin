@@ -322,6 +322,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 	private void UpdateDtr(int songId, bool playedByOrch = false)
 	{
 		if (!Configuration.Instance.ShowSongInNative) return;
+		if (_dtrEntry == null) return;
 
 		var song = SongList.Instance.GetSong(songId);
 
@@ -340,7 +341,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 		var text = songName + suffix;
 
 		text = playedByOrch ? $"{NativeNowPlayingPrefix} [{text}]" : $"{NativeNowPlayingPrefix} {text}";
-
+		
 		_dtrEntry.Text = text;
 	}
 

@@ -113,7 +113,7 @@ public class RenderableSongList
 	private void DrawSongListItem(RenderableSongEntry entry, int index)
 	{
 		var isHistory = entry.TimePlayed != default;
-		if (!SongList.Instance.TryGetSong(entry.Id, out var song)) return;
+		if (entry.Id == 0 || !SongList.Instance.TryGetSong(entry.Id, out var song)) return;
 		
 		if (_renderStrategy.IsPlaying(_listSource, index))
 		{
