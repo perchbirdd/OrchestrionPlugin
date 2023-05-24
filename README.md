@@ -3,59 +3,27 @@
 [![Latest release](https://img.shields.io/github/v/release/lmcintyre/OrchestrionPlugin)](https://github.com/lmcintyre/OrchestrionPlugin)
 
 # OrchestrionPlugin (perchbird fork)
-A plugin for goat's [XivLauncher](https://github.com/goaaats/FFXIVQuickLauncher) that adds a simple music player interface to control the in-game BGM, allowing you to set it to any in-game track you want.  The BGM will persist through **most** changes of zone/instance/etc, and usually will stay active until you change it or click Stop.
-
-You can search for tracks by name or by assorted metadata, such as zone, instance or boss name where the track is usually played.
-
-You can also mark tracks as favorites to easily find them again later.
+A plugin for [XIVLauncher](https://github.com/goaaats/FFXIVQuickLauncher) that adds a simple music player interface to control the in-game BGM,
+allowing you to set it to any in-game track you want. The BGM will persist through **most** changes of zone/instance/etc, and usually will stay active until you change it or click Stop.
+You can search for tracks by name or by assorted metadata, such as zone, instance or boss name where the track is played.
 
 ![Usage](https://github.com/ff-meli/OrchestrionPlugin/raw/master/gh/orch.gif)
 
-## Installation
-Use /xlplugins in game to bring up the plugins menu, and install directly from there.
+_Note that this gif is very old, and is not representative of the current version of the plugin_
 
-Manual installation (not detailed here) is not recommended as it can cause a number of issues and prevent future updates from applying correctly.
-
-## Usage
-The "All Songs" tab will display every song in the game.
-
-The "Favorites" tab will display only those tracks that you have marked as favorites.
-
-### Controls
-To bring up the player:
-* Type `/porch` in the game chat window ('p' for plugin, 'orch' for orchestrion).
-* You can also display the player by clicking the "Open Configuration" button in the /xlplugins menu.
-
-To search for a track:
-* Just start typing in the search box.  If you know the name, that is best, but many tracks also have metadata about the zone/instance/boss/etc they are from, so you might find it that way too.
-
-To play a song:
-* Double-click on the track in the player
-* **OR** Select a track and click the Play button.
-
-To restore the 'normal' game BGM:
-* Click the Stop button.
-
-To add a song as a favorite:
-* Right-click on the song in the player, and select "Add to favorites" from the dropdown menu that appears.
-
-To remove a song from your favorites:
-* Right-click on the favorited song in the player (either tab), and select "Remove from favorites" from the dropdown menu that appears.
-
-## (Mini) FAQ
-
+## FAQ
 ### Why are the song numbers skipping around?  They don't even start at 1!
 Those numbers are the internal ids used by the game.  Many numbers do not correspond to playable tracks, and so I don't display them in the player.
 
 ### It's so hard to find certain tracks!  Can you add/change/remove (some specific info)?
-All the song information in the player is auto-updated from [this spreadsheet](https://docs.google.com/spreadsheets/d/1gGNCu85sjd-4CDgqw-K5tefTe4HYuDK38LkRyvx_fEc).
+All the song information in the player is auto-updated from [this spreadsheet](https://docs.google.com/spreadsheets/d/1qAkxPiXWF-EUHbIXdNcO-Ilo2AwLnqvdpW9tjKPitPY).
 Feel free to comment in the document if you find any inconsistencies.
 
 ### Some new in-game music is out and I can't find it!
 If the tracks are new, it is possible that either the spreadsheet has not been updated yet.
 
 ### I have a suggestion/issue/concern!
-Mention it in the XL discord and @ perchbird.
+Mention it in the XL discord and @ perchbird, or create an issue on this repository.
 
 ## Credits
 * ff-meli, for the original OrchestrionPlugin
