@@ -1,0 +1,242 @@
+{
+  "HelpMessage": {
+    "message": "Displays the Orchestrion window, to view, change, or stop in-game BGM.",
+    "description": "OrchestrionPlugin..ctor"
+  },
+  "NowPlaying": {
+    "message": "now playing ",
+    "description": "OrchestrionPlugin.UpdateChat"
+  },
+  "ShowSongTitleBar": {
+    "message": "Show current song in player title bar",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowNowPlayingChat": {
+    "message": "Show \"Now playing\" messages in game chat when the current song changes",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowSongServerInfo": {
+    "message": "Show current song in the \"server info\" UI element in-game",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowSongIdServerInfo": {
+    "message": "Show song ID in the \"server info\" UI element in-game",
+    "description": "SettingsWindow.Draw"
+  },
+  "HandleSpecialModes": {
+    "message": "Handle special \"in-combat\" and mount movement BGM modes",
+    "description": "SettingsWindow.Draw"
+  },
+  "AudioStreamingDisabledWarning": {
+    "message": "Audio streaming is disabled. This may be due to Sound Filter or a third-party plugin. The above setting may not work as expected and you may encounter other audio issues such as popping or tracks not swapping channels. This is not related to the Orchestrion Plugin.",
+    "description": "SettingsWindow.Draw"
+  },
+  "MiniPlayerSettings": {
+    "message": "Mini Player Settings",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowMiniPlayer": {
+    "message": "Show mini player",
+    "description": "SettingsWindow.Draw"
+  },
+  "LockMiniPlayer": {
+    "message": "Lock mini player",
+    "description": "SettingsWindow.Draw"
+  },
+  "MiniPlayerOpacity": {
+    "message": "Mini player opacity",
+    "description": "SettingsWindow.Draw"
+  },
+  "NoPlaylistSelected": {
+    "message": "No Playlist Selected",
+    "description": "MainWindow.DrawPlaylistSongs"
+  },
+  "SelectAPlaylist": {
+    "message": "Select a playlist.",
+    "description": "MainWindow.DrawPlaylistSongs"
+  },
+  "Play": {
+    "message": "Play",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "Repeat": {
+    "message": "Repeat",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "Shuffle": {
+    "message": "Shuffle",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "ClickAgainDelete": {
+    "message": "Click again to confirm deletion",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "Delete": {
+    "message": "Delete",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "NewPlaylistEllipsis": {
+    "message": "New playlist...",
+    "description": "MainWindow.DrawPlaylistPane"
+  },
+  "Playlists": {
+    "message": "Playlists",
+    "description": "MainWindow.DrawPlaylistPaneButton"
+  },
+  "ReplaceWith": {
+    "message": "will be replaced with",
+    "description": "MainWindow.DrawReplacementList"
+  },
+  "Edit": {
+    "message": "Edit",
+    "description": "MainWindow.DrawReplacementList"
+  },
+  "TargetSong": {
+    "message": "Target Song",
+    "description": "MainWindow.DrawCurrentReplacement"
+  },
+  "ReplacementSong": {
+    "message": "Replacement Song",
+    "description": "MainWindow.DrawCurrentReplacement"
+  },
+  "AddReplacement": {
+    "message": "Add as song replacement",
+    "description": "MainWindow.DrawCurrentReplacement"
+  },
+  "SearchColon": {
+    "message": "Search:",
+    "description": "MainWindow.Draw"
+  },
+  "AllSongs": {
+    "message": "All Songs",
+    "description": "MainWindow.Draw"
+  },
+  "History": {
+    "message": "History",
+    "description": "MainWindow.Draw"
+  },
+  "Replacements": {
+    "message": "Replacements",
+    "description": "MainWindow.Draw"
+  },
+  "Stop": {
+    "message": "Stop",
+    "description": "MainWindow.DrawFooter"
+  },
+  "AddTo": {
+    "message": "Add to...",
+    "description": "MainWindow.DrawPlaylistAddSubmenu"
+  },
+  "SongId": {
+    "message": "Song ID",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongName": {
+    "message": "Song Name",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongLocation": {
+    "message": "Song Location",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongAdditionalInfo": {
+    "message": "Song Additional Info",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "Duration": {
+    "message": "Duration",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongFilePath": {
+    "message": "Song File Path",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "All": {
+    "message": "All",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "Copy": {
+    "message": "Copy",
+    "description": "MainWindow.DrawCopyContentSubmenu"
+  },
+  "SongInfo": {
+    "message": "Song Info",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "TitleColon": {
+    "message": "Title: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "LocationColon": {
+    "message": "Location: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "Unknown": {
+    "message": "Unknown",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "InfoColon": {
+    "message": "Info: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "DurationColon": {
+    "message": "Duration: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "SongNotFound": {
+    "message": "This song is unavailable; the track is not present in the current game files.",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "FilePathColon": {
+    "message": "File Path: ",
+    "description": "MainWindow.DrawBgmTooltip"
+  },
+  "NoChange": {
+    "message": "Do not change BGM",
+    "description": "MainWindow..cctor"
+  },
+  "SecondsAgo": {
+    "message": "{0}s ago",
+    "description": "MainWindow..cctor"
+  },
+  "MinutesAgo": {
+    "message": "{0}m ago",
+    "description": "MainWindow..cctor"
+  },
+  "None": {
+    "message": "None",
+    "description": "Player.Draw"
+  },
+  "FromPlaylist": {
+    "message": "From: {0}",
+    "description": "Player.Draw"
+  },
+  "PopOutMiniPlayer": {
+    "message": "Pop mini-player out of the Orchestrion window",
+    "description": "Player.Draw"
+  },
+  "PopInMiniPlayer": {
+    "message": "Pop mini-player back into the Orchestrion window",
+    "description": "Player.Draw"
+  },
+  "RepeatOne": {
+    "message": "Repeat One: Repeating current song",
+    "description": "Player.Draw"
+  },
+  "RepeatAll": {
+    "message": "Repeat All: Repeating current playlist",
+    "description": "Player.Draw"
+  },
+  "RepeatOnce": {
+    "message": "Repeat Once: Playing current playlist through once",
+    "description": "Player.Draw"
+  },
+  "ShuffleOff": {
+    "message": "Shuffle Off: Playing songs in order",
+    "description": "Player.Draw"
+  },
+  "ShuffleOn": {
+    "message": "Shuffle On: Playing songs randomly",
+    "description": "Player.Draw"
+  }
+}

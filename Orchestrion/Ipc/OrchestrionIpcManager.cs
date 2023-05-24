@@ -1,30 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Logging;
 using Dalamud.Plugin.Ipc;
+using Orchestrion.Audio;
+using Orchestrion.Game;
+using Orchestrion.Persistence;
+using Orchestrion.Struct;
 
-namespace Orchestrion;
+namespace Orchestrion.Ipc;
 
 public class OrchestrionIpcManager : IDisposable
 {
-    private readonly OrchestrionPlugin _plugin;
-    private List<Song> _songListCache;
-
     private const string IpcDisplayName = "Orchestrion Plugin";
+    private const string PlayRandom = "Play a random track";
+    private const string PlayRandomFavorites = "Play a random track from favorites";
+    private const string Stop = "Stop playing";
     private const uint WotsitIconId = 67;
-
+    
+    private readonly List<Song> _songListCache;
+    
     private ICallGateSubscriber<string, string, string, uint, string> _wotsitRegister;
     private ICallGateSubscriber<string, bool> _wotsitUnregister;
     private Dictionary<string, Song> _wotsitSongIpcs;
     private string _wotsitRandomGuid;
     private string _wotsitRandomFavoriteGuid;
     private string _wotsitStopGuid;
-
-    private const string PlayRandom = "Play a random track";
-    private const string PlayRandomFavorites = "Play a random track from favorites";
-    private const string Stop = "Stop playing";
-
+    
     private ICallGateProvider<int> _currentSongProvider;
     private ICallGateProvider<int, bool> _playSongProvider;
     private ICallGateProvider<int, bool> _orchSongChangeProvider;
@@ -32,10 +33,9 @@ public class OrchestrionIpcManager : IDisposable
     private ICallGateProvider<int, Song> _songInfoProvider;
     private ICallGateProvider<List<Song>> _allSongInfoProvider;
 
-    public OrchestrionIpcManager(OrchestrionPlugin plugin)
+    public OrchestrionIpcManager()
     {
-        _plugin = plugin;
-        _songListCache = SongList.GetSongs().Select(x => x.Value).ToList();
+        _songListCache = SongList.Instance.GetSongs().Select(x => x.Value).ToList();
 
         InitForSelf();
 
@@ -48,48 +48,49 @@ public class OrchestrionIpcManager : IDisposable
             // ignored
         }
 
-        var wotsitAvailable = OrchestrionPlugin.PluginInterface.GetIpcSubscriber<bool>("FA.Available");
+        var wotsitAvailable = DalamudApi.PluginInterface.GetIpcSubscriber<bool>("FA.Available");
         wotsitAvailable.Subscribe(InitForWotsit);
     }
 
     private void InitForSelf()
     {
-        _currentSongProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int>("Orch.CurrentSong");
+        _currentSongProvider = DalamudApi.PluginInterface.GetIpcProvider<int>("Orch.CurrentSong");
         _currentSongProvider.RegisterFunc(CurrentSongFunc);
         
-        _playSongProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.PlaySong");
+        _playSongProvider = DalamudApi.PluginInterface.GetIpcProvider<int, bool>("Orch.PlaySong");
         _playSongProvider.RegisterFunc(PlaySongFunc);
         
-        _songInfoProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, Song>("Orch.SongInfo");
-        _songInfoProvider.RegisterFunc(songId => SongList.SongExists(songId) ? SongList.GetSong(songId) : default);
+        _songInfoProvider = DalamudApi.PluginInterface.GetIpcProvider<int, Song>("Orch.SongInfo");
+        _songInfoProvider.RegisterFunc(songId => SongList.Instance.SongExists(songId) ? SongList.Instance.GetSong(songId) : default);
         
-        _allSongInfoProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<List<Song>>("Orch.AllSongInfo");
+        _allSongInfoProvider = DalamudApi.PluginInterface.GetIpcProvider<List<Song>>("Orch.AllSongInfo");
         _allSongInfoProvider.RegisterFunc(() => _songListCache);
         
-        _orchSongChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.OrchSongChange");
-        _songChangeProvider = OrchestrionPlugin.PluginInterface.GetIpcProvider<int, bool>("Orch.SongChange");
+        _orchSongChangeProvider = DalamudApi.PluginInterface.GetIpcProvider<int, bool>("Orch.OrchSongChange");
+        _songChangeProvider = DalamudApi.PluginInterface.GetIpcProvider<int, bool>("Orch.SongChange");
 
-        PluginLog.Verbose("Firing Orch.Available.");
-        var cgAvailable = OrchestrionPlugin.PluginInterface.GetIpcProvider<bool>("Orch.Available");
+        PluginLog.Verbose("[InitForSelf] Firing Orch.Available.");
+        var cgAvailable = DalamudApi.PluginInterface.GetIpcProvider<bool>("Orch.Available");
         cgAvailable.SendMessage();
     }
 
     private int CurrentSongFunc()
     {
-        if (BGMController.PlayingSongId == 0) return BGMController.CurrentSongId;
-            
-        if (OrchestrionPlugin.Configuration.SongReplacements.TryGetValue(BGMController.CurrentSongId, out var replacement)
-            && replacement.ReplacementId == SongReplacement.NoChangeId)
-            return BGMController.SecondSongId;
-        return BGMController.PlayingSongId;
+        return BGMManager.CurrentAudibleSong;
+        // if (_bgmController.PlayingSongId == 0) return BGMController.CurrentSongId;
+        //     
+        // if (OrchestrionPlugin.Configuration.SongReplacements.TryGetValue(BGMController.CurrentSongId, out var replacement)
+        //     && replacement.ReplacementId == SongReplacementEntry.NoChangeId)
+        //     return BGMController.SecondSongId;
+        // return BGMController.PlayingSongId;
     }
 
     private bool PlaySongFunc(int songId)
     {
         if (songId == 0) 
-            _plugin.StopSong();
+            BGMManager.Stop();
         else
-            _plugin.PlaySong(songId);
+            BGMManager.Play(songId);
         return true;
     }
 
@@ -105,25 +106,25 @@ public class OrchestrionIpcManager : IDisposable
 
     private void InitForWotsit()
     {
-        _wotsitRegister = OrchestrionPlugin.PluginInterface.GetIpcSubscriber<string, string, string, uint, string>("FA.RegisterWithSearch");
-        _wotsitUnregister = OrchestrionPlugin.PluginInterface.GetIpcSubscriber<string, bool>("FA.UnregisterAll");
+        _wotsitRegister = DalamudApi.PluginInterface.GetIpcSubscriber<string, string, string, uint, string>("FA.RegisterWithSearch");
+        _wotsitUnregister = DalamudApi.PluginInterface.GetIpcSubscriber<string, bool>("FA.UnregisterAll");
         
-        var subscribe = OrchestrionPlugin.PluginInterface.GetIpcSubscriber<string, bool>("FA.Invoke");
+        var subscribe = DalamudApi.PluginInterface.GetIpcSubscriber<string, bool>("FA.Invoke");
         subscribe.Subscribe(WotsitInvoke);
         
         _wotsitSongIpcs = new Dictionary<string, Song>();
         
-        foreach (var song in SongList.GetSongs())
+        foreach (var song in _songListCache)
         {
-            var guid = _wotsitRegister.InvokeFunc(IpcDisplayName, $"Play {song.Value.Name}", GetSearchString(song.Value), WotsitIconId);
-            _wotsitSongIpcs.Add(guid, song.Value);  
+            var guid = _wotsitRegister.InvokeFunc(IpcDisplayName, $"Play {song.Name}", GetSearchString(song), WotsitIconId);
+            _wotsitSongIpcs.Add(guid, song);  
         }
         
         _wotsitRandomGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, PlayRandom, PlayRandom, WotsitIconId);
         _wotsitRandomFavoriteGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, PlayRandomFavorites, PlayRandomFavorites, WotsitIconId);
         _wotsitStopGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, Stop, Stop, WotsitIconId);
 
-        PluginLog.Debug($"Registered {_wotsitSongIpcs.Count} songs with Wotsit");
+        PluginLog.Debug($"[InitForWotsit] Registered {_wotsitSongIpcs.Count} songs with Wotsit");
     }
 
     private string GetSearchString(Song song)
@@ -135,19 +136,19 @@ public class OrchestrionIpcManager : IDisposable
     {
         if (_wotsitSongIpcs.TryGetValue(guid, out var song))
         {
-            _plugin.PlaySong(song.Id);
+            BGMManager.Play(song.Id);
         }
         else if (guid == _wotsitRandomGuid)
         {
-            _plugin.PlayRandomSong();
+            BGMManager.PlayRandomSong();
         }
-        else if (guid == _wotsitRandomFavoriteGuid)
-        {
-            _plugin.PlayRandomSong(restrictToFavorites: true);
-        }
+        // else if (guid == _wotsitRandomFavoriteGuid)
+        // {
+        //     BGMManager.PlayRandomSong(restrictToFavorites: true);
+        // }
         else if (guid == _wotsitStopGuid)
         {
-            _plugin.StopSong();
+            BGMManager.Stop();
         }
     }
 

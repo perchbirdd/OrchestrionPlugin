@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    <PluginVersion>1.8.4.7</PluginVersion>
+    <PluginVersion>1.9.1.1</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -60,21 +60,26 @@
       <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="CheapLoc">
+      <HintPath>$(DalamudLibPath)CheapLoc.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     
-    <PackageReference Include="DalamudPackager" Version="2.1.10" />
+    <PackageReference Include="DalamudPackager" Version="2.1.11" />
   </ItemGroup>
   <ItemGroup>
-    <ContentWithTargetPath Include="Data\favoriteIcon.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>favoriteIcon.png</TargetPath>
-    </ContentWithTargetPath>
-    <ContentWithTargetPath Include="Data\settings.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>settings.png</TargetPath>
-    </ContentWithTargetPath>
     <ContentWithTargetPath Include="Data\xiv_bgm.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>xiv_bgm.csv</TargetPath>
     </ContentWithTargetPath>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="UI\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Loc\fr.json" />
+    <EmbeddedResource Include="Loc\fr.json" />
+    <None Remove="Loc\en.json" />
+    <EmbeddedResource Include="Loc\en.json" />
   </ItemGroup>
 </Project>
