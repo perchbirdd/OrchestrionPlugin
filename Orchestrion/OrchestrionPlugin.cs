@@ -84,8 +84,10 @@ public class OrchestrionPlugin : IDalamudPlugin
 
 	private void LanguageChanged(string code)
 	{
-		var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"Orchestrion.Loc.{code}.json");
-		if (stream == null) return;
+		var stream = 
+			Assembly.GetExecutingAssembly().GetManifestResourceStream($"Orchestrion.Loc.{code}.json") 
+			?? Assembly.GetExecutingAssembly().GetManifestResourceStream($"Orchestrion.Loc.en.json");
+		if (stream == null) return; // we can't recover
 		var content = new StreamReader(stream).ReadToEnd();
 		Loc.Setup(content);
 	}
