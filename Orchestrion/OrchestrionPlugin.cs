@@ -246,7 +246,8 @@ public class OrchestrionPlugin : IDalamudPlugin
 			case >= 3 when argSplit[1].ToLowerInvariant() == "playlist":
 				PluginLog.Verbose("case >= 3 when argSplit[1].ToLowerInvariant() == playlist");
 				var playlistName = argSplit.Skip(2).Aggregate((x, y) => $"{x} {y}");
-				var playlistExists = Configuration.Instance.Playlists.TryGetValue(playlistName, out var playlist);
+				
+				var playlistExists = Configuration.Instance.TryGetPlaylist(playlistName, out var playlist);
 				if (!playlistExists)
 				{
 					DalamudApi.ChatGui.PrintError(BuildChatMessageFormatted(Loc.Localize("PlaylistNotFound", "Playlist <i>{0}</i> not found."), playlistName, false));
@@ -324,11 +325,12 @@ public class OrchestrionPlugin : IDalamudPlugin
 		if (!Configuration.Instance.ShowSongInNative) return;
 		if (_dtrEntry == null) return;
 
-		var song = SongList.Instance.GetSong(songId);
+		if (!SongList.Instance.TryGetSong(songId, out var song))
+			return;
 
-		var songName = Configuration.Instance.UseClientLangInServerInfo
-			? song.Strings[Util.ClientLangCode()].Name
-			: song.Name;
+		var songName = GetClientSongName(songId);
+
+		if (string.IsNullOrEmpty(songName)) return;
 
 		var suffix = "";
 		if (Configuration.Instance.ShowIdInNative)
@@ -349,13 +351,23 @@ public class OrchestrionPlugin : IDalamudPlugin
 	{
 		if (!Configuration.Instance.ShowSongInChat) return;
 
-		var song = SongList.Instance.GetSong(songId);
+		var songName = GetClientSongName(songId);
+
+		// the actual echoing is done during framework update
+		if (!string.IsNullOrEmpty(songName))
+			_songEchoMsg = BuildChatMessageFormatted(Loc.Localize("NowPlayingEcho", "Now playing <i>{0}</i>."), songName, playedByOrch);
+	}
+
+	private string GetClientSongName(int songId)
+	{
+		if (!SongList.Instance.TryGetSong(songId, out var song))
+			return null;
+		
 		var songName = Configuration.Instance.UseClientLangInServerInfo
 			? song.Strings[Util.ClientLangCode()].Name
 			: song.Name;
 
-		// the actual echoing is done during framework update
-		_songEchoMsg = BuildChatMessageFormatted(Loc.Localize("NowPlayingEcho", "Now playing <i>{0}</i>."), songName, playedByOrch);
+		return songName;
 	}
 
 	private unsafe bool IsLoadingScreen()

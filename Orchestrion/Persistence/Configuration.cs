@@ -50,6 +50,19 @@ public class Configuration : IPluginConfiguration
         }
     }
 
+    public bool TryGetPlaylist(string playlistName, out Playlist foundPlaylist)
+    {
+        foundPlaylist = null;
+        foreach (var pInfo in Playlists) {
+            if (playlistName.Equals(pInfo.Key, StringComparison.InvariantCultureIgnoreCase))
+            {
+                foundPlaylist = pInfo.Value;
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void DeletePlaylist(string playlistName)
     {
         Playlists.Remove(playlistName);
