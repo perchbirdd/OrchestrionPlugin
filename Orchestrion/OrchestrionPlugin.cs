@@ -260,16 +260,16 @@ public class OrchestrionPlugin : IDalamudPlugin
 				switch (arg)
 				{
 					case "play":
-						PlaylistManager.Play(playlistName);
+						PlaylistManager.Play(playlist.Name);
 						break;
 					case "shuffle":
 						playlist.ShuffleMode = ShuffleMode.On;
-						PlaylistManager.Play(playlistName);
+						PlaylistManager.Play(playlist.Name);
 						break;
 					case "repeat":
 						playlist.ShuffleMode = ShuffleMode.Off;
 						playlist.RepeatMode = RepeatMode.All;
-						PlaylistManager.Play(playlistName);
+						PlaylistManager.Play(playlist.Name);
 						break;
 				}
 				break;
