@@ -1,7 +1,7 @@
-﻿using Dalamud.Game;
+﻿using CheapLoc;
+using Dalamud.Game;
 using Dalamud.Logging;
 using Orchestrion.BGMSystem;
-using Orchestrion.Game.BGMSystem;
 using Orchestrion.Ipc;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
@@ -15,7 +15,7 @@ public static class BGMManager
     
     private static bool _isPlayingReplacement;
 	
-    public delegate void SongChanged(int oldSong, int currentSong, bool playedByOrchestrion);
+    public delegate void SongChanged(int oldSong, int currentSong, int oldSecondSong, int oldCurrentSong, bool playedByOrchestrion);
     public static event SongChanged OnSongChanged;
     
     public static int CurrentSongId => _bgmController.CurrentSongId;
@@ -40,7 +40,7 @@ public static class BGMManager
         _bgmController.Dispose();
     }
 
-    private static void IpcUpdate(int oldSong, int newSong, bool playedByOrch)
+    private static void IpcUpdate(int oldSong, int newSong, int oldSecondSong, int oldCurrentSong, bool playedByOrch)
     {
         _ipcManager.InvokeSongChanged(newSong);
         if (playedByOrch) _ipcManager.InvokeOrchSongChanged(newSong);
@@ -73,7 +73,7 @@ public static class BGMManager
                 Stop();
             else
                 // This is the only place in this method where we invoke OnSongChanged, as Play and Stop do it themselves
-                OnSongChanged?.Invoke(oldSong, newSong, playedByOrchestrion: false);
+                InvokeSongChanged(oldSong, newSong, oldSecondSong, newSecondSong, playedByOrch: false);
             return;
         }
 
@@ -107,10 +107,10 @@ public static class BGMManager
     public static void Play(int songId, bool isReplacement = false)
     {
         var oldSongId = CurrentAudibleSong;
-        if (oldSongId == songId) return;
-
+        var secondSongId = _bgmController.SecondSongId;
+        
         PluginLog.Debug($"[Play] Playing {songId}");
-        OnSongChanged?.Invoke(oldSongId, songId, playedByOrchestrion: true);
+        InvokeSongChanged(oldSongId, songId, secondSongId, oldSongId, playedByOrch: true);
         _bgmController.SetSong((ushort)songId);
         _isPlayingReplacement = isReplacement;
     }
@@ -140,9 +140,17 @@ public static class BGMManager
             return;
         }
 
+        var second = _bgmController.SecondSongId;
+        
         // If there was no replacement involved, we don't need to do anything else, just stop
-        OnSongChanged?.Invoke(PlayingSongId, CurrentSongId, playedByOrchestrion: false);
+        InvokeSongChanged(PlayingSongId, CurrentSongId, second, second, playedByOrch: false);
         _bgmController.SetSong(0);
+    }
+
+    private static void InvokeSongChanged(int oldSongId, int newSongId, int oldSecondSongId, int newSecondSongId, bool playedByOrch)
+    {
+        PluginLog.Debug($"[InvokeSongChanged] Invoking SongChanged event with {oldSongId} -> {newSongId}, {oldSecondSongId} -> {newSecondSongId} | {playedByOrch}");
+        OnSongChanged?.Invoke(oldSongId, newSongId, oldSecondSongId, newSecondSongId, playedByOrch);
     }
     
     public static void PlayRandomSong(string playlistName = "")
@@ -150,6 +158,6 @@ public static class BGMManager
         if (SongList.Instance.TryGetRandomSong(playlistName, out var randomFavoriteSong))
             Play(randomFavoriteSong);
         else
-            DalamudApi.ChatGui.PrintError("No possible songs found.");
+            DalamudApi.ChatGui.PrintError(Loc.Localize("NoPossibleSongs", "No possible songs found."));
     }
 }

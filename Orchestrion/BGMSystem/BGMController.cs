@@ -120,9 +120,13 @@ public class BGMController
             }
         }
             
+        var oldSongId = 0;
+        var currentSongId = 0;
+        var oldSecondSongId = 0;
+        var secondSongId = 0;
         var currentChanged = false;
         var secondChanged = false;
-            
+        
         if (CurrentSongId != currentSong)
         {
             OldSongId = CurrentSongId;
@@ -130,8 +134,11 @@ public class BGMController
             CurrentSongId = currentSong;
             CurrentScene = currentScene;
             currentChanged = true;
+
+            oldSongId = OldSongId;
+            currentSongId = CurrentSongId;
         }
-            
+
         if (SecondSongId != secondSong)
         {
             OldSecondSongId = SecondSongId;
@@ -139,9 +146,12 @@ public class BGMController
             SecondSongId = secondSong;
             SecondScene = secondScene;
             secondChanged = true;
+            
+            oldSecondSongId = OldSecondSongId;
+            secondSongId = SecondSongId;
         }
         
-        if (currentChanged || secondChanged) OnSongChanged?.Invoke(OldSongId, CurrentSongId, OldSecondSongId, SecondSongId);
+        if (currentChanged || secondChanged) OnSongChanged?.Invoke(oldSongId, currentSongId, oldSecondSongId, secondSongId);
     }
 
     public void SetSong(ushort songId, int priority = 0)

@@ -39,7 +39,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 	private readonly MainWindow _mainWindow;
 	private readonly SettingsWindow _settingsWindow;
 
-	private readonly DtrBarEntry _dtrEntry;
+	private DtrBarEntry _dtrEntry;
 
 	private SeString _songEchoMsg;
 
@@ -47,11 +47,9 @@ public class OrchestrionPlugin : IDalamudPlugin
 	{
 		DalamudApi.Initialize(pluginInterface);
 		LanguageChanged(pluginInterface.UiLanguage);
-
-		if (Configuration.Instance.ShowSongInNative)
-		{
-			_dtrEntry = DalamudApi.DtrBar.Get(ConstName);
-		}
+		
+		_dtrEntry = DalamudApi.DtrBar.Get(ConstName);
+		_dtrEntry.Shown = Configuration.Instance.ShowSongInNative;
 
 		BGMAddressResolver.Init();
 		BGMManager.OnSongChanged += OnSongChanged;
@@ -111,6 +109,12 @@ public class OrchestrionPlugin : IDalamudPlugin
 
 	private void OrchestrionUpdate(Framework ignored)
 	{
+		PerformEcho();
+		CheckDtr();
+	}
+
+	private void PerformEcho()
+	{
 		if (_songEchoMsg == null || IsLoadingScreen()) return;
 
 		DalamudApi.ChatGui.PrintChat(new XivChatEntry
@@ -122,13 +126,20 @@ public class OrchestrionPlugin : IDalamudPlugin
 		_songEchoMsg = null;
 	}
 
+	private void CheckDtr()
+	{
+		_dtrEntry.Shown = Configuration.Instance.ShowSongInNative;
+	}
+
 	private void ClientStateOnLogout(object sender, EventArgs e)
 	{
 		BGMManager.Stop();
 	}
 
-	private void OnSongChanged(int oldSong, int newSong, bool playedByOrch)
+	private void OnSongChanged(int oldSong, int newSong, int oldSecondSong, int oldCurrentSong, bool playedByOrch)
 	{
+		if (oldSong == newSong && oldSong == 0) return;
+		PluginLog.Debug($"[OnSongChanged] Changed from {oldSong} to {newSong}, playedByOrch: {playedByOrch}");
 		UpdateDtr(newSong, playedByOrch: playedByOrch);
 		UpdateChat(newSong, playedByOrch: playedByOrch);
 	}
@@ -324,14 +335,9 @@ public class OrchestrionPlugin : IDalamudPlugin
 
 	private void UpdateDtr(int songId, bool playedByOrch = false)
 	{
-		if (!Configuration.Instance.ShowSongInNative) return;
 		if (_dtrEntry == null) return;
-
-		if (!SongList.Instance.TryGetSong(songId, out var song))
-			return;
-
+		if (!SongList.Instance.TryGetSong(songId, out var song)) return;
 		var songName = GetClientSongName(songId);
-
 		if (string.IsNullOrEmpty(songName)) return;
 
 		var suffix = "";
