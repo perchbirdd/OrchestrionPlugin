@@ -315,8 +315,16 @@
     "message": "Song ID",
     "description": "RenderableSongList.DrawCopyContentSubmenu"
   },
-  "SongName": {
-    "message": "Song Name",
+  "SongTitle": {
+    "message": "Song Title",
+    "description": "RenderableSongList.DrawCopyContentSubmenu"
+  },
+  "SongAltTitle": {
+    "message": "Song Alternate Title",
+    "description": "RenderableSongList.DrawCopyContentSubmenu"
+  },
+  "SongSpcModeTitle": {
+    "message": "Song Special Mode Title",
     "description": "RenderableSongList.DrawCopyContentSubmenu"
   },
   "SongLocation": {
@@ -346,5 +354,9 @@
   "RemoveSelected": {
     "message": "Remove {0} song(s)",
     "description": "RenderableSongList.DrawRemoveSubmenu"
+  },
+  "NoPossibleSongs": {
+    "message": "No possible songs found.",
+    "description": "BGMManager.PlayRandomSong"
   }
 }
