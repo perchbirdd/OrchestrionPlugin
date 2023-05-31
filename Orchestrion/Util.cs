@@ -41,12 +41,15 @@ public static class Util
 		matchesSearch |= song.Strings["ja"].AlternateName.ToLower().Contains(searchText.ToLower());
 		matchesSearch |= song.Strings["ja"].SpecialModeName.ToLower().Contains(searchText.ToLower());
 		
-		// Localized addtl info check
-		matchesSearch |= song.Strings[lang].Locations.ToLower().Contains(searchText.ToLower());
-		matchesSearch |= song.Strings[lang].AdditionalInfo.ToLower().Contains(searchText.ToLower());
-
 		// Id check
 		matchesSearch |= song.Id.ToString().Contains(searchText);
+		
+		// Localized addtl info check
+		if (song.Strings.TryGetValue(lang, out var strings))
+		{
+			matchesSearch |= strings.Locations.ToLower().Contains(searchText.ToLower());
+			matchesSearch |= strings.AdditionalInfo.ToLower().Contains(searchText.ToLower());
+		}
 		
 		return matchesSearch;
 	}
