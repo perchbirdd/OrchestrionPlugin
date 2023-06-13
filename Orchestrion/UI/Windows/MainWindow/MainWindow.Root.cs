@@ -88,7 +88,7 @@ public partial class MainWindow : Window, IDisposable
 		};
 	}
 
-	private void SongChanged(int oldSong, int currentSong, int oldSecondSong, int secondSong, bool playedByOrchestrion)
+	private void SongChanged(int oldSong, int currentSong, int oldSecondSong, int secondSong, bool oldPlayedByOrch, bool playedByOrchestrion)
 	{
 		var currentChanged = oldSong != currentSong;
 		if (!currentChanged) return;

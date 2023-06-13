@@ -15,7 +15,7 @@ public static class BGMManager
     
     private static bool _isPlayingReplacement;
 	
-    public delegate void SongChanged(int oldSong, int currentSong, int oldSecondSong, int oldCurrentSong, bool playedByOrchestrion);
+    public delegate void SongChanged(int oldSong, int currentSong, int oldSecondSong, int oldCurrentSong, bool oldPlayedByOrch, bool playedByOrchestrion);
     public static event SongChanged OnSongChanged;
     
     public static int CurrentSongId => _bgmController.CurrentSongId;
@@ -40,7 +40,7 @@ public static class BGMManager
         _bgmController.Dispose();
     }
 
-    private static void IpcUpdate(int oldSong, int newSong, int oldSecondSong, int oldCurrentSong, bool playedByOrch)
+    private static void IpcUpdate(int oldSong, int newSong, int oldSecondSong, int oldCurrentSong, bool oldPlayedByOrch, bool playedByOrch)
     {
         _ipcManager.InvokeSongChanged(newSong);
         if (playedByOrch) _ipcManager.InvokeOrchSongChanged(newSong);
@@ -67,13 +67,14 @@ public static class BGMManager
         
         if (PlayingSongId != 0 && !_isPlayingReplacement) return; // manually playing track
         if (secondChanged && !currentChanged && !_isPlayingReplacement) return; // don't care about behind song if not playing replacement
+
         if (!newHasReplacement) // user isn't playing and no replacement at all
         {
             if (PlayingSongId != 0)
                 Stop();
             else
                 // This is the only place in this method where we invoke OnSongChanged, as Play and Stop do it themselves
-                InvokeSongChanged(oldSong, newSong, oldSecondSong, newSecondSong, playedByOrch: false);
+                InvokeSongChanged(oldSong, newSong, oldSecondSong, newSecondSong, oldPlayedByOrch: false, playedByOrch: false);
             return;
         }
 
@@ -106,11 +107,12 @@ public static class BGMManager
 
     public static void Play(int songId, bool isReplacement = false)
     {
+        var wasPlaying = PlayingSongId != 0;
         var oldSongId = CurrentAudibleSong;
         var secondSongId = _bgmController.SecondSongId;
         
         PluginLog.Debug($"[Play] Playing {songId}");
-        InvokeSongChanged(oldSongId, songId, secondSongId, oldSongId, playedByOrch: true);
+        InvokeSongChanged(oldSongId, songId, secondSongId, oldSongId, oldPlayedByOrch: wasPlaying, playedByOrch: true);
         _bgmController.SetSong((ushort)songId);
         _isPlayingReplacement = isReplacement;
     }
@@ -143,14 +145,14 @@ public static class BGMManager
         var second = _bgmController.SecondSongId;
         
         // If there was no replacement involved, we don't need to do anything else, just stop
-        InvokeSongChanged(PlayingSongId, CurrentSongId, second, second, playedByOrch: false);
+        InvokeSongChanged(PlayingSongId, CurrentSongId, second, second, oldPlayedByOrch: true, playedByOrch: false);
         _bgmController.SetSong(0);
     }
 
-    private static void InvokeSongChanged(int oldSongId, int newSongId, int oldSecondSongId, int newSecondSongId, bool playedByOrch)
+    private static void InvokeSongChanged(int oldSongId, int newSongId, int oldSecondSongId, int newSecondSongId, bool oldPlayedByOrch, bool playedByOrch)
     {
-        PluginLog.Debug($"[InvokeSongChanged] Invoking SongChanged event with {oldSongId} -> {newSongId}, {oldSecondSongId} -> {newSecondSongId} | {playedByOrch}");
-        OnSongChanged?.Invoke(oldSongId, newSongId, oldSecondSongId, newSecondSongId, playedByOrch);
+        PluginLog.Debug($"[InvokeSongChanged] Invoking SongChanged event with {oldSongId} -> {newSongId}, {oldSecondSongId} -> {newSecondSongId} | {oldPlayedByOrch} {playedByOrch}");
+        OnSongChanged?.Invoke(oldSongId, newSongId, oldSecondSongId, newSecondSongId, oldPlayedByOrch, playedByOrch);
     }
     
     public static void PlayRandomSong(string playlistName = "")

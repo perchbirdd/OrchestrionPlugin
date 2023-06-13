@@ -136,10 +136,11 @@ public class OrchestrionPlugin : IDalamudPlugin
 		BGMManager.Stop();
 	}
 
-	private void OnSongChanged(int oldSong, int newSong, int oldSecondSong, int oldCurrentSong, bool playedByOrch)
+	private void OnSongChanged(int oldSong, int newSong, int oldSecondSong, int oldCurrentSong, bool oldPlayedByOrch, bool playedByOrch)
 	{
 		if (oldSong == newSong && oldSong == 0) return;
-		PluginLog.Debug($"[OnSongChanged] Changed from {oldSong} to {newSong}, playedByOrch: {playedByOrch}");
+		if (oldSong == newSong && oldPlayedByOrch && playedByOrch) return;
+		PluginLog.Debug($"[OnSongChanged] Changed from {oldSong} to {newSong}, oldPlayedByOrch: {oldPlayedByOrch}, playedByOrch: {playedByOrch}");
 		UpdateDtr(newSong, playedByOrch: playedByOrch);
 		UpdateChat(newSong, playedByOrch: playedByOrch);
 	}
