@@ -239,7 +239,12 @@ public class OrchestrionPlugin : IDalamudPlugin
 						if (PlaylistManager.CurrentPlaylist == null)
 							DalamudApi.ChatGui.PrintError(BuildChatMessage(Loc.Localize("NoPlaylistPlaying", "No playlist is currently playing.")));
 						else
+						{
 							PlaylistManager.CurrentPlaylist.ShuffleMode = shuffleMode;
+							if (shuffleMode == ShuffleMode.On)
+								PlaylistManager.CurrentPlaylist.RepeatMode = RepeatMode.All;
+						}
+							
 						break;
 					case "repeat":
 						if (!Enum.TryParse<RepeatMode>(arg2, true, out var repeatMode))
@@ -305,6 +310,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 						break;
 					case "shuffle":
 						playlist.ShuffleMode = ShuffleMode.On;
+						playlist.RepeatMode = RepeatMode.All;
 						PlaylistManager.Play(playlist.Name);
 						break;
 					case "repeat":

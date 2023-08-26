@@ -145,6 +145,7 @@ public partial class MainWindow
 					if (ImGui.MenuItem(Loc.Localize("Shuffle", "Shuffle")))
 					{
 						playlist.ShuffleMode = ShuffleMode.On;
+						playlist.RepeatMode = RepeatMode.All;
 						Configuration.Instance.Save();
 						PlaylistManager.Play(pName);
 					}
