@@ -170,7 +170,7 @@ public static class BGMManager
     public static void PlayRandomSong(string playlistName = "")
     {
         if (SongList.Instance.TryGetRandomSong(playlistName, out var randomFavoriteSong))
-            Play(randomFavoriteSong, isReplacement: true);
+            Play(randomFavoriteSong);
         else
             DalamudApi.ChatGui.PrintError(Loc.Localize("NoPossibleSongs", "No possible songs found."));
     }
