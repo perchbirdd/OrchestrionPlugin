@@ -27,6 +27,10 @@
     "message": "The specified mode is invalid.",
     "description": "OrchestrionPlugin.OnCommand"
   },
+  "InvalidDDModeCommand": {
+    "message": "Invalid DDMode command <i>{0}</i>.",
+    "description": "OrchestrionPlugin.OnCommand"
+  },
   "PlaylistNotFound": {
     "message": "Playlist <i>{0}</i> not found.",
     "description": "OrchestrionPlugin.OnCommand"
@@ -64,7 +68,19 @@
     "description": "OrchestrionPlugin.PrintHelp"
   },
   "HelpStopSong": {
-    "message": "Stop the current playing song, replacement song, or playlist",
+    "message": "Stop the current playing song, replacement song, playlist, or DD mode.",
+    "description": "OrchestrionPlugin.PrintHelp"
+  },
+  "HelpDDModeStart": {
+    "message": "Enable Deep Dungeon mode: On every in-game BGM change, replace BGM with a random song",
+    "description": "OrchestrionPlugin.PrintHelp"
+  },
+  "HelpDDModeStartPlaylist": {
+    "message": "Enable Deep Dungeon mode: On every in-game BGM change, replace BGM with a random song from the specified playlist",
+    "description": "OrchestrionPlugin.PrintHelp"
+  },
+  "HelpDDModeStop": {
+    "message": "Disable Deep Dungeon mode.",
     "description": "OrchestrionPlugin.PrintHelp"
   },
   "PlaylistCommandsColon": {
@@ -127,10 +143,6 @@
     "message": "General Settings",
     "description": "SettingsWindow.Draw"
   },
-  "DDPlaylistAll": {
-    "message": "All Songs",
-    "description": "SettingsWindow.Draw"
-  },
   "AudioStreamingDisabledWarning": {
     "message": "Audio streaming is disabled. This may be due to Sound Filter or a third-party plugin. The above setting may not work as expected and you may encounter other audio issues such as popping or tracks not swapping channels. This is not related to the Orchestrion Plugin.",
     "description": "SettingsWindow.Draw"
@@ -146,6 +158,26 @@
   "MiniPlayerOpacity": {
     "message": "Mini player opacity",
     "description": "SettingsWindow.Draw"
+  },
+  "DDModeDescription": {
+    "message": "Deep Dungeon Mode is a feature that will instead play a random track from either \"All Songs\" or a specified playlist whenever the track changes.",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
+  },
+  "DDPlaylistAll": {
+    "message": "All Songs",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
+  },
+  "DDPlaylist": {
+    "message": "Playlist",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
+  },
+  "DDModeStart": {
+    "message": "Start Deep Dungeon Mode",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
+  },
+  "DDModeEnd": {
+    "message": "Stop Deep Dungeon Mode",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
   },
   "NoPlaylistSelected": {
     "message": "No Playlist Selected",
@@ -217,6 +249,10 @@
   },
   "Replacements": {
     "message": "Replacements",
+    "description": "MainWindow.Draw"
+  },
+  "DDMode": {
+    "message": "DD Mode",
     "description": "MainWindow.Draw"
   },
   "Stop": {
