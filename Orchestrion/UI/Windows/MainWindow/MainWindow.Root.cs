@@ -23,6 +23,7 @@ public partial class MainWindow : Window, IDisposable
 	{
 		AllSongs,
 		Playlist,
+		DDMode,
 		History,
 		Replacements,
 		Debug,
@@ -159,6 +160,7 @@ public partial class MainWindow : Window, IDisposable
 		{
 			DrawTab(Loc.Localize("AllSongs", "All Songs"), "orch_AllSongs", DrawSongListTab, TabType.AllSongs);
 			DrawTab(Loc.Localize("Playlists", "Playlists"), "orch_Playlists", DrawPlaylistsTab, TabType.Playlist);
+			DrawTab(Loc.Localize("DDMode", "DDMode"), "orch_DDMode", DrawDeepDungeonModeTab, TabType.DDMode);
 			DrawTab(Loc.Localize("History", "History"), "orch_History", DrawSongHistoryTab, TabType.History);
 			DrawTab(Loc.Localize("Replacements", "Replacements"), "orch_Replacements", DrawReplacementsTab, TabType.Replacements);
 #if DEBUG

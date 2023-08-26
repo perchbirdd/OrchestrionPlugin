@@ -127,6 +127,10 @@
     "message": "General Settings",
     "description": "SettingsWindow.Draw"
   },
+  "DDPlaylistAll": {
+    "message": "All Songs",
+    "description": "SettingsWindow.Draw"
+  },
   "AudioStreamingDisabledWarning": {
     "message": "Audio streaming is disabled. This may be due to Sound Filter or a third-party plugin. The above setting may not work as expected and you may encounter other audio issues such as popping or tracks not swapping channels. This is not related to the Orchestrion Plugin.",
     "description": "SettingsWindow.Draw"

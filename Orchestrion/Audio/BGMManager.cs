@@ -14,7 +14,9 @@ public static class BGMManager
     private static readonly OrchestrionIpcManager _ipcManager;
     
     private static bool _isPlayingReplacement;
-	
+    private static bool _isDDMode;
+    private static string _DDPlaylist = "";
+
     public delegate void SongChanged(int oldSong, int currentSong, int oldSecondSong, int oldCurrentSong, bool oldPlayedByOrch, bool playedByOrchestrion);
     public static event SongChanged OnSongChanged;
     
@@ -65,6 +67,15 @@ public static class BGMManager
         if (secondChanged)
             PluginLog.Debug($"[HandleSongChanged] Second song ID changed from {_bgmController.OldSecondSongId} to {_bgmController.SecondSongId}");
         
+        if (PlayingSongId != 0 && _isDDMode)
+        {
+            if (_DDPlaylist != "" && !Configuration.Instance.Playlists.ContainsKey(_DDPlaylist)) // user deleted playlist
+                Stop();
+            else
+                PlayRandomSong(_DDPlaylist, true);
+            return;
+        }
+
         if (PlayingSongId != 0 && !_isPlayingReplacement) return; // manually playing track
         if (secondChanged && !currentChanged && !_isPlayingReplacement) return; // don't care about behind song if not playing replacement
 
@@ -105,7 +116,7 @@ public static class BGMManager
         Play(toPlay, isReplacement: true); // we only ever play a replacement here
     }
 
-    public static void Play(int songId, bool isReplacement = false)
+    public static void Play(int songId, bool isReplacement = false, bool isDDMode = false)
     {
         var wasPlaying = PlayingSongId != 0;
         var oldSongId = CurrentAudibleSong;
@@ -115,6 +126,7 @@ public static class BGMManager
         InvokeSongChanged(oldSongId, songId, secondSongId, oldSongId, oldPlayedByOrch: wasPlaying, playedByOrch: true);
         _bgmController.SetSong((ushort)songId);
         _isPlayingReplacement = isReplacement;
+        _isDDMode = isDDMode;
     }
 
     public static void Stop()
@@ -154,12 +166,23 @@ public static class BGMManager
         PluginLog.Debug($"[InvokeSongChanged] Invoking SongChanged event with {oldSongId} -> {newSongId}, {oldSecondSongId} -> {newSecondSongId} | {oldPlayedByOrch} {playedByOrch}");
         OnSongChanged?.Invoke(oldSongId, newSongId, oldSecondSongId, newSecondSongId, oldPlayedByOrch, playedByOrch);
     }
-    
-    public static void PlayRandomSong(string playlistName = "")
+
+    public static void PlayRandomSong(string playlistName = "", bool isDDMode = false)
     {
         if (SongList.Instance.TryGetRandomSong(playlistName, out var randomFavoriteSong))
-            Play(randomFavoriteSong);
+            Play(randomFavoriteSong, isDDMode: isDDMode);
         else
             DalamudApi.ChatGui.PrintError(Loc.Localize("NoPossibleSongs", "No possible songs found."));
+    }
+
+    public static void StartDeepDungeonMode(string playlistName = "")
+    {
+        if (playlistName != "" && !Configuration.Instance.Playlists.ContainsKey(playlistName))
+        {
+            DalamudApi.ChatGui.PrintError(String.Format("Playlist {0} not found.", playlistName));
+            return;
+        }
+        _DDPlaylist = playlistName;
+        PlayRandomSong(_DDPlaylist, true);
     }
 }
