@@ -259,9 +259,32 @@ public class OrchestrionPlugin : IDalamudPlugin
 						}
 						break;
 					case "ddmode":
-						BGMManager.StartDeepDungeonMode(argSplit[1]);
+						switch (argSplit[1])
+						{
+							case "start":
+								BGMManager.StartDeepDungeonMode("");
+								break;
+							case "stop":
+								BGMManager.StopDeepDungeonMode();
+								break;
+							default:
+								DalamudApi.ChatGui.PrintError(BuildChatMessageFormatted(Loc.Localize("InvalidDDModeCommand", "Invalid DDMode command <i>{0}</i>."), argSplit[1], false));
+								break;
+						}
 						break;
 				}
+				break;
+			case >= 3 when argSplit[0].ToLowerInvariant() == "ddmode" && argSplit[1].ToLowerInvariant() == "start":
+				
+				var ddModePlaylistName = argSplit.Skip(2).Aggregate((x, y) => $"{x} {y}");
+				
+				var ddModePlaylistExists = Configuration.Instance.TryGetPlaylist(ddModePlaylistName, out var ddModePlaylist);
+				if (!ddModePlaylistExists)
+				{
+					DalamudApi.ChatGui.PrintError(BuildChatMessageFormatted(Loc.Localize("PlaylistNotFound", "Playlist <i>{0}</i> not found."), ddModePlaylistName, false));
+					break;
+				}
+				BGMManager.StartDeepDungeonMode(ddModePlaylist.Name);
 				break;
 			case >= 3 when argSplit[1].ToLowerInvariant() == "playlist":
 				PluginLog.Verbose("case >= 3 when argSplit[1].ToLowerInvariant() == playlist");
@@ -328,8 +351,10 @@ public class OrchestrionPlugin : IDalamudPlugin
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch play [songId] - " + Loc.Localize("HelpPlaySongWithId", "Play the song with the specified ID")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch play [song name] - " + Loc.Localize("HelpPlaySongWithName", "Play the song with the specified name (both English and Japanese titles work)")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch random - " + Loc.Localize("HelpPlayRandomSong", "Play a random song")));
-		DalamudApi.ChatGui.Print(BuildChatMessage("/porch stop - " + Loc.Localize("HelpStopSong", "Stop the current playing song, replacement song, or playlist")));
-		DalamudApi.ChatGui.Print(BuildChatMessage("/porch ddmode [playlist] - " + Loc.Localize("HelpDDMode", "On every in-game BGM change replace BGM with random song from specified playlist")));
+		DalamudApi.ChatGui.Print(BuildChatMessage("/porch stop - " + Loc.Localize("HelpStopSong", "Stop the current playing song, replacement song, playlist, or DD mode.")));
+		DalamudApi.ChatGui.Print(BuildChatMessage("/porch ddmode start - " + Loc.Localize("HelpDDModeStart", "Enable Deep Dungeon mode: On every in-game BGM change, replace BGM with a random song")));
+		DalamudApi.ChatGui.Print(BuildChatMessage("/porch ddmode start [playlist name] - " + Loc.Localize("HelpDDModeStartPlaylist", "Enable Deep Dungeon mode: On every in-game BGM change, replace BGM with a random song from the specified playlist")));
+		DalamudApi.ChatGui.Print(BuildChatMessage("/porch ddmode stop - " + Loc.Localize("HelpDDModeStop", "Disable Deep Dungeon mode.")));
 		DalamudApi.ChatGui.Print(BuildChatMessage(Loc.Localize("PlaylistCommandsColon", "Playlist Commands:")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch random [playlist] - " + Loc.Localize("HelpPlayRandomSongFromPlaylist", "Play a random song from the specified playlist (does not begin the playlist)")));
 		DalamudApi.ChatGui.Print(BuildChatMessage("/porch play playlist [playlist name] - " + Loc.Localize("HelpPlayPlaylist", "Play the specified playlist with its current settings")));

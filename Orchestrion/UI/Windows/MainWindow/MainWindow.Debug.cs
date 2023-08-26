@@ -27,5 +27,8 @@ public partial class MainWindow
 		{
 			Loc.ExportLocalizable(true);
 		}
+		ImGui.Text($"DD: {BGMManager.DeepDungeonModeActive()}");
+		// ImGui.Text($"DD playlist: {BGMManager._ddPlaylist}");
+		
 	}
 }
