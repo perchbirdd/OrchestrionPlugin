@@ -157,6 +157,7 @@ public class BGMController
     public void SetSong(ushort songId, int priority = 0)
     {
         if (priority is < 0 or >= SceneCount) throw new IndexOutOfRangeException();
+        if (songId != 0 && SongList.Instance.TryGetSong(songId, out var song) && !song.FileExists) return;
 
         if (BGMAddressResolver.BGMSceneList != nint.Zero)
         {

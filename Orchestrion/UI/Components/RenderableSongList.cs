@@ -137,7 +137,7 @@ public class RenderableSongList
 		{
 			HandleSelect(index, selected);
 
-			if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+			if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && song.FileExists)
 				_renderStrategy.PlaySong(entry, index);
 		}
 

@@ -183,6 +183,8 @@ public class SongList
 
         ICollection<int> source = !isAllSongs ? playlist.Songs : _songs.Keys;
         if (source.Count == 0) return false;
+        if (!source.Any(x => _songs.ContainsKey(x))) return false;
+        if (!source.Any(x => _songs[x].FileExists)) return false;
 
         while (true)
         {
