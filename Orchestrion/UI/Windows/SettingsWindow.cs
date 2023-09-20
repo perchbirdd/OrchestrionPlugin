@@ -20,17 +20,16 @@ public class SettingsWindow : Window
         Size = ImGuiHelpers.ScaledVector2(720, 520);
     }
 
-    private static void Checkbox(string locKey, string fallback, Func<bool> get, Action<bool> set)
+    private static void Checkbox(string text, Func<bool> get, Action<bool> set)
     {
-        var loc = Loc.Localize(locKey, fallback);
         var value = get();
-        if (ImGui.Checkbox($"##orch_{locKey}", ref value))
+        if (ImGui.Checkbox($"##orch_{text}", ref value))
         {
             set(value);
             Configuration.Instance.Save();
         }
         ImGui.SameLine();
-        ImGui.TextWrapped(loc);
+        ImGui.TextWrapped(text);
     }
     
     public override void Draw()
@@ -41,34 +40,34 @@ public class SettingsWindow : Window
         
         ImGui.PushItemWidth(500f);
         
-        Checkbox("ShowSongTitleBar",
-            "Show current song in player title bar",
+        Checkbox(Loc.Localize("ShowSongTitleBar",
+            "Show current song in player title bar"),
             () => Configuration.Instance.ShowSongInTitleBar,
             b => Configuration.Instance.ShowSongInTitleBar = b);
         
-        Checkbox("ShowNowPlayingChat",
-            "Show \"Now playing\" messages in game chat when the current song changes", 
+        Checkbox(Loc.Localize("ShowNowPlayingChat",
+            "Show \"Now playing\" messages in game chat when the current song changes"), 
             () => Configuration.Instance.ShowSongInChat,
             b => Configuration.Instance.ShowSongInChat = b);
 
-        Checkbox("ShowSongServerInfo",
-            "Show current song in the \"server info\" UI element in-game",
+        Checkbox(Loc.Localize("ShowSongServerInfo",
+            "Show current song in the \"server info\" UI element in-game"),
             () => Configuration.Instance.ShowSongInNative, 
             b => Configuration.Instance.ShowSongInNative = b);
 
         if (!Configuration.Instance.ShowSongInNative)
             ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
         
-        Checkbox("ShowSongIdServerInfo", 
-            "Show song ID in the \"server info\" UI element in-game", 
+        Checkbox(Loc.Localize("ShowSongIdServerInfo", 
+            "Show song ID in the \"server info\" UI element in-game"), 
             () => Configuration.Instance.ShowIdInNative, 
             b => Configuration.Instance.ShowIdInNative = b); 
         
         if (!Configuration.Instance.ShowSongInNative)
             ImGui.PopStyleVar();
         
-        Checkbox("HandleSpecialModes", 
-            "Handle special \"in-combat\" and mount movement BGM modes", 
+        Checkbox(Loc.Localize("HandleSpecialModes", 
+            "Handle special \"in-combat\" and mount movement BGM modes"), 
             () => Configuration.Instance.HandleSpecialModes, 
             b => Configuration.Instance.HandleSpecialModes = b);
         
@@ -86,18 +85,18 @@ public class SettingsWindow : Window
         ImGui.Text(Loc.Localize("LocSettings", "Localization Settings"));
         ImGui.PopFont();
 
-        Checkbox("ShowAltLangTitles", 
-            "Show alternate language song titles in tooltips", 
+        Checkbox(Loc.Localize("ShowAltLangTitles", 
+            "Show alternate language song titles in tooltips"), 
             () => Configuration.Instance.ShowAltLangTitles, 
             b => Configuration.Instance.ShowAltLangTitles = b);
 
-        Checkbox("UseClientLangInServerInfo", 
-            "Use client language, not Dalamud language, for song titles in the \"server info\" UI element in-game", 
+        Checkbox(Loc.Localize("UseClientLangInServerInfo", 
+            "Use client language, not Dalamud language, for song titles in the \"server info\" UI element in-game"), 
             () => Configuration.Instance.UseClientLangInServerInfo, 
             b => Configuration.Instance.UseClientLangInServerInfo = b);
 
-        Checkbox("UseClientLangInChat", 
-            "Use client language, not Dalamud language, for song titles in Orchestrion chat messages in-game", 
+        Checkbox(Loc.Localize("UseClientLangInChat", 
+            "Use client language, not Dalamud language, for song titles in Orchestrion chat messages in-game"), 
             () => Configuration.Instance.UseClientLangInChat, 
             b => Configuration.Instance.UseClientLangInChat = b);
 
@@ -105,13 +104,11 @@ public class SettingsWindow : Window
         ImGui.Text(Loc.Localize("MiniPlayerSettings", "Mini Player Settings"));
         ImGui.PopFont();
         
-        Checkbox("ShowMiniPlayer",
-            "Show mini player",
+        Checkbox(Loc.Localize("ShowMiniPlayer", "Show mini player"),
             () => Configuration.Instance.ShowMiniPlayer, 
             b => Configuration.Instance.ShowMiniPlayer = b);
 
-        Checkbox("LockMiniPlayer", 
-            "Lock mini player", 
+        Checkbox(Loc.Localize("LockMiniPlayer", "Lock mini player"), 
             () => Configuration.Instance.MiniPlayerLock, 
             b => Configuration.Instance.MiniPlayerLock = b);
         
