@@ -5,14 +5,14 @@ using Dalamud.Plugin;
 using System.Linq;
 using System.Reflection;
 using CheapLoc;
-using Dalamud.Game;
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Interface;
 using Dalamud.Interface.GameFonts;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using Orchestrion.Audio;
@@ -107,7 +107,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 		BGMManager.Dispose();
 	}
 
-	private void OrchestrionUpdate(Framework ignored)
+	private void OrchestrionUpdate(IFramework ignored)
 	{
 		PerformEcho();
 		CheckDtr();
@@ -117,7 +117,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 	{
 		if (_songEchoMsg == null || IsLoadingScreen()) return;
 
-		DalamudApi.ChatGui.PrintChat(new XivChatEntry
+		DalamudApi.ChatGui.Print(new XivChatEntry
 		{
 			Message = _songEchoMsg,
 			Type = DalamudApi.PluginInterface.GeneralChatType,
@@ -131,7 +131,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 		_dtrEntry.Shown = Configuration.Instance.ShowSongInNative;
 	}
 
-	private void ClientStateOnLogout(object sender, EventArgs e)
+	private void ClientStateOnLogout()
 	{
 		BGMManager.Stop();
 	}
@@ -140,7 +140,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 	{
 		if (oldSong == newSong && oldSong == 0) return;
 		if (oldSong == newSong && oldPlayedByOrch && playedByOrch) return;
-		PluginLog.Debug($"[OnSongChanged] Changed from {oldSong} to {newSong}, oldPlayedByOrch: {oldPlayedByOrch}, playedByOrch: {playedByOrch}");
+		DalamudApi.PluginLog.Debug($"[OnSongChanged] Changed from {oldSong} to {newSong}, oldPlayedByOrch: {oldPlayedByOrch}, playedByOrch: {playedByOrch}");
 		UpdateDtr(newSong, playedByOrch: playedByOrch);
 		UpdateChat(newSong, playedByOrch: playedByOrch);
 	}
@@ -161,16 +161,16 @@ public class OrchestrionPlugin : IDalamudPlugin
 		var argLen = argSplit.Length;
 
 		// print args to log
-		PluginLog.Log($"command: {command} args: {args}");
+		DalamudApi.PluginLog.Information($"command: {command} args: {args}");
 		var argString = "['" + string.Join("', '", argSplit) + "']";
-		PluginLog.Log($"argLen: {argLen} argSplit: {argString}");
+		DalamudApi.PluginLog.Information($"argLen: {argLen} argSplit: {argString}");
 		
 		var mainArg = argSplit[0].ToLowerInvariant();
 
 		switch (argLen)
 		{
 			case 1:
-				PluginLog.Verbose("case 1");
+				DalamudApi.PluginLog.Verbose("case 1");
 				switch (mainArg)
 				{
 					case "":
@@ -212,7 +212,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 				}
 				break;
 			case 2:
-				PluginLog.Verbose("case 2");
+				DalamudApi.PluginLog.Verbose("case 2");
 				var arg2 = argSplit[1].ToLowerInvariant();
 				switch (mainArg)
 				{
@@ -226,7 +226,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 							DalamudApi.ChatGui.PrintError(BuildChatMessage(string.Format(Loc.Localize("SongIdNotFound", "Song ID {0} not found."), songId)));
 						break;
 					case "play" when !int.TryParse(argSplit[1], out var songId):
-						PluginLog.Verbose("play by song name");
+						DalamudApi.PluginLog.Verbose("play by song name");
 						HandlePlayBySongName(argSplit);
 						break;
 					case "shuffle":
@@ -292,7 +292,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 				BGMManager.StartDeepDungeonMode(ddModePlaylist.Name);
 				break;
 			case >= 3 when argSplit[1].ToLowerInvariant() == "playlist":
-				PluginLog.Verbose("case >= 3 when argSplit[1].ToLowerInvariant() == playlist");
+				DalamudApi.PluginLog.Verbose("case >= 3 when argSplit[1].ToLowerInvariant() == playlist");
 				var playlistName = argSplit.Skip(2).Aggregate((x, y) => $"{x} {y}");
 				
 				var playlistExists = Configuration.Instance.TryGetPlaylist(playlistName, out var playlist);
@@ -321,7 +321,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 				}
 				break;
 			case >= 2 when argSplit[0].ToLowerInvariant() == "play" && !int.TryParse(argSplit[1], out _):
-				PluginLog.Verbose("case >= 2 when argSplit[0].ToLowerInvariant() == play && !int.TryParse(argSplit[1], out _)");
+				DalamudApi.PluginLog.Verbose("case >= 2 when argSplit[0].ToLowerInvariant() == play && !int.TryParse(argSplit[1], out _)");
 				HandlePlayBySongName(argSplit);
 				break;
 			default:

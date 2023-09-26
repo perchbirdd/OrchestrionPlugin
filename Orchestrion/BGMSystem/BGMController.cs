@@ -58,7 +58,7 @@ public class BGMController
     public unsafe BGMController()
     {
         _addDisableRestartId = Marshal.GetDelegateForFunctionPointer<AddDisableRestartIdPrototype>(BGMAddressResolver.AddRestartId);
-        _getSpecialModeForSceneHook = Hook<GetSpecialModeByScenePrototype>.FromAddress(BGMAddressResolver.GetSpecialMode, GetSpecialModeBySceneDetour);
+        _getSpecialModeForSceneHook = DalamudApi.Hooker.HookFromAddress<GetSpecialModeByScenePrototype>(BGMAddressResolver.GetSpecialMode, GetSpecialModeBySceneDetour);
         _getSpecialModeForSceneHook.Enable();
     }
 

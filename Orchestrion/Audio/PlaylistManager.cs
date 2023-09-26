@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using Dalamud.Game;
 using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
@@ -37,14 +37,14 @@ public static class PlaylistManager
 		DalamudApi.Framework.Update -= Update;
 	}
 
-	private static void Update(Framework ignore)
+	private static void Update(IFramework ignore)
 	{
 		if (_currentPlaylist == string.Empty || CurrentPlaylist == null) return;
 		if (_playlistStartTrackCount != CurrentPlaylist.Songs.Count)
 			ResetHistory();
 
 		if (ElapsedDuration <= Duration) return;
-		PluginLog.Debug($"{ElapsedDuration} > {Duration}");
+		DalamudApi.PluginLog.Debug($"{ElapsedDuration} > {Duration}");
 
 		Next();
 	}
@@ -94,7 +94,7 @@ public static class PlaylistManager
 
 	private static void BeginTrack(int id)
 	{
-		PluginLog.Debug($"[PlaylistManager] [BeginTrack] id: {id} _currentSongIndex {_currentSongIndex}");
+		DalamudApi.PluginLog.Debug($"[PlaylistManager] [BeginTrack] id: {id} _currentSongIndex {_currentSongIndex}");
 		if (id == 0)
 			Stop();
 		else
@@ -124,7 +124,7 @@ public static class PlaylistManager
 		if (_playbackHistory.Count > 0 && _indexInHistory != _playbackHistory.Count - 1)
 			return CurrentPlaylist.Songs[_playbackHistory[++_indexInHistory]];
 		
-		PluginLog.Debug($"[PlaylistManager] [GetNextSong] CurrentPlaylist.RepeatMode: {CurrentPlaylist?.RepeatMode} CurrentPlaylist.ShuffleMode: {CurrentPlaylist?.ShuffleMode}");
+		DalamudApi.PluginLog.Debug($"[PlaylistManager] [GetNextSong] CurrentPlaylist.RepeatMode: {CurrentPlaylist?.RepeatMode} CurrentPlaylist.ShuffleMode: {CurrentPlaylist?.ShuffleMode}");
 		var nextSong = GenerateNextSongId();
 		_playbackHistory.Add(_currentSongIndex);
 		_indexInHistory++;
