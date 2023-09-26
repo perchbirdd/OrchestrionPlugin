@@ -1,6 +1,6 @@
 ﻿using CheapLoc;
-using Dalamud.Game;
 using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using Orchestrion.BGMSystem;
 using Orchestrion.Ipc;
 using Orchestrion.Persistence;
@@ -47,7 +47,7 @@ public static class BGMManager
         if (playedByOrch) _ipcManager.InvokeOrchSongChanged(newSong);
     }
     
-    public static void Update(Framework ignored)
+    public static void Update(IFramework ignored)
     {
         _bgmController.Update();
     }
@@ -61,10 +61,10 @@ public static class BGMManager
         var newSecondHasReplacement = Configuration.Instance.SongReplacements.TryGetValue(newSecondSong, out var newSecondSongReplacement);
         
         if (currentChanged)
-            PluginLog.Debug($"[HandleSongChanged] Current Song ID changed from {_bgmController.OldSongId} to {_bgmController.CurrentSongId}");
+            DalamudApi.PluginLog.Debug($"[HandleSongChanged] Current Song ID changed from {_bgmController.OldSongId} to {_bgmController.CurrentSongId}");
         
         if (secondChanged)
-            PluginLog.Debug($"[HandleSongChanged] Second song ID changed from {_bgmController.OldSecondSongId} to {_bgmController.SecondSongId}");
+            DalamudApi.PluginLog.Debug($"[HandleSongChanged] Second song ID changed from {_bgmController.OldSecondSongId} to {_bgmController.SecondSongId}");
         
         if (PlayingSongId != 0 && DeepDungeonModeActive())
         {
@@ -90,7 +90,7 @@ public static class BGMManager
 
         var toPlay = 0;
         
-        PluginLog.Debug($"[HandleSongChanged] Song ID {newSong} has a replacement of {newSongReplacement.ReplacementId}");
+        DalamudApi.PluginLog.Debug($"[HandleSongChanged] Song ID {newSong} has a replacement of {newSongReplacement.ReplacementId}");
         
         // Handle 2nd changing when 1st has replacement of NoChangeId, only time it matters
         if (newSongReplacement.ReplacementId == SongReplacementEntry.NoChangeId)
@@ -121,7 +121,7 @@ public static class BGMManager
         var oldSongId = CurrentAudibleSong;
         var secondSongId = _bgmController.SecondSongId;
         
-        PluginLog.Debug($"[Play] Playing {songId}");
+        DalamudApi.PluginLog.Debug($"[Play] Playing {songId}");
         InvokeSongChanged(oldSongId, songId, secondSongId, oldSongId, oldPlayedByOrch: wasPlaying, playedByOrch: true);
         _bgmController.SetSong((ushort)songId);
         _isPlayingReplacement = isReplacement;
@@ -131,18 +131,18 @@ public static class BGMManager
     {
         if (PlaylistManager.IsPlaying)
         {
-            PluginLog.Debug("[Stop] Stopping playlist...");    
+            DalamudApi.PluginLog.Debug("[Stop] Stopping playlist...");    
             PlaylistManager.Reset();
         }
 
         _ddPlaylist = null;
         
         if (PlayingSongId == 0) return;
-        PluginLog.Debug($"[Stop] Stopping playing {_bgmController.PlayingSongId}...");
+        DalamudApi.PluginLog.Debug($"[Stop] Stopping playing {_bgmController.PlayingSongId}...");
 
         if (Configuration.Instance.SongReplacements.TryGetValue(_bgmController.CurrentSongId, out var replacement))
         {
-            PluginLog.Debug($"[Stop] Song ID {_bgmController.CurrentSongId} has a replacement of {replacement.ReplacementId}...");
+            DalamudApi.PluginLog.Debug($"[Stop] Song ID {_bgmController.CurrentSongId} has a replacement of {replacement.ReplacementId}...");
 
             var toPlay = replacement.ReplacementId;
             
@@ -163,7 +163,7 @@ public static class BGMManager
 
     private static void InvokeSongChanged(int oldSongId, int newSongId, int oldSecondSongId, int newSecondSongId, bool oldPlayedByOrch, bool playedByOrch)
     {
-        PluginLog.Debug($"[InvokeSongChanged] Invoking SongChanged event with {oldSongId} -> {newSongId}, {oldSecondSongId} -> {newSecondSongId} | {oldPlayedByOrch} {playedByOrch}");
+        DalamudApi.PluginLog.Debug($"[InvokeSongChanged] Invoking SongChanged event with {oldSongId} -> {newSongId}, {oldSecondSongId} -> {newSecondSongId} | {oldPlayedByOrch} {playedByOrch}");
         OnSongChanged?.Invoke(oldSongId, newSongId, oldSecondSongId, newSecondSongId, oldPlayedByOrch, playedByOrch);
     }
 

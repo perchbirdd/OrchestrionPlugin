@@ -1,6 +1,5 @@
 using System.Collections.Generic;
-using System.Numerics;
-using Dalamud.Interface;
+using Dalamud.Interface.Utility;
 using Dalamud.Logging;
 using ImGuiNET;
 using Orchestrion.Persistence;
@@ -36,7 +35,7 @@ public partial class MainWindow
 		if (currentIndex < 0 || _songHistory[currentIndex].Id != id)
 		{
 			_songHistory.Add(newEntry);
-			PluginLog.Verbose($"[AddSongToHistory] Added {id} to history. There are now {currentIndex + 1} songs in history.");
+			DalamudApi.PluginLog.Verbose($"[AddSongToHistory] Added {id} to history. There are now {currentIndex + 1} songs in history.");
 		}
 	}
 }

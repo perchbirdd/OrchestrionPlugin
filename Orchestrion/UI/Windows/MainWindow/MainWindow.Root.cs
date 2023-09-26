@@ -1,12 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using CheapLoc;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 using ImGuiNET;
@@ -102,7 +100,7 @@ public partial class MainWindow : Window, IDisposable
 				WindowName = BaseName;
 			else
 			{
-				PluginLog.Debug("[UpdateTitle] Updating title bar");
+				DalamudApi.PluginLog.Debug("[UpdateTitle] Updating title bar");
 				var songTitle = SongList.Instance.GetSongTitle(currentSong);
 				WindowName = $"Orchestrion - [{currentSong}] {songTitle}###Orchestrion";
 			}

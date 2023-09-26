@@ -17,12 +17,12 @@ public static class BGMAddressResolver
         AddRestartId = DalamudApi.SigScanner.ScanText("48 89 5C 24 ?? 57 48 83 EC 30 48 8B 41 20 48 8D 79 18");
         GetSpecialMode = DalamudApi.SigScanner.ScanText("48 89 5C 24 ?? 57 48 83 EC 20 8B 41 10 33 DB");
             
-        PluginLog.Debug($"[BGMAddressResolver] init: base address at {_baseAddress.ToInt64():X}");
+        DalamudApi.PluginLog.Debug($"[BGMAddressResolver] init: base address at {_baseAddress.ToInt64():X}");
             
         var musicLoc = DalamudApi.SigScanner.ScanText("48 8B 8F ?? ?? ?? ?? 39 70 20 0F 94 C2 45 33 C0");
         var musicOffset= Marshal.ReadInt32(musicLoc + 3);
         _musicManager = Marshal.ReadIntPtr(new nint(Framework.Instance()) + musicOffset);
-        PluginLog.Debug($"[BGMAddressResolver] MusicManager found at {_musicManager.ToInt64():X}");
+        DalamudApi.PluginLog.Debug($"[BGMAddressResolver] MusicManager found at {_musicManager.ToInt64():X}");
     }
     
     public static nint BGMSceneManager

@@ -6,6 +6,7 @@ using CheapLoc;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.Utility;
 using ImGuiNET;
 using Orchestrion.Audio;
 using Orchestrion.Persistence;
@@ -247,7 +248,7 @@ public partial class MainWindow
 		// 		_startDragY = ImGui.GetMousePos().Y;
 		//
 		// 	_deltaPlaylistPaneSize = -1 * (ImGui.GetMousePos().Y - _startDragY);
-		// 	PluginLog.Debug($"drag {_startDragY} {_basePlaylistPaneSize} {_deltaPlaylistPaneSize} {_playlistPaneConfigSize}");
+		// 	DalamudApi.PluginLog.Debug($"drag {_startDragY} {_basePlaylistPaneSize} {_deltaPlaylistPaneSize} {_playlistPaneConfigSize}");
 		// }
 		
 		var icon = Configuration.Instance.PlaylistPaneOpen ? FontAwesomeIcon.ArrowDown : FontAwesomeIcon.ArrowUp;

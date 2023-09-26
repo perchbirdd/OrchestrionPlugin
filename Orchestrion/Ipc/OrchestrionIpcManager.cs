@@ -3,7 +3,6 @@ using System.Linq;
 using Dalamud.Logging;
 using Dalamud.Plugin.Ipc;
 using Orchestrion.Audio;
-using Orchestrion.Game;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
@@ -69,7 +68,7 @@ public class OrchestrionIpcManager : IDisposable
         _orchSongChangeProvider = DalamudApi.PluginInterface.GetIpcProvider<int, bool>("Orch.OrchSongChange");
         _songChangeProvider = DalamudApi.PluginInterface.GetIpcProvider<int, bool>("Orch.SongChange");
 
-        PluginLog.Verbose("[InitForSelf] Firing Orch.Available.");
+        DalamudApi.PluginLog.Verbose("[InitForSelf] Firing Orch.Available.");
         var cgAvailable = DalamudApi.PluginInterface.GetIpcProvider<bool>("Orch.Available");
         cgAvailable.SendMessage();
     }
@@ -124,7 +123,7 @@ public class OrchestrionIpcManager : IDisposable
         _wotsitRandomFavoriteGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, PlayRandomFavorites, PlayRandomFavorites, WotsitIconId);
         _wotsitStopGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, Stop, Stop, WotsitIconId);
 
-        PluginLog.Debug($"[InitForWotsit] Registered {_wotsitSongIpcs.Count} songs with Wotsit");
+        DalamudApi.PluginLog.Debug($"[InitForWotsit] Registered {_wotsitSongIpcs.Count} songs with Wotsit");
     }
 
     private string GetSearchString(Song song)
