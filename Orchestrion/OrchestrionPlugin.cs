@@ -43,14 +43,11 @@ public class OrchestrionPlugin : IDalamudPlugin
 
 	private SeString _songEchoMsg;
 
-	public OrchestrionPlugin([RequiredVersion("1.0")] DalamudPluginInterface pluginInterface)
+	public OrchestrionPlugin(DalamudPluginInterface pi)
 	{
-		DalamudApi.Initialize(pluginInterface);
-		LanguageChanged(pluginInterface.UiLanguage);
+		DalamudApi.Initialize(pi);
+		LanguageChanged(DalamudApi.PluginInterface.UiLanguage);
 		
-		_dtrEntry = DalamudApi.DtrBar.Get(ConstName);
-		_dtrEntry.Shown = Configuration.Instance.ShowSongInNative;
-
 		BGMAddressResolver.Init();
 		BGMManager.OnSongChanged += OnSongChanged;
 
@@ -62,6 +59,10 @@ public class OrchestrionPlugin : IDalamudPlugin
 		_windowSystem.AddWindow(_mainWindow);
 		_windowSystem.AddWindow(_settingsWindow);
 		_windowSystem.AddWindow(_miniPlayerWindow);
+		
+		_dtrEntry = DalamudApi.DtrBar.Get(ConstName);
+		_dtrEntry.Shown = Configuration.Instance.ShowSongInNative;
+		_dtrEntry.OnClick = _mainWindow.Toggle;
 
 		DalamudApi.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
 		{
@@ -376,7 +377,15 @@ public class OrchestrionPlugin : IDalamudPlugin
 	{
 		if (_dtrEntry == null) return;
 		if (!SongList.Instance.TryGetSong(songId, out var song)) return;
-		var songName = GetClientSongName(songId);
+		var songName = Configuration.Instance.UseClientLangInServerInfo
+			? song.Strings[Util.ClientLangCode()].Name
+			: song.Name;
+		var locations = Configuration.Instance.UseClientLangInServerInfo
+			? song.Strings[Util.ClientLangCode()].Locations
+			: song.Locations;
+		var info = Configuration.Instance.UseClientLangInServerInfo
+			? song.Strings[Util.ClientLangCode()].AdditionalInfo
+			: song.AdditionalInfo;
 		if (string.IsNullOrEmpty(songName)) return;
 
 		var suffix = "";
@@ -392,6 +401,17 @@ public class OrchestrionPlugin : IDalamudPlugin
 		text = playedByOrch ? $"{NativeNowPlayingPrefix} [{text}]" : $"{NativeNowPlayingPrefix} {text}";
 		
 		_dtrEntry.Text = text;
+
+		var locEmpty = string.IsNullOrEmpty(locations);
+		var infoEmpty = string.IsNullOrEmpty(info);
+		if (locEmpty && infoEmpty)
+			_dtrEntry.Tooltip = "";
+		if (!locEmpty && infoEmpty)
+			_dtrEntry.Tooltip = $"{locations}";
+		if (locEmpty && !infoEmpty)
+			_dtrEntry.Tooltip = $"{info}";
+		if (!locEmpty && !infoEmpty)
+			_dtrEntry.Tooltip = $"{locations}\n{info}";
 	}
 
 	private void UpdateChat(int songId, bool playedByOrch = false)
