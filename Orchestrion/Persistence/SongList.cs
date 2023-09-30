@@ -24,7 +24,7 @@ public class SongList
         
         try
         {
-            PluginLog.Log("[SongList] Checking for updated bgm sheets");
+            DalamudApi.PluginLog.Information("[SongList] Checking for updated bgm sheets");
             
             LoadMetadataSheet(GetRemoteSheet("metadata"));
             LoadLangSheet(GetRemoteSheet("en"), "en");
@@ -34,7 +34,7 @@ public class SongList
         }
         catch (Exception e)
         {
-            PluginLog.Error(e, "[SongList] Orchestrion failed to update bgm sheet; using previous version");
+            DalamudApi.PluginLog.Error(e, "[SongList] Orchestrion failed to update bgm sheet; using previous version");
             LoadMetadataSheet(GetLocalSheet("metadata"));
             LoadLangSheet(GetLocalSheet("en"), "en");
             LoadLangSheet(GetLocalSheet("ja"), "ja");
@@ -71,7 +71,7 @@ public class SongList
             var durationStr = elements[1].Substring(1, elements[1].Length - 2).Replace("\"\"", "\"");
             var parsed = double.TryParse(durationStr, out var durationDbl);
             var duration = parsed ? TimeSpan.FromSeconds(durationDbl) : TimeSpan.Zero;
-            if (!parsed) PluginLog.Debug($"failed parse {id}: {durationStr}");
+            if (!parsed) DalamudApi.PluginLog.Debug($"failed parse {id}: {durationStr}");
 
             bgms.TryGetValue((uint)id, out var bgm);
             var song = new Song

@@ -214,7 +214,7 @@ public class RenderableSongList
 
 			if (ImGui.MenuItem(Loc.Localize("NewPlaylistEllipsis", "New playlist...")))
 			{
-				PluginLog.Debug("Opening new playlist popup...");
+				DalamudApi.PluginLog.Debug("Opening new playlist popup...");
 				NewPlaylistModal.Instance.Show(newPlaylistSongs);
 			}
 
@@ -305,11 +305,11 @@ public class RenderableSongList
 		var sb = new StringBuilder();
 		foreach (var songId in indices.Select(songIndex => _listSource[songIndex].Id))
 		{
-			PluginLog.Debug($"[BuildCopyString] Content extractor song {songId}");
+			DalamudApi.PluginLog.Debug($"[BuildCopyString] Content extractor song {songId}");
 			var extracted = contentExtractor.Invoke(SongList.Instance.GetSong(songId));
 			if (!string.IsNullOrEmpty(extracted))
 				sb.Append($"{extracted}, ");
-			PluginLog.Debug($"[BuildCopyString] Content extractor song {songId} done {sb}");
+			DalamudApi.PluginLog.Debug($"[BuildCopyString] Content extractor song {songId} done {sb}");
 		}
 		var text = sb.ToString();
 		return text[..^2];

@@ -1,4 +1,4 @@
-﻿using Dalamud.Interface;
+﻿using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using Orchestrion.Persistence;
@@ -38,7 +38,7 @@ public class MiniPlayerWindow : Window
 
 	public override void PostDraw()
 	{
-		// PluginLog.Debug("PostDraw");
+		// DalamudApi.PluginLog.Debug("PostDraw");
 		ImGui.PopStyleColor(3);
 		ImGui.PopStyleVar(2);
 	}

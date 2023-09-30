@@ -2,7 +2,6 @@
 using Dalamud;
 using Dalamud.Interface;
 using ImGuiNET;
-using Microsoft.VisualBasic.CompilerServices;
 using Orchestrion.Persistence;
 using Orchestrion.Struct;
 
