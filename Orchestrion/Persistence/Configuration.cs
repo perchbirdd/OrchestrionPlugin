@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Configuration;
+using Dalamud.Game.Text;
 using Newtonsoft.Json;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 
 namespace Orchestrion.Persistence;
 
@@ -21,9 +22,17 @@ public class Configuration : IPluginConfiguration
     public bool ShowMiniPlayer { get; set; } = false;
     public bool MiniPlayerLock { get; set; } = false;
     public float MiniPlayerOpacity { get; set; } = 1.0f;
+
+    public bool ChatChannelMatchDalamud { get; set; } = true;
     public bool ShowAltLangTitles { get; set; } = false;
-    public bool UseClientLangInServerInfo { get; set; } = true;
-    public bool UseClientLangInChat { get; set; } = true;
+    public bool UserInterfaceLanguageMatchDalamud { get; set; } = true;
+    public string UserInterfaceLanguageCode { get; set; } = DalamudApi.PluginInterface.UiLanguage;
+    public string AltTitleLanguageCode { get; set; } = "ja";
+    public string ServerInfoLanguageCode { get; set; } = "en";
+    public string ChatLanguageCode { get; set; } = "en";
+    public XivChatType ChatType { get; set; } = DalamudApi.PluginInterface.GeneralChatType;
+    
+    public string LastSelectedPlaylist { get; set; } = "Favorites";
 
     public Dictionary<int, SongReplacementEntry> SongReplacements { get; private set; } = new();
     
@@ -32,10 +41,7 @@ public class Configuration : IPluginConfiguration
     
     public Dictionary<string, Playlist> Playlists { get; set; } = new();
 
-    private Configuration()
-    {
-        
-    }
+    private Configuration() { }
 
     [JsonIgnore]
     private static Configuration _instance;

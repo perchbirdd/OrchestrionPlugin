@@ -1,6 +1,10 @@
-﻿using CheapLoc;
+﻿using System.Collections.Generic;
+using System.Linq;
+using CheapLoc;
+using Dalamud.Game.Text;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using Orchestrion.BGMSystem;
@@ -20,16 +24,48 @@ public class SettingsWindow : Window
         Size = ImGuiHelpers.ScaledVector2(720, 520);
     }
 
-    private static void Checkbox(string text, Func<bool> get, Action<bool> set)
+    private static void Checkbox(string text, Func<bool> get, Action<bool> set, Action<bool> onChange = null)
     {
         var value = get();
+        var backup = value;
         if (ImGui.Checkbox($"##orch_{text}", ref value))
         {
             set(value);
             Configuration.Instance.Save();
         }
+        if (value != backup)
+            onChange?.Invoke(value);
         ImGui.SameLine();
         ImGui.TextWrapped(text);
+    }
+
+    private static void DropDown(string text,
+        Func<string> get,
+        Action<string> set, 
+        Func<string, bool> isSelected, 
+        List<string> items, 
+        Func<string, string> displayFunc = null,
+        Action<bool> onChange = null)
+    {
+        var value = get();
+        ImGui.SetNextItemWidth(100f * ImGuiHelpers.GlobalScale);
+        using var combo = ImRaii.Combo(text, value);
+        if (!combo.Success)
+        {
+            // ImGui.PopItemWidth();
+            return;
+        }
+        foreach (var item in items) {
+            var display = displayFunc != null ? displayFunc(item) : item;
+            if (ImGui.Selectable(display, isSelected(item)))
+            {
+                set(item);
+                Configuration.Instance.Save();
+            }
+        }
+        if (get() != value)
+            onChange?.Invoke(true);
+        // ImGui.PopItemWidth();
     }
     
     public override void Draw()
@@ -81,25 +117,92 @@ public class SettingsWindow : Window
             ImGui.PopStyleColor();
         }
         
+        Checkbox(Loc.Localize("UseDalamudChannelSetting", 
+                "Use the chat channel selected in Dalamud's settings for Orchestrion's chat messages (default)"),
+            () => Configuration.Instance.ChatChannelMatchDalamud, 
+            b => Configuration.Instance.ChatChannelMatchDalamud = b,
+            b =>
+            {
+                if (!b) return;
+                Configuration.Instance.ChatType = DalamudApi.PluginInterface.GeneralChatType;
+                Configuration.Instance.Save();
+            });
+
+        ImGui.BeginDisabled(Configuration.Instance.ChatChannelMatchDalamud);
+        ImGui.Indent(30f * ImGuiHelpers.GlobalScale);
+        DropDown(Loc.Localize("ChatChannelSetting", "Chat channel used for Orchestrion messages"), 
+            () => Configuration.Instance.ChatType.ToString(), 
+            s => Configuration.Instance.ChatType = Enum.Parse<XivChatType>(s), 
+            s => s == Configuration.Instance.ChatType.ToString(), 
+            Enum.GetValues<XivChatType>().Select(c => c.ToString()).ToList());
+        ImGui.Indent(-1 * 30f * ImGuiHelpers.GlobalScale);
+        ImGui.EndDisabled();
+        
         ImGui.PushFont(OrchestrionPlugin.LargeFont);
         ImGui.Text(Loc.Localize("LocSettings", "Localization Settings"));
         ImGui.PopFont();
+        
+        Checkbox(Loc.Localize("UseDalamudLanguageSetting", 
+                "Use the language selected in Dalamud's settings for the Orchestrion Plugin's UI"),
+            () => Configuration.Instance.UserInterfaceLanguageMatchDalamud, 
+            b => Configuration.Instance.UserInterfaceLanguageMatchDalamud = b,
+            b =>
+            {
+                if (!b) return;
+                Configuration.Instance.UserInterfaceLanguageCode = DalamudApi.PluginInterface.UiLanguage;
+                Configuration.Instance.Save();
+                OrchestrionPlugin.LanguageChanged(Configuration.Instance.UserInterfaceLanguageCode);
+            });
 
+        ImGui.BeginDisabled(Configuration.Instance.UserInterfaceLanguageMatchDalamud);
+        ImGui.Indent(30f * ImGuiHelpers.GlobalScale);
+        DropDown(Loc.Localize("UILanguageSetting",
+                "Language used for the Orchestrion Plugin's UI"),
+            () => Util.LangCodeToLanguage(Configuration.Instance.UserInterfaceLanguageCode),
+            s => Configuration.Instance.UserInterfaceLanguageCode = s,
+            s => s == Configuration.Instance.UserInterfaceLanguageCode,
+            Util.AvailableLanguages,
+            Util.LangCodeToLanguage,
+            _ =>
+            {
+                OrchestrionPlugin.LanguageChanged(Configuration.Instance.UserInterfaceLanguageCode);
+            });
+        ImGui.Indent(-1 * 30f * ImGuiHelpers.GlobalScale);
+        ImGui.EndDisabled();
+        
         Checkbox(Loc.Localize("ShowAltLangTitles", 
-            "Show alternate language song titles in tooltips"), 
+                "Show alternate language song titles in tooltips"), 
             () => Configuration.Instance.ShowAltLangTitles, 
             b => Configuration.Instance.ShowAltLangTitles = b);
-
-        Checkbox(Loc.Localize("UseClientLangInServerInfo", 
-            "Use client language, not Dalamud language, for song titles in the \"server info\" UI element in-game"), 
-            () => Configuration.Instance.UseClientLangInServerInfo, 
-            b => Configuration.Instance.UseClientLangInServerInfo = b);
-
-        Checkbox(Loc.Localize("UseClientLangInChat", 
-            "Use client language, not Dalamud language, for song titles in Orchestrion chat messages in-game"), 
-            () => Configuration.Instance.UseClientLangInChat, 
-            b => Configuration.Instance.UseClientLangInChat = b);
-
+        
+        ImGui.BeginDisabled(!Configuration.Instance.ShowAltLangTitles);
+        ImGui.Indent(30f * ImGuiHelpers.GlobalScale);
+        DropDown(Loc.Localize("AltLangLanguageSetting", 
+            "Alternate language for song titles in tooltips"), 
+            () => Util.LangCodeToLanguage(Configuration.Instance.AltTitleLanguageCode), 
+            s => Configuration.Instance.AltTitleLanguageCode = s, 
+            s => s == Configuration.Instance.AltTitleLanguageCode, 
+            Util.AvailableTitleLanguages,
+            Util.LangCodeToLanguage);
+        ImGui.Indent(-1 * 30f * ImGuiHelpers.GlobalScale);
+        ImGui.EndDisabled();
+        
+        DropDown(Loc.Localize("ServerInfoLanguageSetting", 
+                "Language used for song titles in the \"server info\" UI element in-game"), 
+            () => Util.LangCodeToLanguage(Configuration.Instance.ServerInfoLanguageCode), 
+            s => Configuration.Instance.ServerInfoLanguageCode = s, 
+            s => s == Configuration.Instance.ServerInfoLanguageCode, 
+            Util.AvailableTitleLanguages,
+            Util.LangCodeToLanguage);
+        
+        DropDown(Loc.Localize("ChatMessageLanguageSetting", 
+                "Language used for song titles in Orchestrion chat messages in-game"), 
+            () => Util.LangCodeToLanguage(Configuration.Instance.ChatLanguageCode), 
+            s => Configuration.Instance.ChatLanguageCode = s, 
+            s => s == Configuration.Instance.ChatLanguageCode, 
+            Util.AvailableTitleLanguages,
+            Util.LangCodeToLanguage);
+        
         ImGui.PushFont(OrchestrionPlugin.LargeFont);
         ImGui.Text(Loc.Localize("MiniPlayerSettings", "Mini Player Settings"));
         ImGui.PopFont();

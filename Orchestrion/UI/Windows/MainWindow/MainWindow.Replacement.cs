@@ -3,7 +3,7 @@ using System.Numerics;
 using CheapLoc;
 using ImGuiNET;
 using Orchestrion.Persistence;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 using Orchestrion.UI.Components;
 
 namespace Orchestrion.UI.Windows.MainWindow;
@@ -25,15 +25,18 @@ public partial class MainWindow
     {
         foreach (var replacement in Configuration.Instance.SongReplacements.Values)
         {
+            if (!SongList.Instance.TryGetSong(replacement.TargetSongId, out var targetSong)) continue;
+            if (!SongList.Instance.TryGetSong(replacement.ReplacementId, out var replacementSong)) continue;
+            if (!Util.SearchMatches(_searchText, targetSong) && !Util.SearchMatches(_searchText, replacementSong)) continue;
+            
             ImGui.Spacing();
-            SongList.Instance.TryGetSong(replacement.TargetSongId, out var target);
 
-            var targetText = $"{replacement.TargetSongId} - {target.Name}";
-            var replText = replacement.ReplacementId == SongReplacementEntry.NoChangeId ? MainWindow._noChange : $"{replacement.ReplacementId} - {SongList.Instance.GetSong(replacement.ReplacementId).Name}";
+            var targetText = $"{replacement.TargetSongId} - {targetSong.Name}";
+            var replText = replacement.ReplacementId == SongReplacementEntry.NoChangeId ? _noChange : $"{replacement.ReplacementId} - {replacementSong.Name}";
             
             ImGui.TextWrapped($"{targetText}");
             if (ImGui.IsItemHovered())
-                BgmTooltip.DrawBgmTooltip(target);
+                BgmTooltip.DrawBgmTooltip(targetSong);
 
             ImGui.Text(Loc.Localize("ReplaceWith", "will be replaced with"));
             ImGui.TextWrapped($"{replText}");

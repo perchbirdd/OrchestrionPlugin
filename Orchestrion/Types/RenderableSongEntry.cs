@@ -1,4 +1,4 @@
-﻿namespace Orchestrion.Struct;
+﻿namespace Orchestrion.Types;
 
 public struct RenderableSongEntry
 {

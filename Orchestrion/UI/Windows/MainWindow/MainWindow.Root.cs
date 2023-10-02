@@ -10,7 +10,7 @@ using Dalamud.Logging;
 using ImGuiNET;
 using Orchestrion.Audio;
 using Orchestrion.Persistence;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 using Orchestrion.UI.Components;
 
 namespace Orchestrion.UI.Windows.MainWindow;
@@ -42,6 +42,7 @@ public partial class MainWindow : Window, IDisposable
 	public MainWindow(OrchestrionPlugin orch) : base(BaseName, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
 	{
 		_orch = orch;
+		_selectedPlaylist = Configuration.Instance.Playlists.Values.FirstOrDefault(p => p.Name == Configuration.Instance.LastSelectedPlaylist);
 
 		_mainSongList = new RenderableSongList(
 			SongList.Instance.GetSongs().Select(s => new RenderableSongEntry(s.Key)).ToList(),

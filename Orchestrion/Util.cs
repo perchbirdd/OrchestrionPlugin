@@ -1,14 +1,24 @@
-﻿using System.Numerics;
+﻿using System.Collections.Generic;
+using System.Globalization;
+using System.Numerics;
 using Dalamud;
 using Dalamud.Interface;
 using ImGuiNET;
 using Orchestrion.Persistence;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 
 namespace Orchestrion;
 
 public static class Util
 {
+	public static List<string> AvailableLanguages => new() { "en", "ja", "de", "fr", "it", "zh" };
+	public static List<string> AvailableTitleLanguages => new() { "en", "ja", "zh" };
+	
+	public static string LangCodeToLanguage(string code)
+	{
+		return CultureInfo.GetCultureInfo(code).NativeName;
+	}
+	
 	public static Vector2 GetIconSize(FontAwesomeIcon icon)
 	{
 		ImGui.PushFont(UiBuilder.IconFont);
@@ -29,16 +39,13 @@ public static class Util
 		var lang = Lang();
 
 		var matchesSearch = false;
-		
-		// En title check
-		matchesSearch |= song.Strings["en"].Name.ToLower().Contains(searchText.ToLower());
-		matchesSearch |= song.Strings["en"].AlternateName.ToLower().Contains(searchText.ToLower());
-		matchesSearch |= song.Strings["en"].SpecialModeName.ToLower().Contains(searchText.ToLower());
-		
-		// Ja title check
-		matchesSearch |= song.Strings["ja"].Name.ToLower().Contains(searchText.ToLower());
-		matchesSearch |= song.Strings["ja"].AlternateName.ToLower().Contains(searchText.ToLower());
-		matchesSearch |= song.Strings["ja"].SpecialModeName.ToLower().Contains(searchText.ToLower());
+
+		foreach (var titleLang in AvailableTitleLanguages)
+		{
+			matchesSearch |= song.Strings[titleLang].Name.ToLower().Contains(searchText.ToLower());
+			matchesSearch |= song.Strings[titleLang].AlternateName.ToLower().Contains(searchText.ToLower());
+			matchesSearch |= song.Strings[titleLang].SpecialModeName.ToLower().Contains(searchText.ToLower());	
+		}
 		
 		// Id check
 		matchesSearch |= song.Id.ToString().Contains(searchText);
@@ -55,27 +62,5 @@ public static class Util
 	public static string Lang()
 	{
 		return DalamudApi.PluginInterface.UiLanguage;
-	}
-
-	public static string AltLang()
-	{
-		return Lang() switch
-		{
-			"en" => "ja",
-			"ja" => "en",
-			_ => "en",
-		};
-	}
-
-	public static string ClientLangCode()
-	{
-		return DalamudApi.ClientState.ClientLanguage switch
-		{
-			ClientLanguage.Japanese => "ja",
-			ClientLanguage.English => "en",
-			ClientLanguage.German => "de",
-			ClientLanguage.French => "fr",
-			_ => throw new ArgumentOutOfRangeException()
-		};
 	}
 }

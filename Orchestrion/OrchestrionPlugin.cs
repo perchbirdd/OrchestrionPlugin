@@ -10,8 +10,6 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface.GameFonts;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
-using Dalamud.IoC;
-using Dalamud.Logging;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -81,7 +79,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 		DalamudApi.PluginInterface.LanguageChanged += LanguageChanged;
 	}
 
-	private void LanguageChanged(string code)
+	public static void LanguageChanged(string code)
 	{
 		var stream = 
 			Assembly.GetExecutingAssembly().GetManifestResourceStream($"Orchestrion.Loc.{code}.json") 
@@ -112,6 +110,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 	{
 		PerformEcho();
 		CheckDtr();
+		UpdateSettings();
 	}
 
 	private void PerformEcho()
@@ -130,6 +129,23 @@ public class OrchestrionPlugin : IDalamudPlugin
 	private void CheckDtr()
 	{
 		_dtrEntry.Shown = Configuration.Instance.ShowSongInNative;
+	}
+	
+	private void UpdateSettings()
+	{
+		var dalamudChatType = DalamudApi.PluginInterface.GeneralChatType;
+		if (Configuration.Instance.ChatChannelMatchDalamud && Configuration.Instance.ChatType != dalamudChatType)
+		{
+			Configuration.Instance.ChatType = dalamudChatType;
+			Configuration.Instance.Save();
+		}
+		
+		var dalamudLang = DalamudApi.PluginInterface.UiLanguage;
+		if (Configuration.Instance.UserInterfaceLanguageMatchDalamud && Configuration.Instance.UserInterfaceLanguageCode != dalamudLang)
+		{
+			Configuration.Instance.UserInterfaceLanguageCode = dalamudLang;
+			Configuration.Instance.Save();
+		}
 	}
 
 	private void ClientStateOnLogout()
@@ -377,15 +393,9 @@ public class OrchestrionPlugin : IDalamudPlugin
 	{
 		if (_dtrEntry == null) return;
 		if (!SongList.Instance.TryGetSong(songId, out var song)) return;
-		var songName = Configuration.Instance.UseClientLangInServerInfo
-			? song.Strings[Util.ClientLangCode()].Name
-			: song.Name;
-		var locations = Configuration.Instance.UseClientLangInServerInfo
-			? song.Strings[Util.ClientLangCode()].Locations
-			: song.Locations;
-		var info = Configuration.Instance.UseClientLangInServerInfo
-			? song.Strings[Util.ClientLangCode()].AdditionalInfo
-			: song.AdditionalInfo;
+		var songName = song.Strings[Configuration.Instance.ServerInfoLanguageCode].Name;
+		var locations = song.Strings[Configuration.Instance.ServerInfoLanguageCode].Locations;
+		var info = song.Strings[Configuration.Instance.ServerInfoLanguageCode].AdditionalInfo;
 		if (string.IsNullOrEmpty(songName)) return;
 
 		var suffix = "";
@@ -417,24 +427,12 @@ public class OrchestrionPlugin : IDalamudPlugin
 	private void UpdateChat(int songId, bool playedByOrch = false)
 	{
 		if (!Configuration.Instance.ShowSongInChat) return;
-
-		var songName = GetClientSongName(songId);
+		if (!SongList.Instance.TryGetSong(songId, out var song)) return;
+		var songName = song.Strings[Configuration.Instance.ChatLanguageCode].Name;
 
 		// the actual echoing is done during framework update
 		if (!string.IsNullOrEmpty(songName))
 			_songEchoMsg = BuildChatMessageFormatted(Loc.Localize("NowPlayingEcho", "Now playing <i>{0}</i>."), songName, playedByOrch);
-	}
-
-	private string GetClientSongName(int songId)
-	{
-		if (!SongList.Instance.TryGetSong(songId, out var song))
-			return null;
-		
-		var songName = Configuration.Instance.UseClientLangInServerInfo
-			? song.Strings[Util.ClientLangCode()].Name
-			: song.Name;
-
-		return songName;
 	}
 
 	private unsafe bool IsLoadingScreen()

@@ -4,7 +4,7 @@ using Dalamud.Plugin.Services;
 using Orchestrion.BGMSystem;
 using Orchestrion.Ipc;
 using Orchestrion.Persistence;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 
 namespace Orchestrion.Audio;
 

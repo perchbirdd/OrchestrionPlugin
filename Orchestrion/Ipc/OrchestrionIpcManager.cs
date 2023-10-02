@@ -4,7 +4,7 @@ using Dalamud.Logging;
 using Dalamud.Plugin.Ipc;
 using Orchestrion.Audio;
 using Orchestrion.Persistence;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 
 namespace Orchestrion.Ipc;
 

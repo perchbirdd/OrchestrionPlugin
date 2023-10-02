@@ -3,7 +3,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Logging;
 using ImGuiNET;
 using Orchestrion.Persistence;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 using Orchestrion.UI.Components;
 
 namespace Orchestrion.UI.Windows.MainWindow;

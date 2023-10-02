@@ -10,7 +10,7 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using Orchestrion.Audio;
 using Orchestrion.Persistence;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 using Orchestrion.UI.Components;
 
 namespace Orchestrion.UI.Windows.MainWindow;
@@ -121,6 +121,8 @@ public partial class MainWindow
 					    ImGuiHelpers.ScaledVector2(0f, drawHeight)
 				    ))
 				{
+					Configuration.Instance.LastSelectedPlaylist = pName;
+					Configuration.Instance.Save();
 					RefreshPlaylist(playlist);
 					
 					if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && playlist.Songs.Count > 0)

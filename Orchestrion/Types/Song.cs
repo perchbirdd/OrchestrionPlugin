@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Orchestrion.Struct;
+namespace Orchestrion.Types;
 
 public struct SongStrings
 {

@@ -4,7 +4,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 using Orchestrion.Persistence;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 
 namespace Orchestrion.UI.Components;
 
@@ -30,7 +30,7 @@ public static class BgmTooltip
 		
 		if (Configuration.Instance.ShowAltLangTitles)
 		{
-			var code = Util.AltLang();
+			var code = Configuration.Instance.AltTitleLanguageCode;
 			var altLangTitle = bgm.Strings[code].Name;
 			if (bgm.Name != altLangTitle && !string.IsNullOrEmpty(altLangTitle))
 			{
@@ -50,7 +50,7 @@ public static class BgmTooltip
 
 			if (Configuration.Instance.ShowAltLangTitles)
 			{
-				var code = Util.AltLang();
+				var code = Configuration.Instance.AltTitleLanguageCode;
 				var altLangAltTitle = bgm.Strings[code].AlternateName;
 				if (bgm.AlternateName != altLangAltTitle && !string.IsNullOrEmpty(altLangAltTitle))
 				{
@@ -71,7 +71,7 @@ public static class BgmTooltip
 			
 			if (Configuration.Instance.ShowAltLangTitles)
 			{
-				var code = Util.AltLang();
+				var code = Configuration.Instance.AltTitleLanguageCode;
 				var altLangSpecialModeName = bgm.Strings[code].SpecialModeName;
 				if (bgm.SpecialModeName != altLangSpecialModeName)
 				{

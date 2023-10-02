@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Orchestrion.Struct;
+namespace Orchestrion.Types;
 
 public class IndexableSongList
 {

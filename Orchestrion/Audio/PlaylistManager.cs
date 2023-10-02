@@ -2,7 +2,7 @@
 using Dalamud.Logging;
 using Dalamud.Plugin.Services;
 using Orchestrion.Persistence;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 
 namespace Orchestrion.Audio;
 

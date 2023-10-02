@@ -2,9 +2,8 @@
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using Dalamud.Logging;
 using Lumina.Excel.GeneratedSheets;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 
 namespace Orchestrion.Persistence;
 
@@ -31,6 +30,7 @@ public class SongList
             LoadLangSheet(GetRemoteSheet("ja"), "ja");
             LoadLangSheet(GetRemoteSheet("de"), "de");
             LoadLangSheet(GetRemoteSheet("fr"), "fr");
+            LoadLangSheet(GetRemoteSheet("zh"), "zh");
         }
         catch (Exception e)
         {
@@ -40,9 +40,10 @@ public class SongList
             LoadLangSheet(GetLocalSheet("ja"), "ja");
             LoadLangSheet(GetLocalSheet("de"), "de");
             LoadLangSheet(GetLocalSheet("fr"), "fr");
+            LoadLangSheet(GetLocalSheet("zh"), "zh");
         }
     }
-
+    
     private string GetRemoteSheet(string code)
     {
         return _client.GetStringAsync(string.Format(SheetPath, code)).Result;
@@ -156,13 +157,14 @@ public class SongList
         songId = 0;
         foreach (var song in _songs.Values)
         {
-            if (string.Equals(song.Strings["en"].Name, name, StringComparison.InvariantCultureIgnoreCase)
-                || string.Equals(song.Strings["en"].AlternateName, name, StringComparison.InvariantCultureIgnoreCase)
-                || string.Equals(song.Strings["ja"].Name, name, StringComparison.InvariantCultureIgnoreCase)
-                || string.Equals(song.Strings["ja"].AlternateName, name, StringComparison.InvariantCultureIgnoreCase))
+            foreach (var lang in Util.AvailableTitleLanguages)
             {
-                songId = song.Id;
-                return true;
+                if (string.Equals(song.Strings[lang].Name, name, StringComparison.InvariantCultureIgnoreCase)
+                    || string.Equals(song.Strings[lang].AlternateName, name, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    songId = song.Id;
+                    return true;    
+                }
             }
         }
 

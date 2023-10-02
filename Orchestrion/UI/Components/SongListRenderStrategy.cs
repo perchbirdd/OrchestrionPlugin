@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Orchestrion.Audio;
-using Orchestrion.Struct;
+using Orchestrion.Types;
 
 namespace Orchestrion.UI.Components;
 
