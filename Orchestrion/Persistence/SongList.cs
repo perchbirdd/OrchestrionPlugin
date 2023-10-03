@@ -42,6 +42,17 @@ public class SongList
             LoadLangSheet(GetLocalSheet("fr"), "fr");
             LoadLangSheet(GetLocalSheet("zh"), "zh");
         }
+
+        // DebugLogSongs();
+    }
+
+    private void DebugLogSongs()
+    {
+        DalamudApi.PluginLog.Debug($"Songs:");
+        foreach (var song in _songs)
+        {
+            DalamudApi.PluginLog.Debug($"{song.Key}: {song.Value.Id} {song.Value.Strings} {song.Value.FilePath}");
+        }
     }
     
     private string GetRemoteSheet(string code)
@@ -107,7 +118,7 @@ public class SongList
             if (!_songs.TryGetValue(id, out var song))
                 continue;
 
-            if (string.IsNullOrEmpty(name) || name == "Null BGM" || name == "test")
+            if ((code == "en" && string.IsNullOrEmpty(name)) || name == "Null BGM" || name == "test")
                 _songs.Remove(id);
             
             song.Strings[code] = new SongStrings

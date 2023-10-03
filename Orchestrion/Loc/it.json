@@ -27,6 +27,10 @@
     "message": "La modalità specificata non è valida.",
     "description": "OrchestrionPlugin.OnCommand"
   },
+  "InvalidDDModeCommand": {
+    "message": "Invalid DDMode command <i>{0}</i>.",
+    "description": "OrchestrionPlugin.OnCommand"
+  },
   "PlaylistNotFound": {
     "message": "Playlist <i>{0}</i> non trovata.",
     "description": "OrchestrionPlugin.OnCommand"
@@ -64,7 +68,19 @@
     "description": "OrchestrionPlugin.PrintHelp"
   },
   "HelpStopSong": {
-    "message": "Ferma la canzone in riproduzione/sostituzione o la playlist",
+    "message": "Stop the current playing song, replacement song, playlist, or DD mode.",
+    "description": "OrchestrionPlugin.PrintHelp"
+  },
+  "HelpDDModeStart": {
+    "message": "Enable Deep Dungeon mode: On every in-game BGM change, replace BGM with a random song",
+    "description": "OrchestrionPlugin.PrintHelp"
+  },
+  "HelpDDModeStartPlaylist": {
+    "message": "Enable Deep Dungeon mode: On every in-game BGM change, replace BGM with a random song from the specified playlist",
+    "description": "OrchestrionPlugin.PrintHelp"
+  },
+  "HelpDDModeStop": {
+    "message": "Disable Deep Dungeon mode.",
     "description": "OrchestrionPlugin.PrintHelp"
   },
   "PlaylistCommandsColon": {
@@ -127,21 +143,101 @@
     "message": "Impostazioni Generali",
     "description": "SettingsWindow.Draw"
   },
+  "ShowSongTitleBar": {
+    "message": "Show current song in player title bar",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowNowPlayingChat": {
+    "message": "Show \"Now playing\" messages in game chat when the current song changes",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowSongServerInfo": {
+    "message": "Show current song in the \"server info\" UI element in-game",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowSongIdServerInfo": {
+    "message": "Show song ID in the \"server info\" UI element in-game",
+    "description": "SettingsWindow.Draw"
+  },
+  "HandleSpecialModes": {
+    "message": "Handle special \"in-combat\" and mount movement BGM modes",
+    "description": "SettingsWindow.Draw"
+  },
   "AudioStreamingDisabledWarning": {
     "message": "Lo streaming audio è disabilitato. Questo potrebbe essere dovuto a un filtro audio o a un plugin di terze parti. L'impostazione di cui sopra potrebbe non funzionare come previsto e si potrebbero incontrare altri problemi audio come popping o tracce che non cambiano canale. Questo non è correlato al plugin Orchestrion.",
+    "description": "SettingsWindow.Draw"
+  },
+  "UseDalamudChannelSetting": {
+    "message": "Use the chat channel selected in Dalamud's settings for Orchestrion's chat messages (default)",
+    "description": "SettingsWindow.Draw"
+  },
+  "ChatChannelSetting": {
+    "message": "Chat channel used for Orchestrion messages",
     "description": "SettingsWindow.Draw"
   },
   "LocSettings": {
     "message": "Impostazioni di Localizzazione",
     "description": "SettingsWindow.Draw"
   },
+  "UseDalamudLanguageSetting": {
+    "message": "Use the language selected in Dalamud's settings for the Orchestrion Plugin's UI",
+    "description": "SettingsWindow.Draw"
+  },
+  "UILanguageSetting": {
+    "message": "Language used for the Orchestrion Plugin's UI",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowAltLangTitles": {
+    "message": "Show alternate language song titles in tooltips",
+    "description": "SettingsWindow.Draw"
+  },
+  "AltLangLanguageSetting": {
+    "message": "Alternate language for song titles in tooltips",
+    "description": "SettingsWindow.Draw"
+  },
+  "ServerInfoLanguageSetting": {
+    "message": "Language used for song titles in the \"server info\" UI element in-game",
+    "description": "SettingsWindow.Draw"
+  },
+  "ChatMessageLanguageSetting": {
+    "message": "Language used for song titles in Orchestrion chat messages in-game",
+    "description": "SettingsWindow.Draw"
+  },
   "MiniPlayerSettings": {
     "message": "Impostazioni riproduttore ridotto",
+    "description": "SettingsWindow.Draw"
+  },
+  "ShowMiniPlayer": {
+    "message": "Show mini player",
+    "description": "SettingsWindow.Draw"
+  },
+  "LockMiniPlayer": {
+    "message": "Lock mini player",
     "description": "SettingsWindow.Draw"
   },
   "MiniPlayerOpacity": {
     "message": "Opacità riproduttore ridotto",
     "description": "SettingsWindow.Draw"
+  },
+  "DDModeDescription": {
+    "message": "Deep Dungeon Mode is a feature that will instead play a random track from either \"All Songs\" or a specified playlist whenever the track changes.",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
+  },
+  "DDPlaylistAll": {
+    "message": "All Songs",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
+  },
+  "DDPlaylist": {
+    "message": "Playlist",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
+  },
+  "DDModeStart": {
+    "message": "Start Deep Dungeon Mode",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
+  },
+  "DDModeEnd": {
+    "message": "Stop Deep Dungeon Mode",
+    "description": "MainWindow.DrawDeepDungeonModeSelector"
   },
   "NoPlaylistSelected": {
     "message": "Nessuna playlist selezionata",
@@ -213,6 +309,10 @@
   },
   "Replacements": {
     "message": "Sostituzioni",
+    "description": "MainWindow.Draw"
+  },
+  "DDMode": {
+    "message": "DD Mode",
     "description": "MainWindow.Draw"
   },
   "Stop": {
@@ -315,8 +415,16 @@
     "message": "ID Canzone",
     "description": "RenderableSongList.DrawCopyContentSubmenu"
   },
-  "SongName": {
-    "message": "Nome canzone",
+  "SongTitle": {
+    "message": "Song Title",
+    "description": "RenderableSongList.DrawCopyContentSubmenu"
+  },
+  "SongAltTitle": {
+    "message": "Song Alternate Title",
+    "description": "RenderableSongList.DrawCopyContentSubmenu"
+  },
+  "SongSpcModeTitle": {
+    "message": "Song Special Mode Title",
     "description": "RenderableSongList.DrawCopyContentSubmenu"
   },
   "SongLocation": {
@@ -346,5 +454,9 @@
   "RemoveSelected": {
     "message": "Rimuovi {0} canzone/i",
     "description": "RenderableSongList.DrawRemoveSubmenu"
+  },
+  "NoPossibleSongs": {
+    "message": "No possible songs found.",
+    "description": "BGMManager.PlayRandomSong"
   }
 }
