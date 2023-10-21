@@ -40,21 +40,28 @@ public static class Util
 
 		var matchesSearch = false;
 
-		foreach (var titleLang in AvailableTitleLanguages)
+		try
 		{
-			matchesSearch |= song.Strings[titleLang].Name.ToLower().Contains(searchText.ToLower());
-			matchesSearch |= song.Strings[titleLang].AlternateName.ToLower().Contains(searchText.ToLower());
-			matchesSearch |= song.Strings[titleLang].SpecialModeName.ToLower().Contains(searchText.ToLower());	
+			foreach (var titleLang in AvailableTitleLanguages)
+			{
+				matchesSearch |= song.Strings[titleLang].Name.ToLower().Contains(searchText.ToLower());
+				matchesSearch |= song.Strings[titleLang].AlternateName.ToLower().Contains(searchText.ToLower());
+				matchesSearch |= song.Strings[titleLang].SpecialModeName.ToLower().Contains(searchText.ToLower());
+			}
+
+			// Id check
+			matchesSearch |= song.Id.ToString().Contains(searchText);
+
+			// Localized addtl info check
+			var strings = song.Strings["en"];
+			song.Strings.TryGetValue(lang, out strings);
+			matchesSearch |= strings.Locations.ToLower().Contains(searchText.ToLower());
+			matchesSearch |= strings.AdditionalInfo.ToLower().Contains(searchText.ToLower());
 		}
-		
-		// Id check
-		matchesSearch |= song.Id.ToString().Contains(searchText);
-		
-		// Localized addtl info check
-		var strings = song.Strings["en"];
-		song.Strings.TryGetValue(lang, out strings);
-		matchesSearch |= strings.Locations.ToLower().Contains(searchText.ToLower());
-		matchesSearch |= strings.AdditionalInfo.ToLower().Contains(searchText.ToLower());
+		catch (Exception ignore)
+		{
+			
+		}
 		
 		return matchesSearch;
 	}

@@ -26,7 +26,7 @@ public partial class MainWindow
         foreach (var replacement in Configuration.Instance.SongReplacements.Values)
         {
             if (!SongList.Instance.TryGetSong(replacement.TargetSongId, out var targetSong)) continue;
-            if (!SongList.Instance.TryGetSong(replacement.ReplacementId, out var replacementSong)) continue;
+            if (!SongList.Instance.TryGetSong(replacement.ReplacementId, out var replacementSong) && replacement.ReplacementId != SongReplacementEntry.NoChangeId) continue;
             if (!Util.SearchMatches(_searchText, targetSong) && !Util.SearchMatches(_searchText, replacementSong)) continue;
             
             ImGui.Spacing();
