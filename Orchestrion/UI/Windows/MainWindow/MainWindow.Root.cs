@@ -84,7 +84,7 @@ public partial class MainWindow : Window, IDisposable
 		SizeConstraints = new WindowSizeConstraints
 		{
 			MinimumSize = new Vector2(370, 400),
-			MaximumSize = ImGuiHelpers.MainViewport.Size,
+			MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
 		};
 	}
 
