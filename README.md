@@ -1,6 +1,6 @@
-[![Download count](https://img.shields.io/endpoint?url=https%3A%2F%2Fvz32sgcoal.execute-api.us-east-1.amazonaws.com%2Forchestrion)](https://github.com/lmcintyre/OrchestrionPlugin)
-[![Build status](https://github.com/lmcintyre/OrchestrionPlugin/actions/workflows/build.yml/badge.svg)](https://github.com/lmcintyre/OrchestrionPlugin)
-[![Latest release](https://img.shields.io/github/v/release/lmcintyre/OrchestrionPlugin)](https://github.com/lmcintyre/OrchestrionPlugin)
+[![Download count](https://img.shields.io/endpoint?url=https%3A%2F%2Fvz32sgcoal.execute-api.us-east-1.amazonaws.com%2Forchestrion)](https://github.com/perchbirdd/OrchestrionPlugin)
+[![Build status](https://github.com/perchbirdd/OrchestrionPlugin/actions/workflows/build.yml/badge.svg)](https://github.com/perchbirdd/OrchestrionPlugin)
+[![Latest release](https://img.shields.io/github/v/release/perchbirdd/OrchestrionPlugin)](https://github.com/perchbirdd/OrchestrionPlugin)
 
 # OrchestrionPlugin (perchbird fork)
 A plugin for [XIVLauncher](https://github.com/goaaats/FFXIVQuickLauncher) that adds a simple music player interface to control the in-game BGM,

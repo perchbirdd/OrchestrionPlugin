@@ -6,7 +6,7 @@ description: |-
   if you want to know later! Add favorite songs to separate them from the rest.
   Note: This plugin does not currently allow you to play actual orchestrion songs.
 punchline: Adds a simple front-end for browsing and changing the in-game BGM. 
-repo_url: https://github.com/lmcintyre/OrchestrionPlugin
+repo_url: https://github.com/perchbirdd/OrchestrionPlugin
 tags:
   - bgm
   - music
