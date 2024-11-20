@@ -169,7 +169,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 		}
 	}
 
-	private void ClientStateOnLogout()
+	private void ClientStateOnLogout(int type, int code)
 	{
 		BGMManager.Stop();
 	}

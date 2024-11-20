@@ -2,14 +2,14 @@
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using Orchestrion.Types;
 
 namespace Orchestrion.Persistence;
 
 public class SongList
 {
-    private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1qAkxPiXWF-EUHbIXdNcO-Ilo2AwLnqvdpW9tjKPitPY/gviz/tq?tqx=out:csv&sheet={0}";
+    private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1s-xJjxqp6pwS7oewNy1aOQnr3gaJbewvIBbyYchZ6No/gviz/tq?tqx=out:csv&sheet={0}";
     private const string SheetFileName = "xiv_bgm_{0}.csv";
     private readonly Dictionary<int, Song> _songs;
     private readonly HttpClient _client = new();
@@ -85,14 +85,18 @@ public class SongList
             var duration = parsed ? TimeSpan.FromSeconds(durationDbl) : TimeSpan.Zero;
             if (!parsed) DalamudApi.PluginLog.Debug($"failed parse {id}: {durationStr}");
 
-            bgms.TryGetValue((uint)id, out var bgm);
+            if (!bgms.TryGetValue((uint)id, out var bgm)) continue;
+            // DalamudApi.PluginLog.Debug($"{id} {bgm.File == null}");
+            DalamudApi.PluginLog.Debug($"{id}");
+            DalamudApi.PluginLog.Debug($"{bgm.File}");
+            DalamudApi.PluginLog.Debug($"{bgm.File.ExtractText()}");
             var song = new Song
             {
                 Id = id,
-                FilePath = bgm?.File ?? "",
-                SpecialMode = bgm?.SpecialMode ?? 0,
-                DisableRestart = bgm?.DisableRestart ?? false,
-                FileExists = bgm != null && DalamudApi.DataManager.FileExists(bgm.File),
+                FilePath = bgm.File.ExtractText(),
+                SpecialMode = bgm.SpecialMode,
+                DisableRestart = bgm.DisableRestart,
+                FileExists = DalamudApi.DataManager.FileExists(bgm.File.ExtractText()),
                 Duration = duration,
             };
 

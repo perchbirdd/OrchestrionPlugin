@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    <PluginVersion>2.2.0.8</PluginVersion>
+    <PluginVersion>2.2.0.9</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -65,7 +65,7 @@
       <Private>False</Private>
     </Reference>
     
-    <PackageReference Include="DalamudPackager" Version="2.1.13" />
+    <PackageReference Include="DalamudPackager" Version="11.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ContentWithTargetPath Include="Data\xiv_bgm_en.csv">
