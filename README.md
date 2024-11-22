@@ -16,7 +16,7 @@ _Note that this gif is very old, and is not representative of the current versio
 Those numbers are the internal ids used by the game.  Many numbers do not correspond to playable tracks, and so I don't display them in the player.
 
 ### It's so hard to find certain tracks!  Can you add/change/remove (some specific info)?
-All the song information in the player is auto-updated from [this spreadsheet](https://docs.google.com/spreadsheets/d/1qAkxPiXWF-EUHbIXdNcO-Ilo2AwLnqvdpW9tjKPitPY).
+All the song information in the player is auto-updated from [this spreadsheet](https://docs.google.com/spreadsheets/d/1s-xJjxqp6pwS7oewNy1aOQnr3gaJbewvIBbyYchZ6No).
 Feel free to comment in the document if you find any inconsistencies.
 
 ### Some new in-game music is out and I can't find it!
