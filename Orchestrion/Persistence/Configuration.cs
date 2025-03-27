@@ -31,6 +31,7 @@ public class Configuration : IPluginConfiguration
     public string ServerInfoLanguageCode { get; set; } = "en";
     public string ChatLanguageCode { get; set; } = "en";
     public XivChatType ChatType { get; set; } = DalamudApi.PluginInterface.GeneralChatType;
+    public bool DisableTooltips { get; set; } = false;
     
     public string LastSelectedPlaylist { get; set; } = "Favorites";
 

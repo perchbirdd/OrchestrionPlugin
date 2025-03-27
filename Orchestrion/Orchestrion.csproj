@@ -1,12 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Dalamud.NET.Sdk/12.0.2">
   <PropertyGroup>
-    <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    <PluginVersion>2.2.0.9</PluginVersion>
+    <PluginVersion>2.2.0.10</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <LangVersion>preview</LangVersion>
     <AssemblyName>orchestrion</AssemblyName>
     <AssemblyTitle>orchestrion</AssemblyTitle>
     <Product>orchestrion</Product>
@@ -32,41 +29,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Dalamud">
-      <HintPath>$(DalamudLibPath)Dalamud.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="FFXIVClientStructs">
-      <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="ImGui.NET">
-      <HintPath>$(DalamudLibPath)ImGui.NET.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="ImGuiScene">
-      <HintPath>$(DalamudLibPath)ImGuiScene.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Lumina">
-      <HintPath>$(DalamudLibPath)Lumina.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Lumina.Excel">
-      <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="CheapLoc">
       <HintPath>$(DalamudLibPath)CheapLoc.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    
-    <PackageReference Include="DalamudPackager" Version="11.0.0" />
   </ItemGroup>
+  
   <ItemGroup>
     <ContentWithTargetPath Include="Data\xiv_bgm_en.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -93,9 +61,11 @@
       <TargetPath>xiv_bgm_metadata.csv</TargetPath>
     </ContentWithTargetPath>
   </ItemGroup>
+  
   <ItemGroup>
     <Folder Include="UI\" />
   </ItemGroup>
+  
   <ItemGroup>
     <None Remove="Loc\de.json" />
     <EmbeddedResource Include="Loc\de.json" />

@@ -141,7 +141,7 @@ public class RenderableSongList
 				_renderStrategy.PlaySong(entry, index);
 		}
 
-		if (ImGui.IsItemHovered())
+		if (ImGui.IsItemHovered() && !Configuration.Instance.DisableTooltips)
 			BgmTooltip.DrawBgmTooltip(song);
 
 		if (ImGui.BeginPopupContextItem())

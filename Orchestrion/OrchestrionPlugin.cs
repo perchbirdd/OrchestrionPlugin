@@ -436,16 +436,23 @@ public class OrchestrionPlugin : IDalamudPlugin
 		
 		_dtrEntry.Text = text;
 
-		var locEmpty = string.IsNullOrEmpty(locations);
-		var infoEmpty = string.IsNullOrEmpty(info);
-		if (locEmpty && infoEmpty)
+		if (Configuration.Instance.DisableTooltips)
+		{
 			_dtrEntry.Tooltip = "";
-		if (!locEmpty && infoEmpty)
-			_dtrEntry.Tooltip = $"{locations}";
-		if (locEmpty && !infoEmpty)
-			_dtrEntry.Tooltip = $"{info}";
-		if (!locEmpty && !infoEmpty)
-			_dtrEntry.Tooltip = $"{locations}\n{info}";
+		}
+		else
+		{
+			var locEmpty = string.IsNullOrEmpty(locations);
+			var infoEmpty = string.IsNullOrEmpty(info);
+			if (locEmpty && infoEmpty)
+				_dtrEntry.Tooltip = "";
+			if (!locEmpty && infoEmpty)
+				_dtrEntry.Tooltip = $"{locations}";
+			if (locEmpty && !infoEmpty)
+				_dtrEntry.Tooltip = $"{info}";
+			if (!locEmpty && !infoEmpty)
+				_dtrEntry.Tooltip = $"{locations}\n{info}";	
+		}
 	}
 
 	private void UpdateChat(int songId, bool playedByOrch = false)

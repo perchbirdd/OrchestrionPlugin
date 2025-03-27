@@ -108,6 +108,11 @@ public class SettingsWindow : Window
             () => Configuration.Instance.HandleSpecialModes, 
             b => Configuration.Instance.HandleSpecialModes = b);
         
+        Checkbox(Loc.Localize("DisableTooltips", 
+                "Disable tooltips throughout the plugin (Song List, Server Info)"), 
+            () => Configuration.Instance.DisableTooltips, 
+            b => Configuration.Instance.DisableTooltips = b);
+        
         if (!BGMAddressResolver.StreamingEnabled)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
