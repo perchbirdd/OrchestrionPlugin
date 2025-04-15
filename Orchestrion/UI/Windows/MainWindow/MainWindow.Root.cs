@@ -186,10 +186,10 @@ public partial class MainWindow : Window, IDisposable
 
 		ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - buttonHeight - ImGui.GetStyle().WindowPadding.Y);
 
-		if (BGMManager.PlayingSongId == 0) ImGui.BeginDisabled();
+		ImGui.BeginDisabled(BGMManager.PlayingSongId == 0);
 		if (ImGui.Button(stopText, new Vector2(width / 2, buttonHeight)))
 			BGMManager.Stop();
-		if (BGMManager.PlayingSongId == 0) ImGui.EndDisabled();
+		ImGui.EndDisabled();
 
 		ImGui.SameLine();
 
