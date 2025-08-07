@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
 using CheapLoc;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Orchestrion.Persistence;
 using Orchestrion.Types;
 using Orchestrion.UI.Components;

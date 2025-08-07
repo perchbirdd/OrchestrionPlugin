@@ -4,7 +4,7 @@ using System.Text;
 using CheapLoc;
 using Dalamud.Interface;
 using Dalamud.Logging;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Orchestrion.Persistence;
 using Orchestrion.Types;
 using Orchestrion.UI.Windows;
@@ -144,7 +144,7 @@ public class RenderableSongList
 		if (ImGui.IsItemHovered() && !Configuration.Instance.DisableTooltips)
 			BgmTooltip.DrawBgmTooltip(song);
 
-		if (ImGui.BeginPopupContextItem())
+		if (ImGui.BeginPopupContextItem($"{index}orch_copy_content"))
 		{
 			if (_selected.Count is 0 or 1)
 				HandleSelect(index, selected);

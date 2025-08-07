@@ -63,7 +63,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 		
 		_dtrEntry = DalamudApi.DtrBar.Get(ConstName);
 		_dtrEntry.Shown = Configuration.Instance.ShowSongInNative;
-		_dtrEntry.OnClick = _mainWindow.Toggle;
+		_dtrEntry.OnClick = args => _mainWindow.Toggle();
 
 		DalamudApi.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
 		{
@@ -468,8 +468,8 @@ public class OrchestrionPlugin : IDalamudPlugin
 
 	private unsafe bool IsLoadingScreen()
 	{
-		var titleCard = (AtkUnitBase*)DalamudApi.GameGui.GetAddonByName("_LocationTitle");
-		var blackScreen = (AtkUnitBase*)DalamudApi.GameGui.GetAddonByName("FadeMiddle");
+		var titleCard = (AtkUnitBase*)DalamudApi.GameGui.GetAddonByName("_LocationTitle").Address;
+		var blackScreen = (AtkUnitBase*)DalamudApi.GameGui.GetAddonByName("FadeMiddle").Address;
 		return titleCard != null && titleCard->IsVisible || blackScreen != null && blackScreen->IsVisible;
 	}
 

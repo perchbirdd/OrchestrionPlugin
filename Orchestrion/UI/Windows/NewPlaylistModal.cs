@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using CheapLoc;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Orchestrion.Persistence;
 
 namespace Orchestrion.UI.Windows;

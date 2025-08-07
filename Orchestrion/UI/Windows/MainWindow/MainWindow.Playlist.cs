@@ -7,7 +7,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Orchestrion.Audio;
 using Orchestrion.Persistence;
 using Orchestrion.Types;

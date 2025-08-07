@@ -83,13 +83,13 @@ public class SongList
             var durationStr = elements[1].Substring(1, elements[1].Length - 2).Replace("\"\"", "\"");
             var parsed = double.TryParse(durationStr, out var durationDbl);
             var duration = parsed ? TimeSpan.FromSeconds(durationDbl) : TimeSpan.Zero;
-            if (!parsed) DalamudApi.PluginLog.Debug($"failed parse {id}: {durationStr}");
+            // if (!parsed) DalamudApi.PluginLog.Debug($"failed parse {id}: {durationStr}");
 
             if (!bgms.TryGetValue((uint)id, out var bgm)) continue;
             // DalamudApi.PluginLog.Debug($"{id} {bgm.File == null}");
-            DalamudApi.PluginLog.Debug($"{id}");
-            DalamudApi.PluginLog.Debug($"{bgm.File}");
-            DalamudApi.PluginLog.Debug($"{bgm.File.ExtractText()}");
+            // DalamudApi.PluginLog.Debug($"{id}");
+            // DalamudApi.PluginLog.Debug($"{bgm.File}");
+            // DalamudApi.PluginLog.Debug($"{bgm.File.ExtractText()}");
             var song = new Song
             {
                 Id = id,

@@ -19,7 +19,7 @@ public static class BGMAddressResolver
             
         DalamudApi.PluginLog.Debug($"[BGMAddressResolver] init: base address at {_baseAddress.ToInt64():X}");
             
-        var musicLoc = DalamudApi.SigScanner.ScanText("48 8B 8F ?? ?? ?? ?? 39 70 20 0F 94 C2 45 33 C0");
+        var musicLoc = DalamudApi.SigScanner.ScanText("48 8B 8F ?? ?? ?? ?? 85 C0 0F 95 C2 E8 ?? ?? ?? ?? 48 8B 9F");
         var musicOffset= Marshal.ReadInt32(musicLoc + 3);
         _musicManager = Marshal.ReadIntPtr(new nint(Framework.Instance()) + musicOffset);
         DalamudApi.PluginLog.Debug($"[BGMAddressResolver] MusicManager found at {_musicManager.ToInt64():X}");

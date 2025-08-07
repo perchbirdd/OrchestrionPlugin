@@ -7,7 +7,7 @@ using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Orchestrion.Audio;
 using Orchestrion.Persistence;
 using Orchestrion.Types;
