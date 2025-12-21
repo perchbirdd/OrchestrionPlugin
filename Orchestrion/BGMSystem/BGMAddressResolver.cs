@@ -1,4 +1,5 @@
 ﻿using Dalamud.Logging;
+using System.Runtime.InteropServices;
 using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 
 namespace Orchestrion.BGMSystem;
@@ -20,9 +21,14 @@ public static class BGMAddressResolver
         DalamudApi.PluginLog.Debug($"[BGMAddressResolver] init: base address at {_baseAddress.ToInt64():X}");
             
         var musicLoc = DalamudApi.SigScanner.ScanText("48 8B 8F ?? ?? ?? ?? 85 C0 0F 95 C2 E8 ?? ?? ?? ?? 48 8B 9F");
-        var musicOffset= Marshal.ReadInt32(musicLoc + 3);
-        _musicManager = Marshal.ReadIntPtr(new nint(Framework.Instance()) + musicOffset);
-        DalamudApi.PluginLog.Debug($"[BGMAddressResolver] MusicManager found at {_musicManager.ToInt64():X}");
+        
+        if (musicLoc != nint.Zero) {
+            var musicOffset = Marshal.ReadInt32(musicLoc + 3);
+            _musicManager = Marshal.ReadIntPtr((nint)Framework.Instance() + musicOffset);
+            DalamudApi.PluginLog.Debug($"[BGMAddressResolver] MusicManager found at {_musicManager.ToInt64():X}");
+        } else {
+            DalamudApi.PluginLog.Error("[BGMAddressResolver] Could not find MusicManager signature!");
+        }
     }
     
     public static nint BGMSceneManager
@@ -31,7 +37,7 @@ public static class BGMAddressResolver
         {
             var baseObject = Marshal.ReadIntPtr(_baseAddress);
 
-            return baseObject;
+            return baseObject == nint.Zero ? nint.Zero : Marshal.ReadIntPtr(baseObject + 0xC0);
         }
     }
         
@@ -50,6 +56,10 @@ public static class BGMAddressResolver
     {
         get
         {
+            if (_musicManager == nint.Zero) {
+                return false;
+            }
+            
             var ret = Marshal.ReadByte(_musicManager + 50);
             return ret == 1;
         }

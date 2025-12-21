@@ -4,11 +4,13 @@ namespace Orchestrion.Types;
 
 public struct SongStrings
 {
-	public string Name;
-	public string AlternateName;
-	public string SpecialModeName;
-	public string Locations;
-	public string AdditionalInfo;
+	public string Name = string.Empty;
+	public string AlternateName = string.Empty;
+	public string SpecialModeName = string.Empty;
+	public string Locations = string.Empty;
+	public string AdditionalInfo = string.Empty;
+
+	public SongStrings() { }
 }
 
 public struct Song
@@ -21,19 +23,21 @@ public struct Song
 	public bool FileExists;
 	public TimeSpan Duration;
 	
-	public Song(Dictionary<string, SongStrings> strings)
+	public Song(Dictionary<string, SongStrings> strings, string filePath)
 	{
 		Strings = strings;
+		FilePath = string.Empty;
 	}
 
-	public Song()
+	public Song(string filePath)
 	{
+		FilePath = filePath;
 		Strings = new Dictionary<string, SongStrings>();
 	}
 
-	public string Name => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).Name;
-	public string AlternateName => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).AlternateName;
-	public string SpecialModeName => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).SpecialModeName;
-	public string Locations => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).Locations;
-	public string AdditionalInfo => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).AdditionalInfo;
+	public string Name => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).Name ?? string.Empty;
+	public string AlternateName => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).AlternateName ?? string.Empty;
+	public string SpecialModeName => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).SpecialModeName ?? string.Empty;
+	public string Locations => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).Locations ?? string.Empty;
+	public string AdditionalInfo => Strings.GetValueOrDefault(Util.Lang(), Strings["en"]).AdditionalInfo ?? string.Empty;
 }

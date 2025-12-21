@@ -18,19 +18,19 @@ public class OrchestrionIpcManager : IDisposable
     
     private readonly List<Song> _songListCache;
     
-    private ICallGateSubscriber<string, string, string, uint, string> _wotsitRegister;
-    private ICallGateSubscriber<string, bool> _wotsitUnregister;
-    private Dictionary<string, Song> _wotsitSongIpcs;
-    private string _wotsitRandomGuid;
-    private string _wotsitRandomFavoriteGuid;
-    private string _wotsitStopGuid;
+    private ICallGateSubscriber<string, string, string, uint, string>? _wotsitRegister;
+    private ICallGateSubscriber<string, bool>? _wotsitUnregister;
+    private Dictionary<string, Song> _wotsitSongIpcs = new();
+    private string? _wotsitRandomGuid;
+    private string? _wotsitRandomFavoriteGuid;
+    private string? _wotsitStopGuid;
     
-    private ICallGateProvider<int> _currentSongProvider;
-    private ICallGateProvider<int, bool> _playSongProvider;
-    private ICallGateProvider<int, bool> _orchSongChangeProvider;
-    private ICallGateProvider<int, bool> _songChangeProvider;
-    private ICallGateProvider<int, Song> _songInfoProvider;
-    private ICallGateProvider<List<Song>> _allSongInfoProvider;
+    private ICallGateProvider<int>? _currentSongProvider;
+    private ICallGateProvider<int, bool>? _playSongProvider;
+    private ICallGateProvider<int, bool>? _orchSongChangeProvider;
+    private ICallGateProvider<int, bool>? _songChangeProvider;
+    private ICallGateProvider<int, Song>? _songInfoProvider;
+    private ICallGateProvider<List<Song>>? _allSongInfoProvider;
 
     public OrchestrionIpcManager()
     {
@@ -112,13 +112,17 @@ public class OrchestrionIpcManager : IDisposable
         subscribe.Subscribe(WotsitInvoke);
         
         _wotsitSongIpcs = new Dictionary<string, Song>();
-        
-        foreach (var song in _songListCache)
+
+        if (_wotsitSongIpcs != null)
         {
-            var guid = _wotsitRegister.InvokeFunc(IpcDisplayName, $"Play {song.Name}", GetSearchString(song), WotsitIconId);
-            _wotsitSongIpcs.Add(guid, song);  
+            foreach (var song in _songListCache)
+            {
+                var guid = _wotsitRegister.InvokeFunc(IpcDisplayName, $"Play {song.Name}", GetSearchString(song),
+                    WotsitIconId);
+                _wotsitSongIpcs.Add(guid, song);
+            }
         }
-        
+
         _wotsitRandomGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, PlayRandom, PlayRandom, WotsitIconId);
         _wotsitRandomFavoriteGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, PlayRandomFavorites, PlayRandomFavorites, WotsitIconId);
         _wotsitStopGuid = _wotsitRegister.InvokeFunc(IpcDisplayName, Stop, Stop, WotsitIconId);

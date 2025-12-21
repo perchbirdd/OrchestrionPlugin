@@ -35,8 +35,13 @@ public class Playlist
 	
 	[JsonIgnore]
 	public bool PendingDelete { get; set; }
-	
-	public Playlist() { }
+
+	public Playlist()
+	{
+		Name = string.Empty;
+		DisplayName = string.Empty;
+		Songs = new List<int>();
+	}
 	
 	public Playlist(string name)
 	{
@@ -44,6 +49,7 @@ public class Playlist
 		ShuffleMode = ShuffleMode.Off;
 		
 		Name = name;
+		DisplayName = name;
 		Songs = new List<int>();
 	}
 	
