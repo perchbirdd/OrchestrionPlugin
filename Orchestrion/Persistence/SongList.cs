@@ -14,7 +14,7 @@ public class SongList
     private readonly Dictionary<int, Song> _songs;
     private readonly HttpClient _client = new();
 
-    private static SongList _instance;
+    private static SongList? _instance;
     public static SongList Instance => _instance ??= new SongList();
 
     private SongList()
