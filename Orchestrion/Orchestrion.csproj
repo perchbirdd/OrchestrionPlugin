@@ -1,13 +1,13 @@
-<Project Sdk="Dalamud.NET.Sdk/13.0.0">
+<Project Sdk="Dalamud.NET.Sdk/14.0.1">
   <PropertyGroup>
-    <PluginVersion>2.2.0.11</PluginVersion>
+    <PluginVersion>2.2.1.0</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
     <AssemblyName>orchestrion</AssemblyName>
     <AssemblyTitle>orchestrion</AssemblyTitle>
     <Product>orchestrion</Product>
-    <Authors>Meli, perchbird</Authors>
+    <Authors>Meli, perchbird, BoxuChan</Authors>
     <Copyright>Copyright ©  2021</Copyright>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
