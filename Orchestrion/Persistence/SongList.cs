@@ -9,7 +9,7 @@ namespace Orchestrion.Persistence;
 
 public class SongList
 {
-    private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1s-xJjxqp6pwS7oewNy1aOQnr3gaJbewvIBbyYchZ6No/gviz/tq?tqx=out:csv&sheet={0}";
+    private const string SheetPath = @"https://docs.google.com/spreadsheets/d/1HT_YvWTo_RY7-zg3CvesJ77tQxhd1oNh3pW6s8UTeac/gviz/tq?tqx=out:csv&sheet={0}";
     private const string SheetFileName = "xiv_bgm_{0}.csv";
     private readonly Dictionary<int, Song> _songs;
     private readonly HttpClient _client = new();
@@ -119,6 +119,7 @@ public class SongList
                 DalamudApi.PluginLog.Debug(e, $"[SongList] Error parsing line {i}");
             }
         }
+        DalamudApi.PluginLog.Info($"[SongList] Last parsed ID with duration: {_songs.Values.Where(s => s.Duration > TimeSpan.Zero).Select(s => s.Id).DefaultIfEmpty(0).Max()}");
         SaveLocalSheet(sheetText, "metadata");
     }
 

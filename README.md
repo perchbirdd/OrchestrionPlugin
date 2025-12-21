@@ -30,5 +30,6 @@ Mention it in the XL discord and @ perchbird, or create an issue on this reposit
 * goat, for the launcher and dalamud, without which none of this would be possible.
 * MagowDeath#1763 for maintaining [the previous spreadsheet](https://docs.google.com/spreadsheets/d/14yjTMHYmuB1m5-aJO8CkMferRT9sNzgasYq02oJENWs/edit#gid=0) with all of the song data that is used in this plugin.
 * Many thanks to [Caraxi](https://github.com/Caraxi/) for keeping things working and updated while I (meli) was away!
+* [BoxuChan](https://github.com/BoxuChan/) for updating the plugin to API 14 and keeping the list up-to-date with 7.4.
 * [Luna](https://github.com/LunaRyuko) for adding history and replacing columns with tables in the song list UI
 * Too many discord people to name, for helping out with things and offering suggestions.
