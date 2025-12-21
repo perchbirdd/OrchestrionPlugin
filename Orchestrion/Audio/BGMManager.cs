@@ -10,22 +10,32 @@ namespace Orchestrion.Audio;
 
 public static class BGMManager
 {
-	private static readonly BGMController _bgmController;
-    private static readonly OrchestrionIpcManager _ipcManager;
+	private static BGMController? _bgmController;
+    private static OrchestrionIpcManager? _ipcManager;
     
     private static bool _isPlayingReplacement;
-    private static string _ddPlaylist;
+    private static string? _ddPlaylist;
 
     public delegate void SongChanged(int oldSong, int currentSong, int oldSecondSong, int oldCurrentSong, bool oldPlayedByOrch, bool playedByOrchestrion);
     public static event SongChanged OnSongChanged;
     
-    public static int CurrentSongId => _bgmController.CurrentSongId;
-    public static int PlayingSongId => _bgmController.PlayingSongId;
-    public static int CurrentAudibleSong => _bgmController.CurrentAudibleSong;
-    public static int PlayingScene => _bgmController.PlayingScene;
+    public static int CurrentSongId => _bgmController?.CurrentSongId ?? 0;
+    public static int PlayingSongId => _bgmController?.PlayingSongId ?? 0;
+    public static int CurrentAudibleSong => _bgmController?.CurrentAudibleSong ?? 0;
+    public static int PlayingScene => _bgmController?.PlayingScene ?? 0;
     
     static BGMManager()
 	{
+        _bgmController = new BGMController();
+        _ipcManager = new OrchestrionIpcManager();
+
+        DalamudApi.Framework.Update += Update;
+        _bgmController.OnSongChanged += HandleSongChanged;
+        OnSongChanged += IpcUpdate;
+    }
+    
+    public static void Init()
+    {
         _bgmController = new BGMController();
         _ipcManager = new OrchestrionIpcManager();
 
@@ -38,18 +48,18 @@ public static class BGMManager
     {
         DalamudApi.Framework.Update -= Update;
         Stop();
-        _bgmController.Dispose();
+        _bgmController?.Dispose();
     }
 
     private static void IpcUpdate(int oldSong, int newSong, int oldSecondSong, int oldCurrentSong, bool oldPlayedByOrch, bool playedByOrch)
     {
-        _ipcManager.InvokeSongChanged(newSong);
-        if (playedByOrch) _ipcManager.InvokeOrchSongChanged(newSong);
+        _ipcManager?.InvokeSongChanged(newSong);
+        if (playedByOrch) _ipcManager?.InvokeOrchSongChanged(newSong);
     }
     
     public static void Update(IFramework ignored)
     {
-        _bgmController.Update();
+        _bgmController?.Update();
     }
     
     private static void HandleSongChanged(int oldSong, int newSong, int oldSecondSong, int newSecondSong)

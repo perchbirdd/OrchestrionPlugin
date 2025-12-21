@@ -73,34 +73,51 @@ public class SongList
     private void LoadMetadataSheet(string sheetText)
     {
         _songs.Clear();
-        var bgms = DalamudApi.DataManager.Excel.GetSheet<BGM>()!.ToDictionary(k => k.RowId, v => v);
+        var bgmSheet = DalamudApi.DataManager.Excel.GetSheet<BGM>();
+        if (bgmSheet == null) {
+            DalamudApi.PluginLog.Error("[SongList] Could not find BGM sheet!");
+            return;
+        }
+        var bgms = bgmSheet.ToDictionary(k => k.RowId, v => v);
+        
         var sheetLines = sheetText.Split('\n'); // gdocs provides \n
         for (int i = 1; i < sheetLines.Length; i++)
         {
+            if (string.IsNullOrWhiteSpace(sheetLines[i])) continue;
             // The formatting is odd here because gdocs adds quotes around columns and doubles each single quote
-            var elements = sheetLines[i].Split(new[] { "\"," }, StringSplitOptions.None);
-            var id = int.Parse(elements[0].Substring(1));
-            var durationStr = elements[1].Substring(1, elements[1].Length - 2).Replace("\"\"", "\"");
-            var parsed = double.TryParse(durationStr, out var durationDbl);
-            var duration = parsed ? TimeSpan.FromSeconds(durationDbl) : TimeSpan.Zero;
-            // if (!parsed) DalamudApi.PluginLog.Debug($"failed parse {id}: {durationStr}");
-
-            if (!bgms.TryGetValue((uint)id, out var bgm)) continue;
-            // DalamudApi.PluginLog.Debug($"{id} {bgm.File == null}");
-            // DalamudApi.PluginLog.Debug($"{id}");
-            // DalamudApi.PluginLog.Debug($"{bgm.File}");
-            // DalamudApi.PluginLog.Debug($"{bgm.File.ExtractText()}");
-            var song = new Song
+            try
             {
-                Id = id,
-                FilePath = bgm.File.ExtractText(),
-                SpecialMode = bgm.SpecialMode,
-                DisableRestart = bgm.DisableRestart,
-                FileExists = DalamudApi.DataManager.FileExists(bgm.File.ExtractText()),
-                Duration = duration,
-            };
+                var elements = sheetLines[i].Split(new[] { "\"," }, StringSplitOptions.None);
+                if (elements.Length < 2) continue;
 
-            _songs[id] = song;
+                var id = int.Parse(elements[0].Substring(1));
+                var durationStr = elements[1].Substring(1, elements[1].Length - 2).Replace("\"\"", "\"");
+                var parsed = double.TryParse(durationStr, out var durationDbl);
+                var duration = parsed ? TimeSpan.FromSeconds(durationDbl) : TimeSpan.Zero;
+                // if (!parsed) DalamudApi.PluginLog.Debug($"failed parse {id}: {durationStr}");
+
+                if (!bgms.TryGetValue((uint)id, out var bgm)) continue;
+                // DalamudApi.PluginLog.Debug($"{id} {bgm.File == null}");
+                // DalamudApi.PluginLog.Debug($"{id}");
+                // DalamudApi.PluginLog.Debug($"{bgm.File}");
+                // DalamudApi.PluginLog.Debug($"{bgm.File.ExtractText()}");
+                var song = new Song
+                {
+                    Id = id,
+                    Strings = new Dictionary<string, SongStrings>(),
+                    FilePath = bgm.File.ExtractText(),
+                    SpecialMode = bgm.SpecialMode,
+                    DisableRestart = bgm.DisableRestart,
+                    FileExists = DalamudApi.DataManager.FileExists(bgm.File.ExtractText()),
+                    Duration = duration,
+                };
+
+                _songs[id] = song;
+            }
+            catch (Exception e)
+            {
+                DalamudApi.PluginLog.Debug(e, $"[SongList] Error parsing line {i}");
+            }
         }
         SaveLocalSheet(sheetText, "metadata");
     }
@@ -124,6 +141,12 @@ public class SongList
 
             if ((code == "en" && string.IsNullOrEmpty(name)) || name == "Null BGM" || name == "test")
                 _songs.Remove(id);
+            
+            if (song.Strings == null) 
+            {
+                song.Strings = new Dictionary<string, SongStrings>();
+                _songs[id] = song;
+            }
             
             song.Strings[code] = new SongStrings
             {
@@ -197,8 +220,9 @@ public class SongList
         var playlistExists = Configuration.Instance.Playlists.TryGetValue(limitToPlaylist, out var playlist);
         var isAllSongs = limitToPlaylist == string.Empty;
         if (!playlistExists && !isAllSongs) return false;
+        if (playlist == null && !isAllSongs) return false;
 
-        ICollection<int> source = !isAllSongs ? playlist.Songs : _songs.Keys;
+        ICollection<int> source = !isAllSongs ? playlist!.Songs : _songs.Keys;
         if (source.Count == 0) return false;
         if (!source.Any(x => _songs.ContainsKey(x))) return false;
         if (!source.Any(x => _songs[x].FileExists)) return false;

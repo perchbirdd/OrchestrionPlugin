@@ -30,8 +30,8 @@ public class OrchestrionPlugin : IDalamudPlugin
 	private const string CommandName = "/porch";
 	private const string NativeNowPlayingPrefix = "♪ ";
 	
-	public static IFontHandle CnFont { get; private set; }
-	public static IFontHandle LargeFont { get; private set; }
+	public static IFontHandle CnFont { get; private set; } = null!;
+	public static IFontHandle LargeFont { get; private set; } = null!;
 
 	public string Name => ConstName;
 
@@ -61,6 +61,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 		LanguageChanged(DalamudApi.PluginInterface.UiLanguage);
 		
 		BGMAddressResolver.Init();
+		BGMManager.Init(); 
 		BGMManager.OnSongChanged += OnSongChanged;
 
 		_windowSystem = new WindowSystem();
@@ -83,6 +84,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 
 		DalamudApi.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
 		DalamudApi.PluginInterface.UiBuilder.OpenConfigUi += OpenSettingsWindow;
+		DalamudApi.PluginInterface.UiBuilder.OpenMainUi += OpenMainWindow;
 
 		DalamudApi.Framework.Update += OrchestrionUpdate;
 		DalamudApi.ClientState.Logout += ClientStateOnLogout;
@@ -127,6 +129,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 		_mainWindow.Dispose();
 		DalamudApi.Framework.Update -= OrchestrionUpdate;
 		DalamudApi.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
+		DalamudApi.PluginInterface.UiBuilder.OpenMainUi -= OpenMainWindow;
 		// DalamudApi.PluginInterface.UiBuilder.BuildFonts -= BuildFonts;
 		DalamudApi.CommandManager.RemoveHandler(CommandName);
 		_dtrEntry?.Remove();
