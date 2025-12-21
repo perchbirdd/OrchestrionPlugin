@@ -44,9 +44,20 @@ public class OrchestrionPlugin : IDalamudPlugin
 
 	private SeString _songEchoMsg;
 
-	public OrchestrionPlugin(IDalamudPluginInterface pi)
+	public OrchestrionPlugin(IDalamudPluginInterface pi, IChatGui chatGui, IClientState clientState, ICommandManager commandManager, IDataManager dataManager, IDtrBar dtrBar, IFramework framework, IGameGui gameGui, ISigScanner sigScanner, IGameInteropProvider hooks, IPluginLog pluginLog)
 	{
-		DalamudApi.Initialize(pi);
+		DalamudApi.PluginInterface = pi;
+		DalamudApi.ChatGui = chatGui;
+		DalamudApi.ClientState = clientState;
+		DalamudApi.CommandManager = commandManager;
+		DalamudApi.DataManager = dataManager;
+		DalamudApi.DtrBar = dtrBar;
+		DalamudApi.Framework = framework;
+		DalamudApi.GameGui = gameGui;
+		DalamudApi.SigScanner = sigScanner;
+		DalamudApi.Hooks = hooks;
+		DalamudApi.PluginLog = pluginLog;
+		
 		LanguageChanged(DalamudApi.PluginInterface.UiLanguage);
 		
 		BGMAddressResolver.Init();
