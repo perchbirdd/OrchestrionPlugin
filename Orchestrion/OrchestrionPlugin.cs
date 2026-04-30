@@ -90,7 +90,7 @@ public class OrchestrionPlugin : IDalamudPlugin
 					.Concat(Enumerable.Range(1, 127).Select(x => (char)x))
 					.ToGlyphRange(),
 			};
-			tk.Font = tk.AddDalamudAssetFont(DalamudAsset.NotoSansJpMedium, config);
+			tk.Font = tk.AddDalamudAssetFont(DalamudAsset.NotoSansCjkMedium, config);
 		}));
 		if (CnFont.LoadException != null)
 		{
